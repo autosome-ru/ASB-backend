@@ -18,5 +18,5 @@ def get_snps_by_rs(rs_id, param):
     return list(ret_snps)
 
 
-def get_full_snps_by_rs(rs_id):
-    return SNP.query.filter(SNP.rs_id == rs_id).all()
+def get_full_snp(chr, pos, alt):
+    return SNP.query.get((chr, pos, alt))
