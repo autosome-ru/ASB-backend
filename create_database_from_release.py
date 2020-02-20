@@ -17,7 +17,7 @@ conv_bad = dict(zip(
                     ('1', '4/3', '3/2', '2', '5/2', '3', '4', '5', '6')
                 ))
 
-with open(os.path.expanduser('~/Releases/CONVERT_CL_NAMES.json')) as file:
+with open(release_path + 'CONVERT_CL_NAMES.json') as file:
     cl_dict = json.loads(file.readline())
 
 cl_dict_reverse = {}

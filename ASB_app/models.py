@@ -73,7 +73,6 @@ class SNP(GenomePolymorphismLocation):
         db.PrimaryKeyConstraint('chromosome', 'position', 'alt'),
     )
 
-    ref = db.Column(db.Enum(*nucleotides))
     rs_id = db.Column(db.Integer, nullable=False)
 
     def __repr__(self):
