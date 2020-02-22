@@ -1,3 +1,5 @@
+from sqlalchemy.ext.hybrid import hybrid_property
+
 from ASB_app import db
 from ASB_app.constants import chromosomes, nucleotides, bads
 
@@ -7,6 +9,7 @@ class TranscriptionFactor(db.Model):
 
     tf_id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), nullable=False)
+    motif_legnth = db.Column(db.Integer)
 
     def __repr__(self):
         return '<TranscriptionFactor #{0.tf_id}, {0.name}>'.format(self)
@@ -61,18 +64,19 @@ class ExpSNP(db.Model):
 class GenomePolymorphismLocation(db.Model):
     __abstract__ = True
 
-    chromosome = db.Column(db.Enum(*chromosomes))
-    position = db.Column(db.Integer)
-    ref = db.Column(db.Enum(*nucleotides))
-    alt = db.Column(db.Enum(*nucleotides))
+    chromosome = db.Column(db.Enum(*chromosomes), nullable=False)
+    position = db.Column(db.Integer, nullable=False)
+    alt = db.Column(db.Enum(*nucleotides), nullable=False)
 
 
 class SNP(GenomePolymorphismLocation):
     __tablename__ = 'snps'
     __table_args__ = (
         db.PrimaryKeyConstraint('chromosome', 'position', 'alt'),
+        db.Index('rs_index', 'rs_id')
     )
 
+    ref = db.Column(db.Enum(*nucleotides), nullable=False)
     rs_id = db.Column(db.Integer, nullable=False)
 
     def __repr__(self):
@@ -82,11 +86,26 @@ class SNP(GenomePolymorphismLocation):
 class AggregatedSNP(GenomePolymorphismLocation):
     __abstract__ = True
 
-    p_value_ref = db.Column(db.Float)
-    p_value_alt = db.Column(db.Float)
+    log_p_value_ref = db.Column(db.Float)
+    log_p_value_alt = db.Column(db.Float)
     is_asb = db.Column(db.Boolean, nullable=False)
     es_ref = db.Column(db.Float)
     es_alt = db.Column(db.Float)
+    mean_bad = db.Column(db.Float)
+    motif_log_p_ref = db.Column(db.Float)
+    motif_log_p_alt = db.Column(db.Float)
+    motif_log_2_fc = db.Column(db.Float)
+    motif_orientation = db.Column(db.Boolean)
+    motif_position = db.Column(db.Integer)
+    motif_concordance = db.Column(db.Boolean)
+
+    @hybrid_property
+    def best_p_value(self):
+        return min(self.log_p_value_alt, self.log_p_value_ref)
+
+    @best_p_value.expression
+    def best_p_value(cls):
+        return db.func.max(cls.log_p_value_alt, cls.log_p_value_ref)
 
 
 class TranscriptionFactorSNP(AggregatedSNP):
@@ -100,7 +119,9 @@ class TranscriptionFactorSNP(AggregatedSNP):
     tf_snp_id = db.Column(db.Integer, primary_key=True)
     tf_id = db.Column(db.Integer, db.ForeignKey('transcription_factors.tf_id'), nullable=False)
 
-    snp = db.relationship('SNP', backref='tf_aggregated_snps')
+    snp = db.relationship('SNP',
+                          backref=db.backref('tf_aggregated_snps',
+                                             order_by='TranscriptionFactorSNP.best_p_value.desc()'))
     transcription_factor = db.relationship('TranscriptionFactor', backref='tf_aggregated_snps')
 
     def __repr__(self):
@@ -109,8 +130,8 @@ class TranscriptionFactorSNP(AggregatedSNP):
 
 class CellLineSNP(AggregatedSNP):
     __tablename__ = 'cl_snps'
-    __table_args__ = (db.ForeignKeyConstraint(['chromosome', 'position', 'ref', 'alt'],
-                                              ['snps.chromosome', 'snps.position', 'snps.ref', 'snps.alt']),
+    __table_args__ = (db.ForeignKeyConstraint(['chromosome', 'position', 'alt'],
+                                              ['snps.chromosome', 'snps.position', 'snps.alt']),
                       db.UniqueConstraint('chromosome', 'position', 'alt', 'cl_id',
                                           name='cell_line_unique_mutation'),
                       )
@@ -118,11 +139,42 @@ class CellLineSNP(AggregatedSNP):
     cl_snp_id = db.Column(db.Integer, primary_key=True)
     cl_id = db.Column(db.Integer, db.ForeignKey('cell_lines.cl_id'), nullable=False)
 
-    snp = db.relationship('SNP', backref='cl_aggregated_snps')
+    snp = db.relationship('SNP', backref=db.backref('cl_aggregated_snps',
+                                                    order_by='CellLineSNP.best_p_value.desc()'))
     cell_line = db.relationship('CellLine', backref='cl_agregated_snps')
 
     def __repr__(self):
         return '<CellLineSNP #{0.cl_snp_id}>'.format(self)
+
+
+class Phenotype(db.Model):
+    __tablename__ = 'phenotypes'
+    __tableargs__ = (db.UniqueConstraint('phenotype_name', 'db_name',
+                                         name='unique phenotype in db'),
+                     )
+
+    phenotype_id = db.Column(db.Integer, primary_key=True)
+    db_name = db.Column(db.String(100))
+    phenotype_name = db.Column(db.String(100))
+
+    snps = db.relationship(
+        'SNP',
+        secondary='phenotypes_SNPs',
+        backref='phenotypes'
+    )
+
+
+class PhenotypeSNPCorrespondence(GenomePolymorphismLocation):
+    __tablename__ = 'phenotypes_SNPs'
+    __table_args__ = (db.ForeignKeyConstraint(['chromosome', 'position', 'alt'],
+                                              ['snps.chromosome', 'snps.position', 'snps.alt']),
+                      db.UniqueConstraint('chromosome', 'position', 'alt', 'phenotype_id',
+                                          name='unique_phenotype_snp_pair'),
+                      )
+
+    pair_id = db.Column(db.Integer, primary_key=True)
+    phenotype_id = db.Column(db.Integer, db.ForeignKey('phenotypes.phenotype_id'),
+                             nullable=False)
 
 
 db.create_all()

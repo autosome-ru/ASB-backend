@@ -1,4 +1,4 @@
-from ASB_app import session, logger
+from ASB_app import session, logger, db
 from ASB_app.models import TranscriptionFactorSNP, CellLineSNP, SNP
 
 

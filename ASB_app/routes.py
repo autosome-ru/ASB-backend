@@ -17,7 +17,7 @@ class SNPItem(Resource):
         return service.get_full_snp(rs_id, alt)
 
 
-@snp_nsp.route('/snps/rs/<int:rs_id>')
+@search_nsp.route('/snps/rs/<int:rs_id>')
 class SNPSearchSNPByIdCollection(Resource):
     @api.marshal_list_with(rs_snp_model)
     def get(self, rs_id):

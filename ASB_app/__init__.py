@@ -33,5 +33,12 @@ app.register_blueprint(blueprint)
 
 migrate = Migrate(app, db)
 
+
+@app.after_request
+def apply_caching(response):
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    return response
+
+
 import ASB_app.models as models
 from . import routes

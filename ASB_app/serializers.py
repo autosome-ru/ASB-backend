@@ -11,8 +11,8 @@ genome_polymorphism_location_model = api.model('Genome Mutation Position and id'
 })
 
 aggregated_snp_model = api.model('Agregated SNP (no genome info) ', {
-    'p_value_ref': fields.Float,
-    'p_value_alt': fields.Float,
+    'log_p_value_ref': fields.Float,
+    'log_p_value_alt': fields.Float,
     'is_asb': fields.Boolean,
 })
 
@@ -28,6 +28,12 @@ cell_line_model = api.model('Cell line', {
 
 tf_snp_model = api.inherit('Transcription Factor SNP (no genome info)', aggregated_snp_model, {
     'tf_snp_id': fields.Integer(readonly=True),
+    'motif_log_p_ref': fields.Float,
+    'motif_log_p_alt': fields.Float,
+    'motif_log_2_fc': fields.Float,
+    'motif_orientation': fields.Boolean,
+    'motif_position': fields.Integer,
+    'motif_concordance': fields.Boolean,
     'transcription_factor': fields.Nested(transcription_factor_model),
 })
 
@@ -51,16 +57,20 @@ exp_snp_model = api.model('Experiment SNP', {
 })
 
 aggregated_snp_model_full = api.inherit('Agregated SNP (with exp snps)', aggregated_snp_model, {
-    'p_value_ref': fields.Float,
-    'p_value_alt': fields.Float,
-    'is_asb': fields.Boolean,
     'es_ref': fields.Float,
     'es_alt': fields.Float,
+    'mean_bad': fields.Float,
     'exp_snps': fields.List(fields.Nested(exp_snp_model))
 })
 
 tf_snp_model_full = api.inherit('Transcription Factor SNP (with exp snps)', aggregated_snp_model_full, {
     'tf_snp_id': fields.Integer(readonly=True),
+    'motif_log_p_ref': fields.Float,
+    'motif_log_p_alt': fields.Float,
+    'motif_log_2_fc': fields.Float,
+    'motif_orientation': fields.Boolean,
+    'motif_position': fields.Integer,
+    'motif_concordance': fields.Boolean,
     'transcription_factor': fields.Nested(transcription_factor_model),
 })
 
