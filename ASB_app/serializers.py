@@ -79,7 +79,13 @@ cl_snp_model_full = api.inherit('Cell line SNP (with exp snps)', aggregated_snp_
     'cell_line': fields.Nested(cell_line_model),
 })
 
+phenotype_model = api.model('Phenotype', {
+    'db_name': fields.String,
+    'phenotype_string': fields.String,
+})
+
 rs_snp_model_full = api.inherit('Complete rs-SNP info (with exp snps)', genome_polymorphism_location_model, {
     'tf_aggregated_snps': fields.List(fields.Nested(tf_snp_model_full)),
     'cl_aggregated_snps': fields.List(fields.Nested(cl_snp_model_full)),
+    'phenotypes': fields.List(fields.Nested(phenotype_model))
 })

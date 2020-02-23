@@ -6,6 +6,9 @@ from ASB_app.constants import chromosomes, nucleotides, bads
 
 class TranscriptionFactor(db.Model):
     __tablename__ = 'transcription_factors'
+    __table_args__ = (
+        db.Index('tf_uniprot_ac_index', 'name'),
+    )
 
     tf_id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), nullable=False)
@@ -17,6 +20,9 @@ class TranscriptionFactor(db.Model):
 
 class CellLine(db.Model):
     __tablename__ = 'cell_lines'
+    __table_args__ = (
+        db.Index('cell_title_index', 'name'),
+    )
 
     cl_id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), nullable=False)
@@ -27,11 +33,16 @@ class CellLine(db.Model):
 
 class Experiment(db.Model):
     __tablename__ = 'experiments'
+    __table_args__ = (
+        db.Index('align_index', 'align'),
+    )
 
     exp_id = db.Column(db.Integer, primary_key=True)
     align = db.Column(db.Integer, nullable=False)
     tf_id = db.Column(db.Integer, db.ForeignKey('transcription_factors.tf_id'), nullable=False)
     cl_id = db.Column(db.Integer, db.ForeignKey('cell_lines.cl_id'), nullable=False)
+    geo_gse = db.Column(db.String(10))
+    encode = db.Column(db.String(11))
 
     transcription_factor = db.relationship('TranscriptionFactor', backref='experiments')
     cell_line = db.relationship('CellLine', backref='experiments')
@@ -42,6 +53,13 @@ class Experiment(db.Model):
 
 class ExpSNP(db.Model):
     __tablename__ = 'exp_snps'
+    __table_args__ = (
+        db.UniqueConstraint('exp_id', 'tf_snp_id',
+                            name='unique_tf_aggregated_snp'),
+        db.UniqueConstraint('exp_id', 'cl_snp_id',
+                            name='unique_tf_aggregated_snp'),
+        db.Index('ag_snp_index', 'exp_id', 'tf_snp_id', 'cl_snp_id'),
+    )
 
     exp_snp_id = db.Column(db.Integer, primary_key=True)
     ref_readcount = db.Column(db.Integer, nullable=False)
@@ -73,7 +91,7 @@ class SNP(GenomePolymorphismLocation):
     __tablename__ = 'snps'
     __table_args__ = (
         db.PrimaryKeyConstraint('chromosome', 'position', 'alt'),
-        db.Index('rs_index', 'rs_id')
+        db.Index('rs_index', 'rs_id'),
     )
 
     ref = db.Column(db.Enum(*nucleotides), nullable=False)
@@ -112,8 +130,7 @@ class TranscriptionFactorSNP(AggregatedSNP):
     __tablename__ = 'tf_snps'
     __table_args__ = (db.ForeignKeyConstraint(['chromosome', 'position', 'alt'],
                                               ['snps.chromosome', 'snps.position', 'snps.alt']),
-                      db.UniqueConstraint('chromosome', 'position', 'alt', 'tf_id',
-                                          name='transcription_factor_unique_mutation'),
+                      db.Index('unique_tf_mutation_index', 'chromosome', 'position', 'alt', 'tf_id'),
                       )
 
     tf_snp_id = db.Column(db.Integer, primary_key=True)
@@ -134,6 +151,7 @@ class CellLineSNP(AggregatedSNP):
                                               ['snps.chromosome', 'snps.position', 'snps.alt']),
                       db.UniqueConstraint('chromosome', 'position', 'alt', 'cl_id',
                                           name='cell_line_unique_mutation'),
+                      db.Index('unique_cl_mutation_index', 'chromosome', 'position', 'alt', 'cl_id'),
                       )
 
     cl_snp_id = db.Column(db.Integer, primary_key=True)
