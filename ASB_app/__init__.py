@@ -6,9 +6,6 @@ from sqlalchemy import MetaData
 
 from config import Config
 
-# from flask_sslify import SSLify
-
-
 app = Flask(__name__)
 app.config.from_object(Config)
 logger = app.logger

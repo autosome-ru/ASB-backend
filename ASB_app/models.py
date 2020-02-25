@@ -58,7 +58,9 @@ class ExpSNP(db.Model):
                             name='unique_tf_aggregated_snp'),
         db.UniqueConstraint('exp_id', 'cl_snp_id',
                             name='unique_cl_aggregated_snp'),
-        db.Index('ag_snp_index', 'exp_id', 'tf_snp_id', 'cl_snp_id'),
+        db.Index('tf_snp_index', 'tf_snp_id'),
+        db.Index('cl_snp_index', 'cl_snp_id'),
+        db.Index('exp_index', 'exp_id'),
     )
 
     exp_snp_id = db.Column(db.Integer, primary_key=True)
@@ -188,6 +190,8 @@ class PhenotypeSNPCorrespondence(GenomePolymorphismLocation):
                                               ['snps.chromosome', 'snps.position', 'snps.alt']),
                       db.UniqueConstraint('chromosome', 'position', 'alt', 'phenotype_id',
                                           name='unique_phenotype_snp_pair'),
+                      db.Index('snp_index', 'chromosome', 'position', 'alt'),
+                      db.Index('phenotype_index', 'phenotype_id')
                       )
 
     pair_id = db.Column(db.Integer, primary_key=True)

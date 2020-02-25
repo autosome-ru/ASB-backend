@@ -89,7 +89,7 @@ cl_snp_model_full = api.inherit('Cell line SNP (with exp snps)', aggregated_snp_
 
 phenotype_model = api.model('Phenotype', {
     'db_name': fields.String,
-    'phenotype_string': fields.String,
+    'phenotype_name': fields.String,
 })
 
 rs_snp_model_full = api.inherit('Complete rs-SNP info (with exp snps)', genome_polymorphism_location_model, {
