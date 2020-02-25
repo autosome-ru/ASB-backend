@@ -47,13 +47,21 @@ rs_snp_model = api.inherit('rs-SNP info for search', genome_polymorphism_locatio
     'cl_aggregated_snps': fields.List(fields.Nested(cl_snp_model)),
 })
 
+exp_model_short = api.model('Experiment (short info)', {
+    'exp_id': fields.Integer,
+    'align': fields.Integer,
+    'tf_name': fields.String(attribute='transcription_factor.name'),
+    'cl_name': fields.String(attribute='cell_line.name'),
+})
+
 exp_snp_model = api.model('Experiment SNP', {
     'exp_snp_id': fields.Integer(readonly=True),
     'ref_readcount': fields.Integer,
     'alt_readcount': fields.Integer,
     'p_value_ref': fields.Float,
     'p_value_alt': fields.Float,
-    'bad': fields.String(enumerate=bads)
+    'bad': fields.String(enumerate=bads),
+    'experiment': fields.Nested(exp_model_short)
 })
 
 aggregated_snp_model_full = api.inherit('Agregated SNP (with exp snps)', aggregated_snp_model, {

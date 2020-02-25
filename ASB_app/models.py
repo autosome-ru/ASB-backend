@@ -57,7 +57,7 @@ class ExpSNP(db.Model):
         db.UniqueConstraint('exp_id', 'tf_snp_id',
                             name='unique_tf_aggregated_snp'),
         db.UniqueConstraint('exp_id', 'cl_snp_id',
-                            name='unique_tf_aggregated_snp'),
+                            name='unique_cl_aggregated_snp'),
         db.Index('ag_snp_index', 'exp_id', 'tf_snp_id', 'cl_snp_id'),
     )
 
@@ -67,8 +67,8 @@ class ExpSNP(db.Model):
     p_value_ref = db.Column(db.Float)
     p_value_alt = db.Column(db.Float)
     bad = db.Column(db.Enum(*bads))
-    tf_snp_id = db.Column(db.Integer, db.ForeignKey('tf_snps.tf_snp_id'), nullable=False)
-    cl_snp_id = db.Column(db.Integer, db.ForeignKey('cl_snps.cl_snp_id'), nullable=False)
+    tf_snp_id = db.Column(db.Integer, db.ForeignKey('tf_snps.tf_snp_id'))
+    cl_snp_id = db.Column(db.Integer, db.ForeignKey('cl_snps.cl_snp_id'))
     exp_id = db.Column(db.Integer, db.ForeignKey('experiments.exp_id'), nullable=False)
 
     tf_aggregated_snp = db.relationship('TranscriptionFactorSNP', backref='exp_snps')
@@ -76,7 +76,7 @@ class ExpSNP(db.Model):
     experiment = db.relationship('Experiment', backref='exp_snps')
 
     def __repr__(self):
-        return '<ExpSNP #{0.exp_snp_id}, {0.chromosome}, {0.position}, {0.ref}, {0.alt}>'.format(self)
+        return '<ExpSNP #{0.exp_snp_id}, {0.exp_id}, {0.tf_snp_id}, {0.cl_snp_id}>'.format(self)
 
 
 class GenomePolymorphismLocation(db.Model):
@@ -98,7 +98,7 @@ class SNP(GenomePolymorphismLocation):
     rs_id = db.Column(db.Integer, nullable=False)
 
     def __repr__(self):
-        return '<SNP {0.rs_id}, {0.chromosome}, {0.position}, {0.ref}, {0.alt}>'.format(self)
+        return '<SNP rs{0.rs_id}, {0.chromosome}, {0.position}, {0.ref}, {0.alt}>'.format(self)
 
 
 class AggregatedSNP(GenomePolymorphismLocation):
@@ -142,7 +142,7 @@ class TranscriptionFactorSNP(AggregatedSNP):
     transcription_factor = db.relationship('TranscriptionFactor', backref='tf_aggregated_snps')
 
     def __repr__(self):
-        return '<TranscriptionFactorSNP #{0.tf_snp_id}>'.format(self)
+        return '<TranscriptionFactorSNP #{0.tf_snp_id} at {0.chromosome} {0.position} {0.alt}>'.format(self)
 
 
 class CellLineSNP(AggregatedSNP):
@@ -162,7 +162,7 @@ class CellLineSNP(AggregatedSNP):
     cell_line = db.relationship('CellLine', backref='cl_agregated_snps')
 
     def __repr__(self):
-        return '<CellLineSNP #{0.cl_snp_id}>'.format(self)
+        return '<CellLineSNP #{0.cl_snp_id} at {0.chromosome} {0.position} {0.alt}>'.format(self)
 
 
 class Phenotype(db.Model):

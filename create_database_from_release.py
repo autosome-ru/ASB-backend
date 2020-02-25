@@ -5,13 +5,13 @@ import json
 import numpy as np
 import pandas as pd
 
-TF = True
-CL = True
+TF = 0
+CL = 0
 tr = 0.05
-EXP = True
-TF_DICT = True
+EXP = 0
+TF_DICT = False
 CL_DICT = True
-PHEN = True
+PHEN = 0
 
 release_path = os.path.expanduser('~/Releases/')
 
@@ -204,6 +204,8 @@ if __name__ == '__main__':
             name = file.replace('_DICT.json', '')
             if param == 'CL':
                 name = cl_dict_reverse[name]
+                if name < 'Reh (ATCC CRL-8286)':
+                    continue
             print(name)
 
             with open(pv_path + file, 'r') as info:
@@ -220,7 +222,16 @@ if __name__ == '__main__':
 
             exp_snps = []
 
-            for key, value in content.items():
+            hui = len(content)
+            print(hui)
+            if hui > 400000:
+                raise ValueError
+
+            for index, (key, value) in enumerate(content.items(), 1):
+                if index % 10000 == 0:
+                    print(index)
+                # if index < 900000 or index >= 20000000:
+                #     continue
                 chromosome, position, rs_id, ref, alt = key.strip().split('\t')[:5]
                 position = int(position)
                 rs_id = int(rs_id[2:])
@@ -232,13 +243,31 @@ if __name__ == '__main__':
                 ).first()
 
                 if not ag_snp:
-                    print('NO SNP on {} {} {}'.format(chromosome, position, alt))
+                    # print('NO SNP on {} {} {}'.format(chromosome, position, alt))
                     continue
 
                 ag_snp_id = getattr(ag_snp, {'TF': 'tf_snp_id', 'CL': 'cl_snp_id'}[param])
 
+                AnotherAgrClass = {'CL': TranscriptionFactor, 'TF': CellLine}[param]
+                AnotherSNPClass = {'CL': TranscriptionFactorSNP, 'TF': CellLineSNP}[param]
+
+                another_ag_snps = AnotherSNPClass.query.filter(
+                    AnotherSNPClass.chromosome == chromosome,
+                    AnotherSNPClass.position == position,
+                    AnotherSNPClass.alt == alt,
+                ).all()
+
+                another_dict = {}
+                another_id = {'CL': 'tf_snp_id', 'TF': 'cl_snp_id'}[param]
+                another_class = {'CL': 'tf_id', 'TF': 'cl_id'}[param]
+                for snp in another_ag_snps:
+                    another_dict[AnotherAgrClass.query.get(getattr(snp, another_class)).name] = getattr(snp, another_id)
+
                 del value['ref_ef']
                 del value['alt_ef']
+                if 'logitp_ref' in value:
+                    del value['logitp_ref']
+                    del value['logitp_alt']
 
                 parameters_list = [dict(zip(
                     value.keys(),
@@ -247,12 +276,11 @@ if __name__ == '__main__':
                     for i in range(len(value['aligns']))]
 
                 for parameter in parameters_list:
-                    print(int(parameter['aligns'][6:]))
                     exp_id = Experiment.query.filter(Experiment.align == int(parameter['aligns'][6:])).one().exp_id
 
                     exp_snp = ExpSNP.query.filter(
                         ExpSNP.exp_id == exp_id,
-                        getattr(ExpSNP, {'TF': 'tf_snp_id', 'CL': 'cl_snp_id'}[param]) == ag_id,
+                        getattr(ExpSNP, {'TF': 'tf_snp_id', 'CL': 'cl_snp_id'}[param]) == ag_snp_id,
                     ).first()
 
                     if not exp_snp:
@@ -262,13 +290,15 @@ if __name__ == '__main__':
                             'p_value_ref': parameter['ref_pvalues'],
                             'p_value_alt': parameter['alt_pvalues'],
                             'bad': conv_bad[parameter['BAD']],
-                            'tf_snp_id': {'TF': ag_id, 'CL': parameter['TF']}[param],
-                            'cl_snp_id': {'TF': parameter['CL'], 'CL': ag_id}[param],
+                            'tf_snp_id': {'TF': ag_snp_id, 'CL': another_dict.get(parameter.get('TF'))}[param],
+                            'cl_snp_id': {'TF': another_dict.get(cl_dict_reverse.get(parameter.get('CL'))),
+                                          'CL': ag_snp_id}[param],
                             'exp_id': exp_id,
                         })
                     else:
                         other_id = getattr(exp_snp, {'TF': 'cl_snp_id', 'CL': 'tf_snp_id'}[param])
-                        assert other_id == parameter[{'TF': 'CL', 'CL': 'TF'}[param]]
+                        assert other_id == {'TF': another_dict.get(cl_dict_reverse.get(parameter.get('CL'))),
+                                            'CL': another_dict.get(parameter.get('TF'))}[param]
                         assert exp_snp.ref_readcount == parameter['ref_counts']
                         assert exp_snp.p_value_alt == parameter['alt_pvalues']
                         assert exp_snp.bad == conv_bad[parameter['BAD']]
@@ -277,4 +307,3 @@ if __name__ == '__main__':
 
             session.add_all(exp_snps)
             session.commit()
-
