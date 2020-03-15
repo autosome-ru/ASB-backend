@@ -31,7 +31,7 @@ class SNPSearchSNPByIdCollection(Resource):
         return service.get_snps_by_rs_id(rs_id)
 
 
-@search_nsp.route('/snps/gp/<string: chr>/<int: pos1>/<int: pos2>')
+@search_nsp.route('/snps/gp/<string:chr>/<int:pos1>/<int:pos2>')
 class SNPSearchSNPByGPCollection(Resource):
     @api.marshal_list_with(rs_snp_model)
     def get(self, chr, pos1, pos2):
