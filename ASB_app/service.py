@@ -11,3 +11,7 @@ def get_full_snp(rs_id, alt):
         (SNP.rs_id == rs_id) &
         (SNP.alt == alt)
     ).one()
+
+
+def get_snps_by_genome_position(chr, pos1, pos2):
+    return SNP.query.filter(SNP.chromosome == chr, SNP.position.between(pos1, pos2)).all()
