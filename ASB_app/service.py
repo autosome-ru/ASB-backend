@@ -29,7 +29,7 @@ def get_snps_by_advanced_filters(filters_object):
 
     if filters_object['cell_types']:
         cl_filters = (SNP.cl_aggregated_snps.any(CellLineSNP.cl_id.in_(
-            [getattr(CellLine.query.filter(CellLine.name == cl_name).one_or_none().cl_id,
+            [getattr(CellLine.query.filter(CellLine.name == cl_name).one_or_none(),
                      'cl_id', None)
              for cl_name in filters_object['cell_types']])),)
     else:

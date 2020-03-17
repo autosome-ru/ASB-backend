@@ -51,7 +51,7 @@ class SNPSearchSNPByGPCollection(Resource):
         """
         result = service.get_snps_by_genome_position(chr, pos1, pos2)
         if len(result) > 1000:
-            return '{}', 507
+            return [], 507
         return result
 
 
@@ -67,7 +67,7 @@ class AdvancedSearchSNP(Resource):
         try:
             result = service.get_snps_by_advanced_filters(search_parser.parse_args())
             if len(result) > 1000:
-                return '{}', 507
+                return [], 507
             return result
         except ParsingError:
             api.abort(400)
