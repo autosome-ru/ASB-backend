@@ -99,6 +99,13 @@ class SNP(GenomePolymorphismLocation):
     ref = db.Column(db.Enum(*nucleotides), nullable=False)
     rs_id = db.Column(db.Integer, nullable=False)
 
+    db.relationship(db.backref('tf_aggregated_snps',
+                               order_by='TranscriptionFactorSNP.best_p_value.desc()'),
+                    back_populates='snp')
+    db.relationship(db.backref('cl_aggregated_snps',
+                               order_by='CellLineSNP.best_p_value.desc()'),
+                    back_populates='snp')
+
     def __repr__(self):
         return '<SNP rs{0.rs_id}, {0.chromosome}, {0.position}, {0.ref}, {0.alt}>'.format(self)
 
@@ -138,9 +145,7 @@ class TranscriptionFactorSNP(AggregatedSNP):
     tf_snp_id = db.Column(db.Integer, primary_key=True)
     tf_id = db.Column(db.Integer, db.ForeignKey('transcription_factors.tf_id'), nullable=False)
 
-    snp = db.relationship('SNP',
-                          backref=db.backref('tf_aggregated_snps',
-                                             order_by='TranscriptionFactorSNP.best_p_value.desc()'))
+    snp = db.relationship('SNP', back_populates='tf_aggregated_snps')
     transcription_factor = db.relationship('TranscriptionFactor', backref='tf_aggregated_snps')
 
     def __repr__(self):
@@ -159,8 +164,7 @@ class CellLineSNP(AggregatedSNP):
     cl_snp_id = db.Column(db.Integer, primary_key=True)
     cl_id = db.Column(db.Integer, db.ForeignKey('cell_lines.cl_id'), nullable=False)
 
-    snp = db.relationship('SNP', backref=db.backref('cl_aggregated_snps',
-                                                    order_by='CellLineSNP.best_p_value.desc()'))
+    snp = db.relationship('SNP', back_populates='cl_aggregated_snps')
     cell_line = db.relationship('CellLine', backref='cl_agregated_snps')
 
     def __repr__(self):
