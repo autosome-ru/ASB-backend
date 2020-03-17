@@ -1,11 +1,21 @@
 from ASB_app import api, logger, service
 from ASB_app.serializers import rs_snp_model, rs_snp_model_full
+from ASB_app.constants import chromosomes
+from ASB_app.exceptions import ParsingError
 from flask import request, jsonify, g
 from flask_restplus import Resource, inputs
 from sqlalchemy.orm.exc import NoResultFound
+from flask_restplus import inputs
 
 snp_nsp = api.namespace('SNPs', path='/snps', description='Access to Single Nucleotide Polymorphisms')
 search_nsp = api.namespace('Search', path='/search', description='Search SNPs')
+
+search_parser = api.parser()
+search_parser.add_argument('cell_types', action='split')
+search_parser.add_argument('transcription_factors', action='split')
+search_parser.add_argument('chromosome', choices=chromosomes, help='Not a valid chromosome: {error_msg}')
+search_parser.add_argument('start', type=inputs.positive)
+search_parser.add_argument('end', type=inputs.positive)
 
 
 @snp_nsp.route('/<int:rs_id>/<string:alt>')
@@ -42,4 +52,22 @@ class SNPSearchSNPByGPCollection(Resource):
         result = service.get_snps_by_genome_position(chr, pos1, pos2)
         if len(result) > 1000:
             return '{}', 507
-        return service.get_snps_by_genome_position(chr, pos1, pos2)
+        return result
+
+
+@search_nsp.route('/snps/advanced')
+class AdvancedSearchSNP(Resource):
+    @api.marshal_list_with(rs_snp_model)
+    @api.response(507, 'Result too long')
+    @api.expect(search_parser)
+    def get(self):
+        """
+        Get all SNPs with advanced filters short info
+        """
+        try:
+            result = service.get_snps_by_advanced_filters(search_parser.parse_args())
+            if len(result) > 1000:
+                return '{}', 507
+            return result
+        except ParsingError:
+            api.abort(400)
