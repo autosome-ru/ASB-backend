@@ -99,12 +99,12 @@ class SNP(GenomePolymorphismLocation):
     ref = db.Column(db.Enum(*nucleotides), nullable=False)
     rs_id = db.Column(db.Integer, nullable=False)
 
-    db.relationship(db.backref('tf_aggregated_snps',
-                               order_by='TranscriptionFactorSNP.best_p_value.desc()'),
-                    back_populates='snp')
-    db.relationship(db.backref('cl_aggregated_snps',
-                               order_by='CellLineSNP.best_p_value.desc()'),
-                    back_populates='snp')
+    tf_aggregated_snps = db.relationship('TranscriptionFactorSNP',
+                                         order_by='TranscriptionFactorSNP.best_p_value.desc()',
+                                         back_populates='snp')
+    cl_aggregated_snps = db.relationship('CellLineSNP',
+                                         order_by='CellLineSNP.best_p_value.desc()',
+                                         back_populates='snp')
 
     def __repr__(self):
         return '<SNP rs{0.rs_id}, {0.chromosome}, {0.position}, {0.ref}, {0.alt}>'.format(self)
