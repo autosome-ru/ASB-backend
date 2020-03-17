@@ -165,7 +165,7 @@ class CellLineSNP(AggregatedSNP):
     cl_id = db.Column(db.Integer, db.ForeignKey('cell_lines.cl_id'), nullable=False)
 
     snp = db.relationship('SNP', back_populates='cl_aggregated_snps')
-    cell_line = db.relationship('CellLine', backref='cl_agregated_snps')
+    cell_line = db.relationship('CellLine', backref='cl_aggregated_snps')
 
     def __repr__(self):
         return '<CellLineSNP #{0.cl_snp_id} at {0.chromosome} {0.position} {0.alt}>'.format(self)

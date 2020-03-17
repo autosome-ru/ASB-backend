@@ -21,14 +21,16 @@ def get_snps_by_genome_position(chr, pos1, pos2):
 def get_snps_by_advanced_filters(filters_object):
     if filters_object['transcription_factors']:
         tf_filters = (SNP.tf_aggregated_snps.any(TranscriptionFactorSNP.tf_id.in_(
-            [TranscriptionFactor.query.filter(TranscriptionFactor.name == tf_name).one_or_none().tf_id
+            [getattr(TranscriptionFactor.query.filter(TranscriptionFactor.name == tf_name).one_or_none(),
+                     'tf_id', lambda: None)()
              for tf_name in filters_object['transcription_factors']])),)
     else:
         tf_filters = ()
 
     if filters_object['cell_types']:
         cl_filters = (SNP.cl_aggregated_snps.any(CellLineSNP.cl_id.in_(
-            [CellLine.query.filter(CellLine.name == cl_name).one_or_none().cl_id
+            [getattr(CellLine.query.filter(CellLine.name == cl_name).one_or_none().cl_id,
+                     'cl_id', lambda: None)()
              for cl_name in filters_object['cell_types']])),)
     else:
         cl_filters = ()
