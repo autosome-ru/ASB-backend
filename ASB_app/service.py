@@ -52,4 +52,4 @@ def get_hints(what_for, in_str, used_options):
     filters = ((cls.name.like(in_str),) if in_str else () +
                (not_(cls.name.in_(used_options)),) if used_options else ())
     print(filters)
-    return session.query(cls.name).filter(*filters).order_by(cls.aggregated_snps_count.desc()).limit(3).all()
+    return cls.query.filter(*filters).order_by(cls.aggregated_snps_count.desc()).limit(3).all()
