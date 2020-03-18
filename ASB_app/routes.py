@@ -10,13 +10,6 @@ from flask_restplus import inputs
 snp_nsp = api.namespace('SNPs', path='/snps', description='Access to Single Nucleotide Polymorphisms')
 search_nsp = api.namespace('Search', path='/search', description='Search SNPs')
 
-search_parser = api.parser()
-search_parser.add_argument('cell_types', action='split')
-search_parser.add_argument('transcription_factors', action='split')
-search_parser.add_argument('chromosome', choices=chromosomes, help='Not a valid chromosome: {error_msg}')
-search_parser.add_argument('start', type=inputs.positive)
-search_parser.add_argument('end', type=inputs.positive)
-
 
 @snp_nsp.route('/<int:rs_id>/<string:alt>')
 class SNPItem(Resource):
@@ -55,6 +48,14 @@ class SNPSearchSNPByGPCollection(Resource):
         return result
 
 
+search_parser = api.parser()
+search_parser.add_argument('cell_types', action='split')
+search_parser.add_argument('transcription_factors', action='split')
+search_parser.add_argument('chromosome', choices=chromosomes, help='Not a valid chromosome: {error_msg}')
+search_parser.add_argument('start', type=inputs.positive)
+search_parser.add_argument('end', type=inputs.positive)
+
+
 @search_nsp.route('/snps/advanced')
 class AdvancedSearchSNP(Resource):
     @api.marshal_list_with(rs_snp_model)
@@ -71,3 +72,21 @@ class AdvancedSearchSNP(Resource):
             return result
         except ParsingError:
             api.abort(400)
+
+
+used_hints_parser = api.parser()
+used_hints_parser.add_argument('options', action='split')
+
+
+@search_nsp.route('/tf/hint/<string:in_str>')
+class TransctiptionFactorHint(Resource):
+    @api.expect(used_hints_parser)
+    def get(self, in_str):
+        return service.get_hints('TF', in_str, used_hints_parser.parse_args.get('options', []))
+
+
+@search_nsp.route('/cl/hint/<string:in_str>')
+class TransctiptionFactorHint(Resource):
+    @api.expect(used_hints_parser)
+    def get(self, in_str):
+        return service.get_hints('CL', in_str, used_hints_parser.parse_args.get('options', []))

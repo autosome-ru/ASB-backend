@@ -1,4 +1,5 @@
 from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy_utils.aggregates import aggregated
 
 from ASB_app import db
 from ASB_app.constants import chromosomes, nucleotides, bads
@@ -14,6 +15,10 @@ class TranscriptionFactor(db.Model):
     name = db.Column(db.String(50), nullable=False)
     motif_legnth = db.Column(db.Integer)
 
+    @aggregated('tf_aggregated_snps', db.Column(db.Integer))
+    def aggregated_snps_count(self):
+        return db.func.sum(TranscriptionFactorSNP.tf_snp_id)
+
     def __repr__(self):
         return '<TranscriptionFactor #{0.tf_id}, {0.name}>'.format(self)
 
@@ -26,6 +31,10 @@ class CellLine(db.Model):
 
     cl_id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), nullable=False)
+
+    @aggregated('cl_aggregated_snps', db.Column(db.Integer))
+    def aggregated_snps_count(self):
+        return db.func.sum(TranscriptionFactorSNP.tf_snp_id)
 
     def __repr__(self):
         return '<CellLine #{0.cl_id}, {0.name}>'.format(self)
@@ -140,6 +149,7 @@ class TranscriptionFactorSNP(AggregatedSNP):
     __table_args__ = (db.ForeignKeyConstraint(['chromosome', 'position', 'alt'],
                                               ['snps.chromosome', 'snps.position', 'snps.alt']),
                       db.Index('unique_tf_mutation_index', 'chromosome', 'position', 'alt', 'tf_id'),
+                      db.Index('tf_id_index', 'tf_id')
                       )
 
     tf_snp_id = db.Column(db.Integer, primary_key=True)
@@ -159,6 +169,7 @@ class CellLineSNP(AggregatedSNP):
                       db.UniqueConstraint('chromosome', 'position', 'alt', 'cl_id',
                                           name='cell_line_unique_mutation'),
                       db.Index('unique_cl_mutation_index', 'chromosome', 'position', 'alt', 'cl_id'),
+                      db.Index('cl_id_index', 'cl_id')
                       )
 
     cl_snp_id = db.Column(db.Integer, primary_key=True)

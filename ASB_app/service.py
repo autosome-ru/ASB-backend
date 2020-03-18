@@ -1,6 +1,7 @@
 from ASB_app import session, logger, db
 from ASB_app.models import TranscriptionFactorSNP, CellLineSNP, SNP, TranscriptionFactor, CellLine
 from ASB_app.exceptions import ParsingError
+from sqlalchemy import not_
 
 
 def get_snps_by_rs_id(rs_id):
@@ -44,3 +45,11 @@ def get_snps_by_advanced_filters(filters_object):
         chrpos_filters = ()
 
     return SNP.query.filter(*(tf_filters + cl_filters + chrpos_filters)).all()
+
+
+def get_hints(what_for, in_str, used_options):
+    cls = {'TF': TranscriptionFactor, 'CL': CellLine}[what_for]
+    return session.query(cls.name).filter(
+        cls.name.like(in_str+'%'),
+        not_(cls.name.in_(used_options))
+    ).order_by(cls.aggregated_snps_count.desc()).limit(5).all()
