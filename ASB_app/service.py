@@ -99,6 +99,6 @@ def get_snps_by_advanced_filters_csv(filters_object):
 def get_hints(what_for, in_str, used_options):
     cls = {'TF': TranscriptionFactor, 'CL': CellLine}[what_for]
     filters = (((cls.name.like(in_str),) if in_str else ()) +
-               (not_(cls.name.in_(used_options)),) if used_options else ())
+               ((not_(cls.name.in_(used_options)),) if used_options else ()))
     print(filters)
     return cls.query.filter(*filters).order_by(cls.aggregated_snps_count.desc()).limit(3).all()
