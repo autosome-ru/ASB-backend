@@ -18,6 +18,30 @@ def get_full_snp(rs_id, alt):
     ).one()
 
 
+def get_full_snp_csv(what_for, rs_id, alt, headers):
+    agg_snps = getattr(get_full_snp(rs_id, alt), what_for + '_aggregated_snps')
+
+    file = tempfile.NamedTemporaryFile('wt', suffix='.csv')
+    csv_writer = csv.writer(file)
+
+    csv_writer.writerow(headers)
+
+    getter = lambda snp, header: getter(getattr(snp, header[:header.find('.')]),
+                                        header[header.find('.') + 1:]) if '.' in header else getattr(snp, header)
+
+    for snp in agg_snps:
+        csv_writer.writerow([getter(snp, header) for header in headers])
+
+    file.flush()
+
+    return send_file(
+        file.name,
+        cache_timeout=0,
+        mimetype="text/csv",
+        as_attachment=True
+    )
+
+
 def get_snps_by_genome_position(chr, pos1, pos2):
     return SNP.query.filter(SNP.chromosome == chr, SNP.position.between(pos1, pos2)).all()
 

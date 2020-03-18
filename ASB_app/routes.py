@@ -108,3 +108,22 @@ class CellLineHint(Resource):
     def get(self):
         args = used_hints_parser.parse_args()
         return service.get_hints('CL', args.get('search', ''), args.get('options', []))
+
+
+csv_columns_parser = api.parser()
+csv_columns_parser.add_argument('columns', action='split', required=True)
+csv_columns_parser.add_argument('filter')
+
+
+@snp_nsp.route('/<int:rs_id>/<string:alt>/<string:what_for>/csv')
+class SNPItemCSV(Resource):
+    @api.expect(csv_columns_parser)
+    def get(self, rs_id, alt, what_for):
+        """
+        Get complete imformation about an SNP by rs-ID and alt allele
+        """
+        args = csv_columns_parser.parse_args()
+        try:
+            return service.get_full_snp_csv(what_for, rs_id, alt, args['columns'])
+        except NoResultFound:
+            api.abort(404)
