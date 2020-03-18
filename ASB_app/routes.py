@@ -88,7 +88,7 @@ class TransctiptionFactorHint(Resource):
 
 
 @search_nsp.route('/cl/hint')
-class TransctiptionFactorHint(Resource):
+class CellLineHint(Resource):
     @api.expect(used_hints_parser)
     def get(self):
         args = used_hints_parser.parse_args()
