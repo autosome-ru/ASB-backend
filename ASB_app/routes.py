@@ -1,5 +1,5 @@
 from ASB_app import api, logger, service
-from ASB_app.serializers import rs_snp_model, rs_snp_model_full
+from ASB_app.serializers import rs_snp_model, rs_snp_model_full, transcription_factor_model, cell_line_model
 from ASB_app.constants import chromosomes
 from ASB_app.exceptions import ParsingError
 from flask import request, jsonify, g
@@ -82,6 +82,7 @@ used_hints_parser.add_argument('search')
 @search_nsp.route('/tf/hint')
 class TransctiptionFactorHint(Resource):
     @api.expect(used_hints_parser)
+    @api.marshal_with(transcription_factor_model)
     def get(self):
         args = used_hints_parser.parse_args()
         return service.get_hints('TF', args.get('search', ''), args.get('options', []))
@@ -90,6 +91,7 @@ class TransctiptionFactorHint(Resource):
 @search_nsp.route('/cl/hint')
 class CellLineHint(Resource):
     @api.expect(used_hints_parser)
+    @api.marshal_with(cell_line_model)
     def get(self):
         args = used_hints_parser.parse_args()
         return service.get_hints('CL', args.get('search', ''), args.get('options', []))

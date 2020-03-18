@@ -19,11 +19,13 @@ aggregated_snp_model = api.model('Agregated SNP (no genome info) ', {
 transcription_factor_model = api.model('Transcription factor', {
     'tf_id': fields.Integer(readonly=True),
     'name': fields.String,
+    'aggregated_snp_count': fields.Integer(readonly=True),
 })
 
 cell_line_model = api.model('Cell line', {
     'cl_id': fields.Integer(readonly=True),
     'name': fields.String,
+    'aggregated_snp_count': fields.Integer(readonly=True),
 })
 
 tf_snp_model = api.inherit('Transcription Factor SNP (no genome info)', aggregated_snp_model, {
