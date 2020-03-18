@@ -75,8 +75,7 @@ class AdvancedSearchSNP(Resource):
 
 
 @search_nsp.route('/snps/advanced/csv')
-class AdvancedSearchSNP(Resource):
-    @api.marshal_list_with(rs_snp_model)
+class AdvancedSearchSNPCSV(Resource):
     @api.expect(search_parser)
     def get(self):
         """
