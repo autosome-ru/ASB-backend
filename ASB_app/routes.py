@@ -82,7 +82,7 @@ used_hints_parser.add_argument('search')
 @search_nsp.route('/tf/hint')
 class TransctiptionFactorHint(Resource):
     @api.expect(used_hints_parser)
-    @api.marshal_with(transcription_factor_model)
+    @api.marshal_list_with(transcription_factor_model)
     def get(self):
         args = used_hints_parser.parse_args()
         return service.get_hints('TF', args.get('search', ''), args.get('options', []))
@@ -91,7 +91,7 @@ class TransctiptionFactorHint(Resource):
 @search_nsp.route('/cl/hint')
 class CellLineHint(Resource):
     @api.expect(used_hints_parser)
-    @api.marshal_with(cell_line_model)
+    @api.marshal_list_with(cell_line_model)
     def get(self):
         args = used_hints_parser.parse_args()
         return service.get_hints('CL', args.get('search', ''), args.get('options', []))
