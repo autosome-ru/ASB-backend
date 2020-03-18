@@ -74,6 +74,20 @@ class AdvancedSearchSNP(Resource):
             api.abort(400)
 
 
+@search_nsp.route('/snps/advanced/csv')
+class AdvancedSearchSNP(Resource):
+    @api.marshal_list_with(rs_snp_model)
+    @api.expect(search_parser)
+    def get(self):
+        """
+        Get all SNPs with advanced filters short info in csv file
+        """
+        try:
+            return service.get_snps_by_advanced_filters_csv(search_parser.parse_args())
+        except ParsingError:
+            api.abort(400)
+
+
 used_hints_parser = api.parser()
 used_hints_parser.add_argument('options', action='split')
 used_hints_parser.add_argument('search')

@@ -2,6 +2,9 @@ from ASB_app import session, logger, db
 from ASB_app.models import TranscriptionFactorSNP, CellLineSNP, SNP, TranscriptionFactor, CellLine
 from ASB_app.exceptions import ParsingError
 from sqlalchemy import not_
+import csv
+import tempfile
+from flask import send_file
 
 
 def get_snps_by_rs_id(rs_id):
@@ -45,6 +48,28 @@ def get_snps_by_advanced_filters(filters_object):
         chrpos_filters = ()
 
     return SNP.query.filter(*(tf_filters + cl_filters + chrpos_filters)).all()
+
+
+def get_snps_by_advanced_filters_csv(filters_object):
+    found_snps = get_snps_by_advanced_filters(filters_object)
+
+    file = tempfile.NamedTemporaryFile('wt', suffix='.csv')
+    csv_writer = csv.writer(file)
+
+    headers = ['chromosome', 'position', 'ref', 'alt']
+
+    csv_writer.writerow(headers)
+
+    for snp in found_snps:
+        csv_writer.writerow([getattr(snp, header) for header in headers])
+
+    file.flush()
+    return send_file(
+        file.name,
+        cache_timeout=0,
+        mimetype="text/csv",
+        as_attachment=True
+    )
 
 
 def get_hints(what_for, in_str, used_options):
