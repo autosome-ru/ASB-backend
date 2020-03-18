@@ -51,10 +51,10 @@ def get_hints(what_for, in_str, used_options):
     cls = {'TF': TranscriptionFactor, 'CL': CellLine}[what_for]
     if used_options:
         return [entity.name for entity in session.query(cls.name).filter(
-            cls.name.like(in_str+'%'),
+            cls.name.like(in_str),
             not_(cls.name.in_(used_options))
-        ).order_by(cls.aggregated_snps_count.desc()).limit(5).all()]
+        ).order_by(cls.aggregated_snps_count.desc()).limit(3).all()]
     else:
         return [entity.name for entity in session.query(cls.name).filter(
-            cls.name.like(in_str + '%')
-        ).order_by(cls.aggregated_snps_count.desc()).limit(5).all()]
+            cls.name.like(in_str)
+        ).order_by(cls.aggregated_snps_count.desc()).limit(3).all()]

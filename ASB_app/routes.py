@@ -76,17 +76,20 @@ class AdvancedSearchSNP(Resource):
 
 used_hints_parser = api.parser()
 used_hints_parser.add_argument('options', action='split')
+used_hints_parser.add_argument('search')
 
 
-@search_nsp.route('/tf/hint/<string:in_str>')
+@search_nsp.route('/tf/hint')
 class TransctiptionFactorHint(Resource):
     @api.expect(used_hints_parser)
-    def get(self, in_str):
-        return service.get_hints('TF', in_str, used_hints_parser.parse_args().get('options', []))
+    def get(self):
+        args = used_hints_parser.parse_args()
+        return service.get_hints('TF', args.get('search', ''), args.get('options', []))
 
 
-@search_nsp.route('/cl/hint/<string:in_str>')
+@search_nsp.route('/cl/hint')
 class TransctiptionFactorHint(Resource):
     @api.expect(used_hints_parser)
-    def get(self, in_str):
-        return service.get_hints('CL', in_str, used_hints_parser.parse_args().get('options', []))
+    def get(self):
+        args = used_hints_parser.parse_args()
+        return service.get_hints('CL', args.get('search', ''), args.get('options', []))

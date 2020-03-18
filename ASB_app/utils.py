@@ -1,7 +1,7 @@
 from ASB_app import session, logger
 from sqlalchemy_utils.aggregates import manager
 
-from ASB_app.models import TranscriptionFactorSNP, CellLineSNP
+from ASB_app.models import TranscriptionFactorSNP, CellLineSNP, TranscriptionFactor, CellLine
 
 
 def update_all_aggregated_fields():
@@ -25,6 +25,24 @@ def update_all_aggregated_fields():
             offset += max_count
             count -= max_count
         objects = cls.query.offset(offset).all()
+        manager.construct_aggregate_queries(session, ...)  # Второй параметр не используется
+        session.commit()
+        session.close()
+
+
+def update_aggregated_snp_count():
+    objects = []
+    for cls in [TranscriptionFactor, CellLine]:
+        for item in cls.query:
+            print(item.name)
+            if cls == TranscriptionFactor:
+                objects.append(TranscriptionFactorSNP.query.filter(
+                    TranscriptionFactorSNP.tf_id == item.tf_id
+                ).first())
+            elif cls == CellLine:
+                objects.append(CellLineSNP.query.filter(
+                    CellLineSNP.cl_id == item.cl_id
+                ).first())
         manager.construct_aggregate_queries(session, ...)  # Второй параметр не используется
         session.commit()
         session.close()
