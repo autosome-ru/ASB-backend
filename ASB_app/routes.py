@@ -82,11 +82,11 @@ used_hints_parser.add_argument('options', action='split')
 class TransctiptionFactorHint(Resource):
     @api.expect(used_hints_parser)
     def get(self, in_str):
-        return service.get_hints('TF', in_str, used_hints_parser.parse_args.get('options', []))
+        return service.get_hints('TF', in_str, used_hints_parser.parse_args().get('options', []))
 
 
 @search_nsp.route('/cl/hint/<string:in_str>')
 class TransctiptionFactorHint(Resource):
     @api.expect(used_hints_parser)
     def get(self, in_str):
-        return service.get_hints('CL', in_str, used_hints_parser.parse_args.get('options', []))
+        return service.get_hints('CL', in_str, used_hints_parser.parse_args().get('options', []))
