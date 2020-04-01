@@ -9,8 +9,8 @@ TF = 0
 CL = 0
 tr = 0.05
 EXP = 0
-TF_DICT = False
-CL_DICT = True
+TF_DICT = 0
+CL_DICT = 1
 PHEN = 0
 
 release_path = os.path.expanduser('~/Releases/')
@@ -34,17 +34,16 @@ if __name__ == '__main__':
         exps = []
         tfs = []
         cls = []
-        used_tf_names = set()
+        used_tf_names = {}
         used_cl_ids = set()
-        increment = False
         for index, row in table.iterrows():
             if (index + 1) % 1000 == 0:
                 print(index + 1)
 
             if row['tf_uniprot_ac'] not in used_tf_names:
                 tfs.append(TranscriptionFactor(tf_id=counter, name=row['tf_uniprot_ac']))
-                used_tf_names.add(row['tf_uniprot_ac'])
-                increment = True
+                used_tf_names[row['tf_uniprot_ac']] = counter
+                counter += 1
             if row['cell_id'] not in used_cl_ids:
                 cls.append(CellLine(cl_id=int(row['cell_id']), name=row['cell_title']))
                 used_cl_ids.add(row['cell_id'])
@@ -53,17 +52,14 @@ if __name__ == '__main__':
                              align=int(row['ALIGNS'][6:]),
                              geo_gse=row['GEO_GSE'] if row['GEO_GSE'] != 'None' else None,
                              encode=row['ENCODE'] if row['ENCODE'] != 'None' else None,
-                             tf_id=counter,
+                             tf_id=used_tf_names[row['tf_uniprot_ac']],
                              cl_id=int(row['cell_id']))
 
             exps.append(exp)
 
-            if increment:
-                counter += 1
-                increment = False
-
         session.add_all(tfs + cls + exps)
         session.commit()
+        session.close()
 
     for param in ['TF'] * TF + ['CL'] * CL:
         pv_path = release_path + '{}_P-values/'.format(param)
@@ -175,6 +171,8 @@ if __name__ == '__main__':
             session.add_all(ag_snps)
             session.commit()
 
+            session.close()
+
     if PHEN:
         table = pd.read_table(release_path + '00_QTL_TFCL_fdrp_bh_0.05snpphtfASB_230120_Durland.tsv')
         for index, row in table.iterrows():
@@ -197,6 +195,8 @@ if __name__ == '__main__':
                     ]
         session.commit()
 
+    session.close()
+
     for param in ['TF'] * TF_DICT + ['CL'] * CL_DICT:
         pv_path = release_path + '{}_DICTS/'.format(param)
         for file in sorted(os.listdir(pv_path)):
@@ -204,7 +204,7 @@ if __name__ == '__main__':
             name = file.replace('_DICT.json', '')
             if param == 'CL':
                 name = cl_dict_reverse[name]
-                if name < 'Reh (ATCC CRL-8286)':
+                if name != 'MCF7 (Invasive ductal breast carcinoma)':
                     continue
             print(name)
 
@@ -220,90 +220,97 @@ if __name__ == '__main__':
             else:
                 ag_id = ag.tf_id
 
-            exp_snps = []
+            items_length = len(content)
 
-            hui = len(content)
-            print(hui)
-            if hui > 400000:
-                raise ValueError
+            if items_length > 600000:
+                print(items_length)
+                # w.write(param + '\t' + name + '\n')
+                items = sorted(list(content.items()), key=lambda x: x[0])
+            else:
+                items = list(content.items())
 
-            for index, (key, value) in enumerate(content.items(), 1):
-                if index % 10000 == 0:
-                    print(index)
-                # if index < 900000 or index >= 20000000:
-                #     continue
-                chromosome, position, rs_id, ref, alt = key.strip().split('\t')[:5]
-                position = int(position)
-                rs_id = int(rs_id[2:])
-                ag_snp = SNPClass.query.filter(
-                    SNPClass.chromosome == chromosome,
-                    SNPClass.position == position,
-                    SNPClass.alt == alt,
-                    getattr(SNPClass, {'TF': 'tf_id', 'CL': 'cl_id'}[param]) == ag_id,
-                ).first()
-
-                if not ag_snp:
-                    # print('NO SNP on {} {} {}'.format(chromosome, position, alt))
-                    continue
-
-                ag_snp_id = getattr(ag_snp, {'TF': 'tf_snp_id', 'CL': 'cl_snp_id'}[param])
-
-                AnotherAgrClass = {'CL': TranscriptionFactor, 'TF': CellLine}[param]
-                AnotherSNPClass = {'CL': TranscriptionFactorSNP, 'TF': CellLineSNP}[param]
-
-                another_ag_snps = AnotherSNPClass.query.filter(
-                    AnotherSNPClass.chromosome == chromosome,
-                    AnotherSNPClass.position == position,
-                    AnotherSNPClass.alt == alt,
-                ).all()
-
-                another_dict = {}
-                another_id = {'CL': 'tf_snp_id', 'TF': 'cl_snp_id'}[param]
-                another_class = {'CL': 'tf_id', 'TF': 'cl_id'}[param]
-                for snp in another_ag_snps:
-                    another_dict[AnotherAgrClass.query.get(getattr(snp, another_class)).name] = getattr(snp, another_id)
-
-                del value['ref_ef']
-                del value['alt_ef']
-                if 'logitp_ref' in value:
-                    del value['logitp_ref']
-                    del value['logitp_alt']
-
-                parameters_list = [dict(zip(
-                    value.keys(),
-                    [val[i] for val in value.values()],
-                ))
-                    for i in range(len(value['aligns']))]
-
-                for parameter in parameters_list:
-                    exp_id = Experiment.query.filter(Experiment.align == int(parameter['aligns'][6:])).one().exp_id
-
-                    exp_snp = ExpSNP.query.filter(
-                        ExpSNP.exp_id == exp_id,
-                        getattr(ExpSNP, {'TF': 'tf_snp_id', 'CL': 'cl_snp_id'}[param]) == ag_snp_id,
+            processed = 0
+            chunk_size = 100000
+            while items_length - processed > 0:
+                exp_snps = []
+                for index, (key, value) in enumerate(items[processed: min(items_length, processed + chunk_size)], 1):
+                    if index % 10000 == 0:
+                        print(index)
+                    chromosome, position, rs_id, ref, alt = key.strip().split('\t')[:5]
+                    position = int(position)
+                    rs_id = int(rs_id[2:])
+                    ag_snp = SNPClass.query.filter(
+                        SNPClass.chromosome == chromosome,
+                        SNPClass.position == position,
+                        SNPClass.alt == alt,
+                        getattr(SNPClass, {'TF': 'tf_id', 'CL': 'cl_id'}[param]) == ag_id,
                     ).first()
 
-                    if not exp_snp:
-                        exp_snp = ExpSNP(**{
-                            'ref_readcount': parameter['ref_counts'],
-                            'alt_readcount': parameter['alt_counts'],
-                            'p_value_ref': parameter['ref_pvalues'],
-                            'p_value_alt': parameter['alt_pvalues'],
-                            'bad': conv_bad[parameter['BAD']],
-                            'tf_snp_id': {'TF': ag_snp_id, 'CL': another_dict.get(parameter.get('TF'))}[param],
-                            'cl_snp_id': {'TF': another_dict.get(cl_dict_reverse.get(parameter.get('CL'))),
-                                          'CL': ag_snp_id}[param],
-                            'exp_id': exp_id,
-                        })
-                    else:
-                        other_id = getattr(exp_snp, {'TF': 'cl_snp_id', 'CL': 'tf_snp_id'}[param])
-                        assert other_id == {'TF': another_dict.get(cl_dict_reverse.get(parameter.get('CL'))),
-                                            'CL': another_dict.get(parameter.get('TF'))}[param]
-                        assert exp_snp.ref_readcount == parameter['ref_counts']
-                        assert exp_snp.p_value_alt == parameter['alt_pvalues']
-                        assert exp_snp.bad == conv_bad[parameter['BAD']]
+                    if not ag_snp:
+                        # print('NO SNP on {} {} {}'.format(chromosome, position, alt))
+                        continue
 
-                    exp_snps.append(exp_snp)
+                    ag_snp_id = getattr(ag_snp, {'TF': 'tf_snp_id', 'CL': 'cl_snp_id'}[param])
 
-            session.add_all(exp_snps)
-            session.commit()
+                    AnotherAgrClass = {'CL': TranscriptionFactor, 'TF': CellLine}[param]
+                    AnotherSNPClass = {'CL': TranscriptionFactorSNP, 'TF': CellLineSNP}[param]
+
+                    another_ag_snps = AnotherSNPClass.query.filter(
+                        AnotherSNPClass.chromosome == chromosome,
+                        AnotherSNPClass.position == position,
+                        AnotherSNPClass.alt == alt,
+                    ).all()
+
+                    another_dict = {}
+                    another_id = {'CL': 'tf_snp_id', 'TF': 'cl_snp_id'}[param]
+                    another_class = {'CL': 'tf_id', 'TF': 'cl_id'}[param]
+                    for snp in another_ag_snps:
+                        another_dict[AnotherAgrClass.query.get(getattr(snp, another_class)).name] = getattr(snp,
+                                                                                                            another_id)
+
+                    del value['ref_ef']
+                    del value['alt_ef']
+                    if 'logitp_ref' in value:
+                        del value['logitp_ref']
+                        del value['logitp_alt']
+
+                    parameters_list = [dict(zip(
+                        value.keys(),
+                        [val[i] for val in value.values()],
+                    ))
+                        for i in range(len(value['aligns']))]
+
+                    for parameter in parameters_list:
+                        exp_id = Experiment.query.filter(Experiment.align == int(parameter['aligns'][6:])).one().exp_id
+
+                        exp_snp = ExpSNP.query.filter(
+                            ExpSNP.exp_id == exp_id,
+                            getattr(ExpSNP, {'TF': 'tf_snp_id', 'CL': 'cl_snp_id'}[param]) == ag_snp_id,
+                        ).first()
+
+                        if not exp_snp:
+                            exp_snp = ExpSNP(**{
+                                'ref_readcount': parameter['ref_counts'],
+                                'alt_readcount': parameter['alt_counts'],
+                                'p_value_ref': parameter['ref_pvalues'],
+                                'p_value_alt': parameter['alt_pvalues'],
+                                'bad': conv_bad[parameter['BAD']],
+                                'tf_snp_id': {'TF': ag_snp_id, 'CL': another_dict.get(parameter.get('TF'))}[param],
+                                'cl_snp_id': {'TF': another_dict.get(cl_dict_reverse.get(parameter.get('CL'))),
+                                              'CL': ag_snp_id}[param],
+                                'exp_id': exp_id,
+                            })
+                        else:
+                            other_id = getattr(exp_snp, {'TF': 'cl_snp_id', 'CL': 'tf_snp_id'}[param])
+                            assert other_id == {'TF': another_dict.get(cl_dict_reverse.get(parameter.get('CL'))),
+                                                'CL': another_dict.get(parameter.get('TF'))}[param]
+                            assert exp_snp.ref_readcount == parameter['ref_counts']
+                            assert exp_snp.p_value_alt == parameter['alt_pvalues']
+                            assert exp_snp.bad == conv_bad[parameter['BAD']]
+
+                        exp_snps.append(exp_snp)
+
+                session.add_all(exp_snps)
+                session.commit()
+                session.close()
+                processed += chunk_size
