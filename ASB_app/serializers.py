@@ -49,6 +49,11 @@ rs_snp_model = api.inherit('rs-SNP info for search', genome_polymorphism_locatio
     'cl_aggregated_snps': fields.List(fields.Nested(cl_snp_model)),
 })
 
+search_results_model = api.model('SNP search results model', {
+    'total': fields.Integer,
+    'results': fields.List(fields.Nested(rs_snp_model))
+})
+
 exp_model_short = api.model('Experiment (short info)', {
     'exp_id': fields.Integer,
     'align': fields.Integer,

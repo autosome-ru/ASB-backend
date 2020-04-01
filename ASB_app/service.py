@@ -46,7 +46,7 @@ def get_snps_by_genome_position(chr, pos1, pos2):
     return SNP.query.filter(SNP.chromosome == chr, SNP.position.between(pos1, pos2)).all()
 
 
-def get_snps_by_advanced_filters(filters_object):
+def get_snps_by_advanced_filters_or(filters_object):
     if filters_object['transcription_factors']:
         tf_filters = (SNP.tf_aggregated_snps.any(TranscriptionFactorSNP.tf_id.in_(
             [getattr(TranscriptionFactor.query.filter(TranscriptionFactor.name == tf_name).one_or_none(),
@@ -72,6 +72,32 @@ def get_snps_by_advanced_filters(filters_object):
         chrpos_filters = ()
 
     return SNP.query.filter(*(tf_filters + cl_filters + chrpos_filters)).all()
+
+
+def get_snps_by_advanced_filters(filters_object):
+    filters = []
+    if filters_object['transcription_factors']:
+        filters += [SNP.tf_aggregated_snps.any(
+            TranscriptionFactorSNP.tf_id == getattr(TranscriptionFactor.query.filter(
+                TranscriptionFactor.name == tf_name
+            ).one_or_none(), 'tf_id', None))
+            for tf_name in filters_object['transcription_factors']]
+
+    if filters_object['cell_types']:
+        filters += [SNP.cl_aggregated_snps.any(
+            CellLineSNP.cl_id == getattr(CellLine.query.filter(
+                CellLine.name == cl_name
+            ).one_or_none(), 'cl_id', None))
+            for cl_name in filters_object['cell_types']]
+
+    if filters_object['chromosome']:
+        if not filters_object['start'] or not filters_object['end']:
+            filters += [SNP.chromosome == filters_object['chromosome']]
+        else:
+            filters += [SNP.chromosome == filters_object['chromosome'],
+                        SNP.position.between(filters_object['start'], filters_object['end'])]
+
+    return SNP.query.filter(*filters).all()
 
 
 def get_snps_by_advanced_filters_csv(filters_object):

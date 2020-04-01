@@ -1,5 +1,6 @@
 from ASB_app import api, logger, service
-from ASB_app.serializers import rs_snp_model, rs_snp_model_full, transcription_factor_model, cell_line_model
+from ASB_app.serializers import rs_snp_model, rs_snp_model_full, transcription_factor_model, cell_line_model, \
+    search_results_model
 from ASB_app.constants import chromosomes
 from ASB_app.exceptions import ParsingError
 from flask import request, jsonify, g
@@ -26,26 +27,28 @@ class SNPItem(Resource):
 
 @search_nsp.route('/snps/rs/<int:rs_id>')
 class SNPSearchSNPByIdCollection(Resource):
-    @api.marshal_list_with(rs_snp_model)
+    @api.marshal_with(search_results_model)
     def get(self, rs_id):
         """
         Get all SNPs by rs-ID short info
         """
-        return service.get_snps_by_rs_id(rs_id)
+        result = service.get_snps_by_rs_id(rs_id)
+        return {'results': result, 'total': len(result)}
 
 
 @search_nsp.route('/snps/gp/<string:chr>/<int:pos1>/<int:pos2>')
 class SNPSearchSNPByGPCollection(Resource):
-    @api.marshal_list_with(rs_snp_model)
+    @api.marshal_with(search_results_model)
     @api.response(507, 'Result too long')
     def get(self, chr, pos1, pos2):
         """
         Get all SNPs by genome position short info
         """
         result = service.get_snps_by_genome_position(chr, pos1, pos2)
-        if len(result) > 1000:
-            return [], 507
-        return result
+        total = len(result)
+        if total > 1000:
+            return {'results': [], 'total': total}
+        return {'results': result, 'total': total}
 
 
 search_parser = api.parser()
@@ -58,7 +61,7 @@ search_parser.add_argument('end', type=inputs.positive)
 
 @search_nsp.route('/snps/advanced')
 class AdvancedSearchSNP(Resource):
-    @api.marshal_list_with(rs_snp_model)
+    @api.marshal_with(search_results_model)
     @api.response(507, 'Result too long')
     @api.expect(search_parser)
     def get(self):
@@ -67,9 +70,10 @@ class AdvancedSearchSNP(Resource):
         """
         try:
             result = service.get_snps_by_advanced_filters(search_parser.parse_args())
-            if len(result) > 1000:
-                return [], 507
-            return result
+            total = len(result)
+            if total > 1000:
+                return {'results': [], 'total': total}
+            return {'results': result, 'total': total}
         except ParsingError:
             api.abort(400)
 
