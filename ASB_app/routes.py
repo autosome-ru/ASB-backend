@@ -86,7 +86,7 @@ class AdvancedSearchSNPCSV(Resource):
         Get all SNPs with advanced filters short info in csv file
         """
         try:
-            return service.get_snps_by_advanced_filters_csv(search_parser.parse_args())
+            return service.get_snps_by_advanced_filters_tsv(search_parser.parse_args())
         except ParsingError:
             api.abort(400)
 
@@ -128,6 +128,6 @@ class SNPItemCSV(Resource):
         """
         args = csv_columns_parser.parse_args()
         try:
-            return service.get_full_snp_csv(what_for, rs_id, alt, args['columns'])
+            return service.get_full_snp_tsv(what_for, rs_id, alt, args['columns'])
         except NoResultFound:
             api.abort(404)

@@ -5,6 +5,7 @@ from sqlalchemy import not_
 import csv
 import tempfile
 from flask import send_file
+from ASB_app.utils import TsvDialect
 
 
 def get_snps_by_rs_id(rs_id):
@@ -18,11 +19,11 @@ def get_full_snp(rs_id, alt):
     ).one()
 
 
-def get_full_snp_csv(what_for, rs_id, alt, headers):
+def get_full_snp_tsv(what_for, rs_id, alt, headers):
     agg_snps = getattr(get_full_snp(rs_id, alt), what_for + '_aggregated_snps')
 
-    file = tempfile.NamedTemporaryFile('wt', suffix='.csv')
-    csv_writer = csv.writer(file)
+    file = tempfile.NamedTemporaryFile('wt', suffix='.tsv')
+    csv_writer = csv.writer(file, dialect=TsvDialect)
 
     csv_writer.writerow(headers)
 
@@ -37,7 +38,7 @@ def get_full_snp_csv(what_for, rs_id, alt, headers):
     return send_file(
         file.name,
         cache_timeout=0,
-        mimetype="text/csv",
+        mimetype="text/tsv",
         as_attachment=True
     )
 
@@ -100,11 +101,11 @@ def get_snps_by_advanced_filters(filters_object):
     return SNP.query.filter(*filters).all()
 
 
-def get_snps_by_advanced_filters_csv(filters_object):
+def get_snps_by_advanced_filters_tsv(filters_object):
     found_snps = get_snps_by_advanced_filters(filters_object)
 
-    file = tempfile.NamedTemporaryFile('wt', suffix='.csv')
-    csv_writer = csv.writer(file)
+    file = tempfile.NamedTemporaryFile('wt', suffix='.tsv')
+    csv_writer = csv.writer(file, dialect=TsvDialect)
 
     headers = ['chromosome', 'position', 'ref', 'alt']
 
@@ -117,7 +118,7 @@ def get_snps_by_advanced_filters_csv(filters_object):
     return send_file(
         file.name,
         cache_timeout=0,
-        mimetype="text/csv",
+        mimetype="text/tsv",
         as_attachment=True
     )
 
@@ -126,5 +127,4 @@ def get_hints(what_for, in_str, used_options):
     cls = {'TF': TranscriptionFactor, 'CL': CellLine}[what_for]
     filters = (((cls.name.like(in_str),) if in_str else ()) +
                ((not_(cls.name.in_(used_options)),) if used_options else ()))
-    print(filters)
     return cls.query.filter(*filters).order_by(cls.aggregated_snps_count.desc()).limit(3).all()

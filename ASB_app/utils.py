@@ -4,6 +4,16 @@ from sqlalchemy_utils.aggregates import manager
 from ASB_app.models import TranscriptionFactorSNP, CellLineSNP, TranscriptionFactor, CellLine
 
 
+class TsvDialect:
+    delimiter = '\t'
+    quotechar = '"'
+    escapechar = None
+    doublequote = True
+    skipinitialspace = False
+    lineterminator = '\r\n'
+    quoting = 0
+
+
 def update_all_aggregated_fields():
     """
     Updates all columns with @aggregated decorator
