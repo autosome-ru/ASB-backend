@@ -137,7 +137,7 @@ class AggregatedSNP(GenomePolymorphismLocation):
 
     @hybrid_property
     def best_p_value(self):
-        return min(self.log_p_value_alt, self.log_p_value_ref)
+        return max(self.log_p_value_alt, self.log_p_value_ref)
 
     @best_p_value.expression
     def best_p_value(cls):

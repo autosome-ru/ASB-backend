@@ -1,6 +1,8 @@
 from ASB_app import session, logger
 from sqlalchemy_utils.aggregates import manager
 
+import numpy as np
+
 from ASB_app.models import TranscriptionFactorSNP, CellLineSNP, TranscriptionFactor, CellLine
 
 
@@ -56,3 +58,14 @@ def update_aggregated_snp_count():
         manager.construct_aggregate_queries(session, ...)  # Второй параметр не используется
         session.commit()
         session.close()
+
+
+def update_motif_concordance():
+    for snp in TranscriptionFactorSNP.query():
+        passes_filters = (snp.best_pvalue >= 1 + np.log10(2)  # 0.05
+                          and abs(snp.motif_log_2_fc) >= 4)
+        assert np.sign(snp.motif_log_p_alt - snp.motif_log_p_ref) == np.sign(snp.motif_log_2_fc)
+        concordant = snp.motif_log_2_fc * (snp.log_p_value_alt - snp.log_p_value_ref) > 0
+        snp.motif_concordance = concordant if passes_filters else None
+    session.commit()
+    session.close()
