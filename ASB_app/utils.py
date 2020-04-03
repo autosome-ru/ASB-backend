@@ -61,11 +61,27 @@ def update_aggregated_snp_count():
 
 
 def update_motif_concordance():
-    for snp in TranscriptionFactorSNP.query():
-        passes_filters = (snp.best_pvalue >= 1 + np.log10(2)  # 0.05
-                          and abs(snp.motif_log_2_fc) >= 4)
-        assert np.sign(snp.motif_log_p_alt - snp.motif_log_p_ref) == np.sign(snp.motif_log_2_fc)
-        concordant = snp.motif_log_2_fc * (snp.log_p_value_alt - snp.log_p_value_ref) > 0
-        snp.motif_concordance = concordant if passes_filters else None
-    session.commit()
-    session.close()
+    query = TranscriptionFactorSNP.query
+    count = query.count()
+    offset = 0
+    max_count = 999
+    while count > 0:
+        print(count)
+        for snp in query.offset(offset).limit(max_count):
+            if snp.motif_log_p_ref:
+                snp.motif_log_2_fc = (snp.motif_log_p_alt - snp.motif_log_p_ref) / np.log10(2)
+            passes_filters = (snp.best_p_value >= 1 + np.log10(2)  # 0.05
+                              and (abs((snp.motif_log_p_alt - snp.motif_log_p_ref) / np.log10(2)) >= 4
+                                   if snp.motif_log_p_ref
+                                   else False))
+            if not passes_filters:
+                snp.motif_concordance = None
+                continue
+
+            snp.motif_log_2_fc = (snp.motif_log_p_alt - snp.motif_log_p_ref) / np.log10(2)
+            snp.motif_concordance = (snp.motif_log_p_alt - snp.motif_log_p_ref) * \
+                                    (snp.log_p_value_alt - snp.log_p_value_ref) > 0
+        session.commit()
+        session.close()
+        offset += max_count
+        count -= max_count
