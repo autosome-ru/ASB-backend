@@ -1,5 +1,5 @@
 from ASB_app import session, logger, db
-from ASB_app.models import TranscriptionFactorSNP, CellLineSNP, SNP, TranscriptionFactor, CellLine
+from ASB_app.models import TranscriptionFactorSNP, CellLineSNP, SNP, TranscriptionFactor, CellLine, Phenotype
 from ASB_app.exceptions import ParsingError
 from sqlalchemy import not_
 import csv
@@ -97,6 +97,9 @@ def get_snps_by_advanced_filters(filters_object):
         else:
             filters += [SNP.chromosome == filters_object['chromosome'],
                         SNP.position.between(filters_object['start'], filters_object['end'])]
+
+    for phenotype_db in filters_object['phenotype_databases']:
+        filters += [SNP.phenotypes.any(Phenotype.db_name == phenotype_db)]
 
     return SNP.query.filter(*filters).all()
 

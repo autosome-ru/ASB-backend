@@ -57,6 +57,7 @@ search_parser.add_argument('transcription_factors', action='split')
 search_parser.add_argument('chromosome', choices=chromosomes, help='Not a valid chromosome: {error_msg}')
 search_parser.add_argument('start', type=inputs.positive)
 search_parser.add_argument('end', type=inputs.positive)
+search_parser.add_argument('phenotype_databases', action='split')
 
 
 @search_nsp.route('/snps/advanced')
