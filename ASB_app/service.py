@@ -98,8 +98,9 @@ def get_snps_by_advanced_filters(filters_object):
             filters += [SNP.chromosome == filters_object['chromosome'],
                         SNP.position.between(filters_object['start'], filters_object['end'])]
 
-    for phenotype_db in filters_object['phenotype_databases']:
-        filters += [SNP.phenotypes.any(Phenotype.db_name == phenotype_db)]
+    if filters_object['phenotype_databases']:
+        for phenotype_db in filters_object['phenotype_databases']:
+            filters += [SNP.phenotypes.any(Phenotype.db_name == phenotype_db)]
 
     return SNP.query.filter(*filters).all()
 
