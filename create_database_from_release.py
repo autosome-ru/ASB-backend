@@ -9,8 +9,9 @@ TF = 0
 CL = 0
 tr = 0.05
 EXP = 0
+UNIPROT = 0
 TF_DICT = 0
-CL_DICT = 1
+CL_DICT = 0
 PHEN = 0
 
 release_path = os.path.expanduser('~/Releases/')
@@ -58,6 +59,28 @@ if __name__ == '__main__':
             exps.append(exp)
 
         session.add_all(tfs + cls + exps)
+        session.commit()
+        session.close()
+
+    if UNIPROT:
+        table = pd.read_table(os.path.expanduser('~/Documents/slice(GTRD).csv'))
+        counter = 1
+        tfs = []
+        used_tf_names = {}
+        for index, row in table.iterrows():
+            if (index + 1) % 1000 == 0:
+                print(index + 1)
+
+            if row['tf_uniprot_ac'] not in used_tf_names:
+                tf = TranscriptionFactor.query.filter(TranscriptionFactor.name == row['tf_uniprot_ac']).first()
+                if not tf:
+                    continue
+                tf.uniprot_ac = row['tf_uniprot_id']
+                tfs.append(tf)
+                used_tf_names[row['tf_uniprot_ac']] = counter
+                counter += 1
+
+        session.add_all(tfs)
         session.commit()
         session.close()
 
@@ -180,14 +203,13 @@ if __name__ == '__main__':
                 print(index + 1)
             mutations = SNP.query.filter(SNP.rs_id == int(row['RSID'][2:])).all()
             # if not mutations:
-            #     print('ЗАЧЕМ ТЫ УДАЛИЛ НАМ БАЗУ?', int(row['RSID'][2:]))
-            # print('GOOD BOI', int(row['RSID'][2:]))
+            #     print('No snps for ', int(row['RSID'][2:]))
             for database in ['grasp', 'ebi', 'clinvar', 'phewas', 'finemapping', 'QTL']:
                 if str(row[database]) == 'nan':
                     continue
                 ph_names = row[database].strip('\n').split(';')
                 for mutation in mutations:
-                    mutation.phenotypes = [
+                    mutation.phenotypes += [
                         Phenotype(**{
                             'db_name': database,
                             'phenotype_name': name

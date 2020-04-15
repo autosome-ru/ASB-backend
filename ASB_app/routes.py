@@ -10,6 +10,7 @@ from flask_restplus import inputs
 
 snp_nsp = api.namespace('SNPs', path='/snps', description='Access to Single Nucleotide Polymorphisms')
 search_nsp = api.namespace('Search', path='/search', description='Search SNPs')
+browse_nsp = api.namespace('Browse', path='/browse', description='Catalog of TFs and Cell types')
 
 
 @snp_nsp.route('/<int:rs_id>/<string:alt>')
@@ -113,6 +114,20 @@ class CellLineHint(Resource):
     def get(self):
         args = used_hints_parser.parse_args()
         return service.get_hints('CL', args.get('search', ''), args.get('options', []))
+
+
+@browse_nsp.route('/tf>')
+class TransctiptionFactorBrowse(Resource):
+    @api.marshal_list_with(transcription_factor_model)
+    def get(self):
+        return service.TranscriptionFactor.query.filter(service.TranscriptionFactor.aggregated_snps_count > 0).all()
+
+
+@browse_nsp.route('/cl>')
+class CellLineBrowse(Resource):
+    @api.marshal_list_with(cell_line_model)
+    def get(self):
+        return service.CellLine.query.filter(service.CellLine.aggregated_snps_count > 0).all()
 
 
 csv_columns_parser = api.parser()

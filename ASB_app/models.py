@@ -13,6 +13,7 @@ class TranscriptionFactor(db.Model):
 
     tf_id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), nullable=False)
+    uniprot_ac = db.Column(db.String(60), nullable=False, index=True)
     motif_legnth = db.Column(db.Integer)
 
     @aggregated('tf_aggregated_snps', db.Column(db.Integer))
@@ -189,7 +190,7 @@ class Phenotype(db.Model):
                      )
 
     phenotype_id = db.Column(db.Integer, primary_key=True)
-    db_name = db.Column(db.String(100))
+    db_name = db.Column(db.String(100), index=True)
     phenotype_name = db.Column(db.String(100))
 
     snps = db.relationship(
