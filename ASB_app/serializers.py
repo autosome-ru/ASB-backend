@@ -19,6 +19,7 @@ aggregated_snp_model = api.model('Agregated SNP (no genome info) ', {
 transcription_factor_model = api.model('Transcription factor', {
     'tf_id': fields.Integer(readonly=True),
     'name': fields.String,
+    'uniprot_ac': fields.String,
     'aggregated_snps_count': fields.Integer(readonly=True),
 })
 
