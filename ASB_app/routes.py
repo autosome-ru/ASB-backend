@@ -116,14 +116,14 @@ class CellLineHint(Resource):
         return service.get_hints('CL', args.get('search', ''), args.get('options', []))
 
 
-@browse_nsp.route('/tf>')
+@browse_nsp.route('/tf')
 class TransctiptionFactorBrowse(Resource):
     @api.marshal_list_with(transcription_factor_model)
     def get(self):
         return service.TranscriptionFactor.query.filter(service.TranscriptionFactor.aggregated_snps_count > 0).all()
 
 
-@browse_nsp.route('/cl>')
+@browse_nsp.route('/cl')
 class CellLineBrowse(Resource):
     @api.marshal_list_with(cell_line_model)
     def get(self):
