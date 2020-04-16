@@ -1,7 +1,8 @@
 from ASB_app import session, logger, db
 from ASB_app.models import TranscriptionFactorSNP, CellLineSNP, SNP, TranscriptionFactor, CellLine, Phenotype
 from ASB_app.exceptions import ParsingError
-from sqlalchemy import not_
+from ASB_app.utils import db_name_property_dict
+from sqlalchemy import not_, or_
 import csv
 import tempfile
 from flask import send_file
@@ -99,8 +100,8 @@ def get_snps_by_advanced_filters(filters_object):
                         SNP.position.between(filters_object['start'], filters_object['end'])]
 
     if filters_object['phenotype_databases']:
-        for phenotype_db in filters_object['phenotype_databases']:
-            filters += [SNP.phenotypes.any(Phenotype.db_name == phenotype_db)]
+        filters += [getattr(SNP, db_name_property_dict[phenotype_db])
+                    for phenotype_db in filters_object['phenotype_databases']]
 
     return SNP.query.filter(*filters).all()
 

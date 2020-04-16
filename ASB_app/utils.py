@@ -1,9 +1,12 @@
+from sqlalchemy import distinct
+
 from ASB_app import session, logger
 from sqlalchemy_utils.aggregates import manager
 
 import numpy as np
 
-from ASB_app.models import TranscriptionFactorSNP, CellLineSNP, TranscriptionFactor, CellLine
+from ASB_app.constants import db_name_property_dict
+from ASB_app.models import TranscriptionFactorSNP, CellLineSNP, TranscriptionFactor, CellLine, Phenotype, SNP, PhenotypeSNPCorrespondence
 
 
 class TsvDialect:
@@ -16,30 +19,28 @@ class TsvDialect:
     quoting = 0
 
 
-def update_all_aggregated_fields():
+def update_aggregated_fields(mappers=(TranscriptionFactorSNP, CellLineSNP)):
     """
-    Updates all columns with @aggregated decorator
+    Updates all columns with @aggregated decorator, depending on mappers
+    :param mappers: list of db.Model subclasses
     :return: None
     """
-    for cls in [TranscriptionFactorSNP, CellLineSNP]:
+    for cls in mappers:
         logger.info('Updating aggregates, depending on {}'.format(cls.__name__))
         count = cls.query.count()
         offset = 0
         max_count = 999
-        while count > max_count:
+        while count > 0:
             print(count)
             objects = cls.query.order_by({TranscriptionFactorSNP: TranscriptionFactorSNP.tf_id,
-                                          CellLineSNP: CellLineSNP.cl_id}
+                                          CellLineSNP: CellLineSNP.cl_id,
+                                          Phenotype: Phenotype.phenotype_id}
                                          [cls]).offset(offset).limit(max_count).all()
             manager.construct_aggregate_queries(session, ...)  # Второй параметр не используется
             session.commit()
             session.close()
             offset += max_count
             count -= max_count
-        objects = cls.query.offset(offset).all()
-        manager.construct_aggregate_queries(session, ...)  # Второй параметр не используется
-        session.commit()
-        session.close()
 
 
 def update_aggregated_snp_count():
@@ -81,6 +82,30 @@ def update_motif_concordance():
             snp.motif_log_2_fc = (snp.motif_log_p_alt - snp.motif_log_p_ref) / np.log10(2)
             snp.motif_concordance = (snp.motif_log_p_alt - snp.motif_log_p_ref) * \
                                     (snp.log_p_value_alt - snp.log_p_value_ref) > 0
+        session.commit()
+        session.close()
+        offset += max_count
+        count -= max_count
+
+
+def update_phenotype_associations():
+    q = session.query(SNP, Phenotype.db_name).join(
+        PhenotypeSNPCorrespondence,
+        (SNP.chromosome == PhenotypeSNPCorrespondence.chromosome) &
+        (SNP.position == PhenotypeSNPCorrespondence.position) &
+        (SNP.alt == PhenotypeSNPCorrespondence.alt)
+    ).join(
+        Phenotype,
+        PhenotypeSNPCorrespondence.phenotype_id == Phenotype.phenotype_id
+    ).group_by(SNP.rs_id, SNP.alt, Phenotype.db_name)
+    print(q)
+    count = q.count()
+    offset = 0
+    max_count = 999
+    while count > 0:
+        print(count)
+        for snp, db_name in q.order_by(SNP.rs_id).limit(max_count).offset(offset):
+            setattr(snp, db_name_property_dict[db_name], True)
         session.commit()
         session.close()
         offset += max_count
