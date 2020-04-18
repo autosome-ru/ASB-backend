@@ -20,6 +20,10 @@ class TranscriptionFactor(db.Model):
     def aggregated_snps_count(self):
         return db.func.count(TranscriptionFactorSNP.tf_snp_id)
 
+    @aggregated('experiments', db.Column(db.Integer))
+    def experiments_count(self):
+        return db.func.count(Experiment.exp_id)
+
     def __repr__(self):
         return '<TranscriptionFactor #{0.tf_id}, {0.name}>'.format(self)
 
@@ -36,6 +40,10 @@ class CellLine(db.Model):
     @aggregated('cl_aggregated_snps', db.Column(db.Integer))
     def aggregated_snps_count(self):
         return db.func.count(CellLineSNP.cl_snp_id)
+
+    @aggregated('experiments', db.Column(db.Integer))
+    def experiments_count(self):
+        return db.func.count(Experiment.exp_id)
 
     def __repr__(self):
         return '<CellLine #{0.cl_id}, {0.name}>'.format(self)

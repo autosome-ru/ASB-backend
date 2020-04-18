@@ -1,6 +1,6 @@
 from ASB_app import api, logger, service
 from ASB_app.serializers import rs_snp_model, rs_snp_model_full, transcription_factor_model, cell_line_model, \
-    search_results_model
+    search_results_model, frontpage_statistics_model
 from ASB_app.constants import chromosomes
 from ASB_app.exceptions import ParsingError
 from flask import request, jsonify, g
@@ -128,6 +128,13 @@ class CellLineBrowse(Resource):
     @api.marshal_list_with(cell_line_model)
     def get(self):
         return service.CellLine.query.filter(service.CellLine.aggregated_snps_count > 0).all()
+
+
+@browse_nsp.route('/total')
+class FrontPageStatistics(Resource):
+    @api.marshal_with(frontpage_statistics_model)
+    def get(self):
+        return service.get_overall_statistics()
 
 
 csv_columns_parser = api.parser()

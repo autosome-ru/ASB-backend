@@ -6,7 +6,8 @@ from sqlalchemy_utils.aggregates import manager
 import numpy as np
 
 from ASB_app.constants import db_name_property_dict
-from ASB_app.models import TranscriptionFactorSNP, CellLineSNP, TranscriptionFactor, CellLine, Phenotype, SNP, PhenotypeSNPCorrespondence
+from ASB_app.models import TranscriptionFactorSNP, CellLineSNP, TranscriptionFactor, CellLine, Phenotype, SNP, \
+    PhenotypeSNPCorrespondence, Experiment
 
 
 class TsvDialect:
@@ -44,21 +45,53 @@ def update_aggregated_fields(mappers=(TranscriptionFactorSNP, CellLineSNP)):
 
 
 def update_aggregated_snp_count():
-    objects = []
     for cls in [TranscriptionFactor, CellLine]:
-        for item in cls.query:
-            print(item.name)
-            if cls == TranscriptionFactor:
-                objects.append(TranscriptionFactorSNP.query.filter(
-                    TranscriptionFactorSNP.tf_id == item.tf_id
-                ).first())
-            elif cls == CellLine:
-                objects.append(CellLineSNP.query.filter(
-                    CellLineSNP.cl_id == item.cl_id
-                ).first())
-        manager.construct_aggregate_queries(session, ...)  # Второй параметр не используется
-        session.commit()
-        session.close()
+        objects = []
+        query = cls.query
+        count = cls.query.count()
+        offset = 0
+        max_count = 999
+        while count > 0:
+            for item in query.offset(offset).limit(max_count):
+                if cls == TranscriptionFactor:
+                    objects.append(TranscriptionFactorSNP.query.filter(
+                        TranscriptionFactorSNP.tf_id == item.tf_id
+                    ).first())
+                    print(objects[-1])
+                elif cls == CellLine:
+                    objects.append(CellLineSNP.query.filter(
+                        CellLineSNP.cl_id == item.cl_id
+                    ).first())
+            manager.construct_aggregate_queries(session, ...)  # Второй параметр не используется
+            session.commit()
+            session.close()
+            offset += max_count
+            count -= max_count
+
+
+def update_experiments_count():
+    for cls in [TranscriptionFactor, CellLine]:
+        objects = []
+        query = cls.query
+        count = cls.query.count()
+        offset = 0
+        max_count = 999
+        while count > 0:
+            for item in query.offset(offset).limit(max_count):
+                if cls == TranscriptionFactor:
+                    objects.append(Experiment.query.filter(
+                        Experiment.tf_id == item.tf_id
+                    ).first())
+                    print(objects[-1])
+                elif cls == CellLine:
+                    objects.append(Experiment.query.filter(
+                        Experiment.cl_id == item.cl_id
+                    ).first())
+            manager.construct_aggregate_queries(session, ...)  # Второй параметр не используется
+            session.commit()
+            session.close()
+            offset += max_count
+            count -= max_count
 
 
 def update_motif_concordance():

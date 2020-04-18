@@ -21,12 +21,14 @@ transcription_factor_model = api.model('Transcription factor', {
     'name': fields.String,
     'uniprot_ac': fields.String,
     'aggregated_snps_count': fields.Integer(readonly=True),
+    'experiments_count': fields.Integer(readonly=True),
 })
 
 cell_line_model = api.model('Cell line', {
     'cl_id': fields.Integer(readonly=True),
     'name': fields.String,
     'aggregated_snps_count': fields.Integer(readonly=True),
+    'experiments_count': fields.Integer(readonly=True),
 })
 
 tf_snp_model = api.inherit('Transcription Factor SNP (no genome info)', aggregated_snp_model, {
@@ -104,4 +106,10 @@ rs_snp_model_full = api.inherit('Complete rs-SNP info (with exp snps)', genome_p
     'tf_aggregated_snps': fields.List(fields.Nested(tf_snp_model_full)),
     'cl_aggregated_snps': fields.List(fields.Nested(cl_snp_model_full)),
     'phenotypes': fields.List(fields.Nested(phenotype_model))
+})
+
+frontpage_statistics_model = api.inherit('Front page statistics', {
+    'transcription_factors_count': fields.Integer,
+    'cell_types_count': fields.Integer,
+    'snps_count': fields.Integer,
 })

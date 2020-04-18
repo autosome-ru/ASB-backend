@@ -134,3 +134,11 @@ def get_hints(what_for, in_str, used_options):
                ((not_(cls.name.in_(used_options)),) if used_options else ()) +
                (cls.aggregated_snps_count,))
     return cls.query.filter(*filters).order_by(cls.aggregated_snps_count.desc()).limit(3).all()
+
+
+def get_overall_statistics():
+    return {
+        'transcription_factors_count': TranscriptionFactor.query.filter(TranscriptionFactor.aggregated_snps_count > 0).count(),
+        'cell_types_count': CellLine.query.filter(CellLine.aggregated_snps_count > 0).count(),
+        'snps_count': SNP.query.count(),  # FIXME: consider .group_by(SNP.rs_id)
+    }
