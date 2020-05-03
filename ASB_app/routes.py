@@ -34,28 +34,32 @@ class SNPItem(Resource):
 
 @search_nsp.route('/snps/rs/<int:rs_id>')
 class SNPSearchSNPByIdCollection(Resource):
-    @api.marshal_with(search_results_model)
+    @api.marshal_with(search_results_model, PaginationMixin)
+    @api.exepct(pagination_parser)
     def get(self, rs_id):
         """
         Get all SNPs by rs-ID short info
         """
-        result = service.get_snps_by_rs_id(rs_id)
-        return {'results': result, 'total': len(result)}
+        all_args = pagination_parser.parse_args()
+        filters = service.get_filters_by_rs_id(rs_id)
+        result = self.paginate(all_args, extra_filters=filters)
+        return {'results': result, 'total': self.items_count(all_args, extra_filters=filters)}
 
 
 @search_nsp.route('/snps/gp/<string:chr>/<int:pos1>/<int:pos2>')
-class SNPSearchSNPByGPCollection(Resource):
+class SNPSearchSNPByGPCollection(Resource, PaginationMixin):
     @api.marshal_with(search_results_model)
     @api.response(507, 'Result too long')
+    @api.expect(pagination_parser)
     def get(self, chr, pos1, pos2):
         """
         Get all SNPs by genome position short info
         """
-        result = service.get_snps_by_genome_position(chr, pos1, pos2)
-        total = len(result)
-        if total > 1000:
-            return {'results': [], 'total': total}
-        return {'results': result, 'total': total}
+        all_args = pagination_parser.parse_args()
+        filters = service.get_filters_by_genome_position(chr, pos1, pos2)
+        result = self.paginate(all_args, extra_filters=filters)
+
+        return {'results': result, 'total': self.items_count(all_args, extra_filters=filters)}
 
 
 search_parser = pagination_parser.copy()
@@ -81,7 +85,7 @@ class AdvancedSearchSNP(Resource, PaginationMixin):
         try:
             filters = service.construct_advanced_filters(all_args)
             result = self.paginate(all_args, extra_filters=filters)
-            return {'results': result, 'total': len(result)}
+            return {'results': result, 'total': self.items_count(all_args, extra_filters=filters)}
         except ParsingError:
             api.abort(400)
 

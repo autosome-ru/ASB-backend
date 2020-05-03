@@ -8,8 +8,8 @@ import tempfile
 from flask import send_file
 
 
-def get_snps_by_rs_id(rs_id):
-    return SNP.query.filter(SNP.rs_id == rs_id).all()
+def get_filters_by_rs_id(rs_id):
+    return (SNP.rs_id == rs_id, )
 
 
 def get_full_snp(rs_id, alt):
@@ -43,8 +43,8 @@ def get_full_snp_tsv(what_for, rs_id, alt, headers):
     )
 
 
-def get_snps_by_genome_position(chr, pos1, pos2):
-    return SNP.query.filter(SNP.chromosome == chr, SNP.position.between(pos1, pos2)).all()
+def get_filters_by_genome_position(chr, pos1, pos2):
+    return SNP.chromosome == chr, SNP.position.between(pos1, pos2)
 
 
 def construct_advanced_filters(filters_object):
