@@ -33,7 +33,9 @@ class SNPItem(Resource):
 
 
 @search_nsp.route('/snps/rs/<int:rs_id>')
-class SNPSearchSNPByIdCollection(Resource):
+class SNPSearchSNPByIdCollection(Resource, PaginationMixin):
+    BaseEntity = service.SNP
+
     @api.marshal_with(search_results_model, PaginationMixin)
     @api.expect(pagination_parser)
     def get(self, rs_id):
@@ -43,11 +45,13 @@ class SNPSearchSNPByIdCollection(Resource):
         all_args = pagination_parser.parse_args()
         filters = service.get_filters_by_rs_id(rs_id)
         result = self.paginate(all_args, extra_filters=filters)
-        return {'results': result, 'total': self.items_count(all_args, extra_filters=filters)}
+        return {'results': result, 'total': self.items_count(extra_filters=filters)}
 
 
 @search_nsp.route('/snps/gp/<string:chr>/<int:pos1>/<int:pos2>')
 class SNPSearchSNPByGPCollection(Resource, PaginationMixin):
+    BaseEntity = service.SNP
+
     @api.marshal_with(search_results_model)
     @api.response(507, 'Result too long')
     @api.expect(pagination_parser)
@@ -59,7 +63,7 @@ class SNPSearchSNPByGPCollection(Resource, PaginationMixin):
         filters = service.get_filters_by_genome_position(chr, pos1, pos2)
         result = self.paginate(all_args, extra_filters=filters)
 
-        return {'results': result, 'total': self.items_count(all_args, extra_filters=filters)}
+        return {'results': result, 'total': self.items_count(extra_filters=filters)}
 
 
 search_parser = pagination_parser.copy()
@@ -85,7 +89,7 @@ class AdvancedSearchSNP(Resource, PaginationMixin):
         try:
             filters = service.construct_advanced_filters(all_args)
             result = self.paginate(all_args, extra_filters=filters)
-            return {'results': result, 'total': self.items_count(all_args, extra_filters=filters)}
+            return {'results': result, 'total': self.items_count(extra_filters=filters)}
         except ParsingError:
             api.abort(400)
 
