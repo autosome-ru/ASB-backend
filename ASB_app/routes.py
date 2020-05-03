@@ -35,7 +35,7 @@ class SNPItem(Resource):
 @search_nsp.route('/snps/rs/<int:rs_id>')
 class SNPSearchSNPByIdCollection(Resource):
     @api.marshal_with(search_results_model, PaginationMixin)
-    @api.exepct(pagination_parser)
+    @api.expect(pagination_parser)
     def get(self, rs_id):
         """
         Get all SNPs by rs-ID short info
