@@ -131,7 +131,6 @@ def update_phenotype_associations():
         Phenotype,
         PhenotypeSNPCorrespondence.phenotype_id == Phenotype.phenotype_id
     ).group_by(SNP.rs_id, SNP.alt, Phenotype.db_name)
-    print(q)
     count = q.count()
     offset = 0
     max_count = 999

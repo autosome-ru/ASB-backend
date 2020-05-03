@@ -1,16 +1,22 @@
 from ASB_app import api, logger, service
-from ASB_app.serializers import rs_snp_model, rs_snp_model_full, transcription_factor_model, cell_line_model, \
+from ASB_app.serializers import rs_snp_model_full, transcription_factor_model, cell_line_model, \
     search_results_model, frontpage_statistics_model
 from ASB_app.constants import chromosomes
 from ASB_app.exceptions import ParsingError
-from flask import request, jsonify, g
 from flask_restplus import Resource, inputs
 from sqlalchemy.orm.exc import NoResultFound
-from flask_restplus import inputs
+from ASB_app.utils import PaginationMixin
 
 snp_nsp = api.namespace('SNPs', path='/snps', description='Access to Single Nucleotide Polymorphisms')
 search_nsp = api.namespace('Search', path='/search', description='Search SNPs')
 browse_nsp = api.namespace('Browse', path='/browse', description='Catalog of TFs and Cell types')
+
+pagination_parser = api.parser()
+pagination_parser.add_argument('page', type=inputs.positive, help='Page number', default=1)
+pagination_parser.add_argument('size', type=inputs.natural, help='Items per page or 0 for all items', default=0)
+pagination_parser.add_argument('offset', type=inputs.natural, help='Skip first N items', default=0)
+pagination_parser.add_argument('filter', help='Comma-separated filters: field1 EQ "value1", field2 GE "value2"')
+pagination_parser.add_argument('order_by', help='Comma-separated ORDER BY criterions: "field1, -field2"')
 
 
 @snp_nsp.route('/<int:rs_id>/<string:alt>')
@@ -52,30 +58,30 @@ class SNPSearchSNPByGPCollection(Resource):
         return {'results': result, 'total': total}
 
 
-search_parser = api.parser()
+search_parser = pagination_parser.copy()
 search_parser.add_argument('cell_types', action='split')
 search_parser.add_argument('transcription_factors', action='split')
-search_parser.add_argument('chromosome', choices=chromosomes, help='Not a valid chromosome: {error_msg}')
+search_parser.add_argument('chromosome', choices=chromosomes)
 search_parser.add_argument('start', type=inputs.positive)
 search_parser.add_argument('end', type=inputs.positive)
 search_parser.add_argument('phenotype_databases', action='split')
 
 
 @search_nsp.route('/snps/advanced')
-class AdvancedSearchSNP(Resource):
+class AdvancedSearchSNP(Resource, PaginationMixin):
+    BaseEntity = service.SNP
+
     @api.marshal_with(search_results_model)
-    @api.response(507, 'Result too long')
     @api.expect(search_parser)
     def get(self):
         """
         Get all SNPs with advanced filters short info
         """
+        all_args = search_parser.parse_args()
         try:
-            result = service.get_snps_by_advanced_filters(search_parser.parse_args())
-            total = len(result)
-            if total > 1000:
-                return {'results': [], 'total': total}
-            return {'results': result, 'total': total}
+            filters = service.construct_advanced_filters(all_args)
+            result = self.paginate(all_args, extra_filters=filters)
+            return {'results': result, 'total': len(result)}
         except ParsingError:
             api.abort(400)
 
@@ -91,6 +97,35 @@ class AdvancedSearchSNPCSV(Resource):
             return service.get_snps_by_advanced_filters_tsv(search_parser.parse_args())
         except ParsingError:
             api.abort(400)
+
+
+@browse_nsp.route('/tf')
+class TransctiptionFactorBrowse(Resource, PaginationMixin):
+    BaseEntity = service.TranscriptionFactor
+
+    @api.marshal_list_with(transcription_factor_model)
+    @api.expect(pagination_parser)
+    def get(self):
+        return self.paginate(pagination_parser.parse_args(),
+                             extra_filters=(self.BaseEntity.aggregated_snps_count > 0, ))
+
+
+@browse_nsp.route('/cl')
+class CellLineBrowse(Resource, PaginationMixin):
+    BaseEntity = service.CellLine
+
+    @api.marshal_list_with(cell_line_model)
+    @api.expect(pagination_parser)
+    def get(self):
+        return self.paginate(pagination_parser.parse_args(),
+                             extra_filters=(self.BaseEntity.aggregated_snps_count > 0, ))
+
+
+@browse_nsp.route('/total')
+class FrontPageStatistics(Resource):
+    @api.marshal_with(frontpage_statistics_model)
+    def get(self):
+        return service.get_overall_statistics()
 
 
 used_hints_parser = api.parser()
@@ -114,27 +149,6 @@ class CellLineHint(Resource):
     def get(self):
         args = used_hints_parser.parse_args()
         return service.get_hints('CL', args.get('search', ''), args.get('options', []))
-
-
-@browse_nsp.route('/tf')
-class TransctiptionFactorBrowse(Resource):
-    @api.marshal_list_with(transcription_factor_model)
-    def get(self):
-        return service.TranscriptionFactor.query.filter(service.TranscriptionFactor.aggregated_snps_count > 0).all()
-
-
-@browse_nsp.route('/cl')
-class CellLineBrowse(Resource):
-    @api.marshal_list_with(cell_line_model)
-    def get(self):
-        return service.CellLine.query.filter(service.CellLine.aggregated_snps_count > 0).all()
-
-
-@browse_nsp.route('/total')
-class FrontPageStatistics(Resource):
-    @api.marshal_with(frontpage_statistics_model)
-    def get(self):
-        return service.get_overall_statistics()
 
 
 csv_columns_parser = api.parser()

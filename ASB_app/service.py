@@ -1,12 +1,11 @@
-from ASB_app import session, logger, db
-from ASB_app.models import TranscriptionFactorSNP, CellLineSNP, SNP, TranscriptionFactor, CellLine, Phenotype
+from ASB_app import db
+from ASB_app.models import TranscriptionFactorSNP, CellLineSNP, SNP, TranscriptionFactor, CellLine
 from ASB_app.exceptions import ParsingError
-from ASB_app.utils import db_name_property_dict
-from sqlalchemy import not_, or_
+from ASB_app.utils.aggregates import db_name_property_dict, TsvDialect
+from sqlalchemy import not_
 import csv
 import tempfile
 from flask import send_file
-from ASB_app.utils import TsvDialect
 
 
 def get_snps_by_rs_id(rs_id):
@@ -48,35 +47,7 @@ def get_snps_by_genome_position(chr, pos1, pos2):
     return SNP.query.filter(SNP.chromosome == chr, SNP.position.between(pos1, pos2)).all()
 
 
-def get_snps_by_advanced_filters_or(filters_object):
-    if filters_object['transcription_factors']:
-        tf_filters = (SNP.tf_aggregated_snps.any(TranscriptionFactorSNP.tf_id.in_(
-            [getattr(TranscriptionFactor.query.filter(TranscriptionFactor.name == tf_name).one_or_none(),
-                     'tf_id', None)
-             for tf_name in filters_object['transcription_factors']])),)
-    else:
-        tf_filters = ()
-
-    if filters_object['cell_types']:
-        cl_filters = (SNP.cl_aggregated_snps.any(CellLineSNP.cl_id.in_(
-            [getattr(CellLine.query.filter(CellLine.name == cl_name).one_or_none(),
-                     'cl_id', None)
-             for cl_name in filters_object['cell_types']])),)
-    else:
-        cl_filters = ()
-
-    if filters_object['chromosome']:
-        if not filters_object['start'] or not filters_object['end']:
-            raise ParsingError
-        chrpos_filters = (SNP.chromosome == filters_object['chromosome'],
-                          SNP.position.between(filters_object['start'], filters_object['end']))
-    else:
-        chrpos_filters = ()
-
-    return SNP.query.filter(*(tf_filters + cl_filters + chrpos_filters)).all()
-
-
-def get_snps_by_advanced_filters(filters_object):
+def construct_advanced_filters(filters_object):
     filters = []
     if filters_object['transcription_factors']:
         filters += [SNP.tf_aggregated_snps.any(
@@ -103,11 +74,11 @@ def get_snps_by_advanced_filters(filters_object):
         filters += [getattr(SNP, db_name_property_dict[phenotype_db])
                     for phenotype_db in filters_object['phenotype_databases']]
 
-    return SNP.query.filter(*filters).all()
+    return filters
 
 
 def get_snps_by_advanced_filters_tsv(filters_object):
-    found_snps = get_snps_by_advanced_filters(filters_object)
+    found_snps = SNP.query.filter(*construct_advanced_filters(filters_object)).all()
 
     file = tempfile.NamedTemporaryFile('wt', suffix='.tsv')
     csv_writer = csv.writer(file, dialect=TsvDialect)
@@ -126,6 +97,30 @@ def get_snps_by_advanced_filters_tsv(filters_object):
         mimetype="text/tsv",
         as_attachment=True
     )
+
+# import numpy as np
+# def save_for_sarus():
+#     found_snps = TranscriptionFactorSNP.query.filter(
+#         TranscriptionFactorSNP.tf_id != 75,
+#         db.func.max(TranscriptionFactorSNP.motif_log_p_alt, TranscriptionFactorSNP.motif_log_p_ref) >= -np.log10(0.0001),
+#         db.func.max(TranscriptionFactorSNP.motif_log_2_fc, -1 * TranscriptionFactorSNP.motif_log_2_fc) >= 2,
+#     )
+#     import os
+#     file = open(os.path.expanduser('~/Top10TFs/All_but_CTCF.tsv'), 'w')
+#     csv_writer = csv.writer(file, dialect=TsvDialect)
+#
+#     headers = ['chromosome', 'position', 'snp.ref', 'alt', 'log_p_value_ref', 'log_p_value_alt', 'motif_log_2_fc']
+#
+#     csv_writer.writerow(['chr', 'pos', 'ref', 'alt', 'log_p_value_ref', 'log_p_value_alt', 'motif_log_2_fc'])
+#
+#     getter = lambda snp, header: getter(getattr(snp, header[:header.find('.')]),
+#                                         header[header.find('.') + 1:]) if '.' in header else getattr(snp, header)
+#
+#     for snp in found_snps:
+#         csv_writer.writerow([getter(snp, header) for header in headers])
+#
+#     file.flush()
+#     file.close()
 
 
 def get_hints(what_for, in_str, used_options):
