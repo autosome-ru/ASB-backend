@@ -135,5 +135,5 @@ def get_overall_statistics():
     return {
         'transcription_factors_count': TranscriptionFactor.query.filter(TranscriptionFactor.aggregated_snps_count > 0).count(),
         'cell_types_count': CellLine.query.filter(CellLine.aggregated_snps_count > 0).count(),
-        'snps_count': SNP.query.count(),  # FIXME: consider .group_by(SNP.rs_id)
+        'snps_count': db.session.query(SNP.rs_id).distinct().count(),
     }
