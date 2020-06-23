@@ -14,7 +14,8 @@ TF_DICT = 0
 CL_DICT = 0
 PHEN = 0
 
-release_path = os.path.expanduser('~/Releases/')
+release_path = os.path.expanduser('~/RESULTS/release-220620_Waddles/')
+parameters_path = os.path.expanduser('~/PARAMETERS/')
 
 conv_bad = dict(zip(
     (1, 4 / 3, 3 / 2, 2, 5 / 2, 3, 4, 5, 6),
@@ -30,7 +31,7 @@ if __name__ == '__main__':
         cl_dict_reverse[value] = key
 
     if EXP:
-        table = pd.read_table(release_path + 'Master-lines.tsv')
+        table = pd.read_table(parameters_path + 'Master-lines.tsv')
         counter = 1
         exps = []
         tfs = []
@@ -63,7 +64,7 @@ if __name__ == '__main__':
         session.close()
 
     if UNIPROT:
-        table = pd.read_table(os.path.expanduser('~/Documents/slice(GTRD).csv'))
+        table = pd.read_table(parameters_path + 'slice(GTRD).csv')
         counter = 1
         tfs = []
         used_tf_names = {}
@@ -197,13 +198,13 @@ if __name__ == '__main__':
             session.close()
 
     if PHEN:
-        table = pd.read_table(release_path + '00_QTL_TFCL_fdrp_bh_0.05snpphtfASB_230120_Durland.tsv')
+        table = pd.read_table(release_path + '00_QTL_TFCL_fdrp_bh_0.05snpphtfASB_220620_Waddles.tsv')
         for index, row in table.iterrows():
             if (index + 1) % 1000 == 0:
                 print(index + 1)
             mutations = SNP.query.filter(SNP.rs_id == int(row['RSID'][2:])).all()
-            # if not mutations:
-            #     print('No snps for ', int(row['RSID'][2:]))
+            if not mutations:
+                print('No snps for ', int(row['RSID'][2:]))
             for database in ['grasp', 'ebi', 'clinvar', 'phewas', 'finemapping', 'QTL']:
                 if str(row[database]) == 'nan':
                     continue
@@ -262,7 +263,7 @@ if __name__ == '__main__':
                     ).first()
 
                     if not ag_snp:
-                        # print('NO SNP on {} {} {}'.format(chromosome, position, alt))
+                        print('NO SNP on {} {} {}'.format(chromosome, position, alt))
                         continue
 
                     ag_snp_id = getattr(ag_snp, {'TF': 'tf_snp_id', 'CL': 'cl_snp_id'}[param])
