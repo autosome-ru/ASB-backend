@@ -284,11 +284,11 @@ if __name__ == '__main__':
                         another_dict[AnotherAgrClass.query.get(getattr(snp, another_class)).name] = getattr(snp,
                                                                                                             another_id)
 
-                    del value['ref_ef']
-                    del value['alt_ef']
-                    if 'logitp_ref' in value:
-                        del value['logitp_ref']
-                        del value['logitp_alt']
+                    # del value['ref_ef']
+                    # del value['alt_ef']
+                    # if 'logitp_ref' in value:
+                    #     del value['logitp_ref']
+                    #     del value['logitp_alt']
 
                     parameters_list = [dict(zip(
                         value.keys(),
