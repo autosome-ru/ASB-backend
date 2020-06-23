@@ -226,8 +226,6 @@ if __name__ == '__main__':
             name = file.replace('_DICT.json', '')
             if param == 'CL':
                 name = cl_dict_reverse[name]
-                if name != 'MCF7 (Invasive ductal breast carcinoma)':
-                    continue
             print(name)
 
             with open(pv_path + file, 'r') as info:
@@ -244,12 +242,7 @@ if __name__ == '__main__':
 
             items_length = len(content)
 
-            if items_length > 600000:
-                print(items_length)
-                # w.write(param + '\t' + name + '\n')
-                items = sorted(list(content.items()), key=lambda x: x[0])
-            else:
-                items = list(content.items())
+            items = list(content.items())
 
             processed = 0
             chunk_size = 100000
