@@ -13,7 +13,7 @@ class TranscriptionFactor(db.Model):
 
     tf_id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), nullable=False)
-    uniprot_ac = db.Column(db.String(60), nullable=False, index=True)
+    uniprot_ac = db.Column(db.String(60), index=True)
     motif_legnth = db.Column(db.Integer)
 
     @aggregated('tf_aggregated_snps', db.Column(db.Integer))

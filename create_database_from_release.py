@@ -5,14 +5,14 @@ import json
 import numpy as np
 import pandas as pd
 
-TF = 0
-CL = 0
+TF = 1
+CL = 1
 tr = 0.05
-EXP = 0
-UNIPROT = 0
-TF_DICT = 0
-CL_DICT = 0
-PHEN = 0
+EXP = 1
+UNIPROT = 1
+TF_DICT = 1
+CL_DICT = 1
+PHEN = 1
 
 release_path = os.path.expanduser('~/RESULTS/release-220620_Waddles/')
 parameters_path = os.path.expanduser('~/PARAMETERS/')
@@ -23,7 +23,7 @@ conv_bad = dict(zip(
 ))
 
 if __name__ == '__main__':
-    with open(release_path + 'CONVERT_CL_NAMES.json') as file:
+    with open(parameters_path + 'CONVERT_CL_NAMES.json') as file:
         cl_dict = json.loads(file.readline())
 
     cl_dict_reverse = {}
