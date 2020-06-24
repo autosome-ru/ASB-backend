@@ -262,6 +262,9 @@ if __name__ == '__main__':
                         getattr(SNPClass, {'TF': 'tf_id', 'CL': 'cl_id'}[param]) == ag_id,
                     ).first()
 
+                    if not ag_snp:
+                        continue
+
                     ag_snp_id = getattr(ag_snp, {'TF': 'tf_snp_id', 'CL': 'cl_snp_id'}[param])
 
                     AnotherAgrClass = {'CL': TranscriptionFactor, 'TF': CellLine}[param]
