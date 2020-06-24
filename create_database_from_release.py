@@ -5,14 +5,14 @@ import json
 import numpy as np
 import pandas as pd
 
-TF = 1
-CL = 1
+TF = 0
+CL = 0
 tr = 0.05
-EXP = 1
-UNIPROT = 1
+EXP = 0
+UNIPROT = 0
 TF_DICT = 1
 CL_DICT = 1
-PHEN = 1
+PHEN = 0
 
 release_path = os.path.expanduser('~/RESULTS/release-220620_Waddles/')
 parameters_path = os.path.expanduser('~/PARAMETERS/')
@@ -284,11 +284,11 @@ if __name__ == '__main__':
                         another_dict[AnotherAgrClass.query.get(getattr(snp, another_class)).name] = getattr(snp,
                                                                                                             another_id)
 
-                    # del value['ref_ef']
-                    # del value['alt_ef']
-                    # if 'logitp_ref' in value:
-                    #     del value['logitp_ref']
-                    #     del value['logitp_alt']
+                    del value['ref_ef']
+                    del value['alt_ef']
+                    if 'logitp_ref' in value:
+                        del value['logitp_ref']
+                        del value['logitp_alt']
 
                     parameters_list = [dict(zip(
                         value.keys(),
