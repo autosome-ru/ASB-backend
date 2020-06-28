@@ -105,7 +105,7 @@ def update_motif_concordance():
             if snp.motif_log_p_ref:
                 snp.motif_log_2_fc = (snp.motif_log_p_alt - snp.motif_log_p_ref) / np.log10(2)
             passes_filters = (snp.best_p_value >= 1 + np.log10(2)  # 0.05
-                              and (abs((snp.motif_log_p_alt - snp.motif_log_p_ref) / np.log10(2)) >= 4
+                              and (abs((snp.motif_log_p_alt - snp.motif_log_p_ref) / np.log10(2)) >= 2
                                    if snp.motif_log_p_ref
                                    else False))
             if not passes_filters:
