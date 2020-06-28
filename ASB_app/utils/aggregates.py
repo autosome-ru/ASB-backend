@@ -111,7 +111,7 @@ def update_motif_concordance():
                 assert not snp.motif_log_2_fc
                 continue
             if not passes_motif_filters:
-                snp.motif_concordance = None
+                snp.motif_concordance = 'No Hit'
                 snp.motif_log_2_fc = None
                 continue
 

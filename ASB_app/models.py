@@ -149,7 +149,7 @@ class AggregatedSNP(GenomePolymorphismLocation):
     motif_log_2_fc = db.Column(db.Float)
     motif_orientation = db.Column(db.Boolean)
     motif_position = db.Column(db.Integer)
-    motif_concordance = db.Column(db.Enum('Concordant', 'Discordant', 'Weak Concordant', 'Weak Discordant'), nullable=True)
+    motif_concordance = db.Column(db.Enum('Concordant', 'Discordant', 'Weak Concordant', 'Weak Discordant', 'No Hit'), nullable=True)
 
     @hybrid_property
     def best_p_value(self):
