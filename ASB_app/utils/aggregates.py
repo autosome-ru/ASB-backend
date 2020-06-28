@@ -104,17 +104,30 @@ def update_motif_concordance():
         for snp in query.offset(offset).limit(max_count):
             if snp.motif_log_p_ref:
                 snp.motif_log_2_fc = (snp.motif_log_p_alt - snp.motif_log_p_ref) / np.log10(2)
-            passes_filters = (snp.best_p_value >= 1 + np.log10(2)  # 0.05
-                              and (abs((snp.motif_log_p_alt - snp.motif_log_p_ref) / np.log10(2)) >= 2
-                                   if snp.motif_log_p_ref
-                                   else False))
-            if not passes_filters:
+                passes_fdr_filters = snp.best_p_value >= 1 + np.log10(2)  # 0.05
+                passes_motif_filters = snp.motif_log_p_ref >= 3 + np.log10(2)  # 0.0005
+            else:
+                assert not snp.motif_log_p_alt
+                assert not snp.motif_log_2_fc
+                continue
+            if not passes_motif_filters:
                 snp.motif_concordance = None
+                snp.motif_log_2_fc = None
                 continue
 
             snp.motif_log_2_fc = (snp.motif_log_p_alt - snp.motif_log_p_ref) / np.log10(2)
-            snp.motif_concordance = (snp.motif_log_p_alt - snp.motif_log_p_ref) * \
-                                    (snp.log_p_value_alt - snp.log_p_value_ref) > 0
+
+            if passes_fdr_filters:
+                if abs((snp.motif_log_p_alt - snp.motif_log_p_ref) / np.log10(2)) >= 2:
+                    snp.motif_concordance = 'Concordant' if (snp.motif_log_p_alt - snp.motif_log_p_ref) * \
+                                                            (snp.log_p_value_alt - snp.log_p_value_ref) > 0 \
+                        else 'Discordant'
+                else:
+                    snp.motif_concordance = 'Weak Concordant' if (snp.motif_log_p_alt - snp.motif_log_p_ref) * \
+                                                            (snp.log_p_value_alt - snp.log_p_value_ref) > 0 \
+                        else 'Weak Discordant'
+            else:
+                snp.motif_concordance = None
         session.commit()
         session.close()
         offset += max_count
