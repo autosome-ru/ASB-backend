@@ -38,7 +38,7 @@ tf_snp_model = api.inherit('Transcription Factor SNP (no genome info)', aggregat
     'motif_log_2_fc': fields.Float,
     'motif_orientation': fields.Boolean,
     'motif_position': fields.Integer,
-    'motif_concordance': fields.Boolean,
+    'motif_concordance': fields.String,
     'transcription_factor': fields.Nested(transcription_factor_model),
 })
 
