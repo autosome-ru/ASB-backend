@@ -105,7 +105,8 @@ def update_motif_concordance():
             if snp.motif_log_p_ref:
                 snp.motif_log_2_fc = (snp.motif_log_p_alt - snp.motif_log_p_ref) / np.log10(2)
                 passes_fdr_filters = snp.best_p_value >= 1 + np.log10(2)  # 0.05
-                passes_motif_filters = snp.motif_log_p_ref >= 3 + np.log10(2)  # 0.0005
+                passes_motif_filters = ((snp.motif_log_p_ref >= 3 + np.log10(2)) or
+                                        (snp.motif_log_p_alt >= 3 + np.log10(2)))  # 0.0005
             else:
                 assert not snp.motif_log_p_alt
                 assert not snp.motif_log_2_fc
