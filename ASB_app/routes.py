@@ -16,7 +16,7 @@ pagination_parser.add_argument('page', type=inputs.positive, help='Page number',
 pagination_parser.add_argument('size', type=inputs.natural, help='Items per page or 0 for all items', default=0)
 pagination_parser.add_argument('offset', type=inputs.natural, help='Skip first N items', default=0)
 pagination_parser.add_argument('filter', help='Comma-separated filters: field1 EQ "value1", field2 GE "value2"')
-pagination_parser.add_argument('order_by', help='Comma-separated ORDER BY criterions: "field1, -field2"')
+pagination_parser.add_argument('order_by', help='ORDER BY criterion: "field1", "-field2"')
 
 
 @snp_nsp.route('/<int:rs_id>/<string:alt>')
@@ -114,6 +114,9 @@ class TransctiptionFactorBrowse(Resource, PaginationMixin):
     @api.marshal_list_with(transcription_factor_model)
     @api.expect(pagination_parser)
     def get(self):
+        """
+        Get the list of transcription factors available in the database
+        """
         return self.paginate(pagination_parser.parse_args(),
                              extra_filters=(self.BaseEntity.aggregated_snps_count > 0, ))
 
@@ -125,11 +128,15 @@ class CellLineBrowse(Resource, PaginationMixin):
     @api.marshal_list_with(cell_line_model)
     @api.expect(pagination_parser)
     def get(self):
+        """
+        Get the list of cell types available in the database
+        """
         return self.paginate(pagination_parser.parse_args(),
                              extra_filters=(self.BaseEntity.aggregated_snps_count > 0, ))
 
 
 @browse_nsp.route('/total')
+@api.hide
 class FrontPageStatistics(Resource):
     @api.marshal_with(frontpage_statistics_model)
     def get(self):
@@ -142,6 +149,7 @@ used_hints_parser.add_argument('search')
 
 
 @search_nsp.route('/tf/hint')
+@api.hide
 class TransctiptionFactorHint(Resource):
     @api.expect(used_hints_parser)
     @api.marshal_list_with(transcription_factor_model)
@@ -151,6 +159,7 @@ class TransctiptionFactorHint(Resource):
 
 
 @search_nsp.route('/cl/hint')
+@api.hide
 class CellLineHint(Resource):
     @api.expect(used_hints_parser)
     @api.marshal_list_with(cell_line_model)
@@ -169,7 +178,7 @@ class SNPItemCSV(Resource):
     @api.expect(csv_columns_parser)
     def get(self, rs_id, alt, what_for):
         """
-        Get complete imformation about an SNP by rs-ID and alt allele
+        Get complete imformation about an SNP by rs-ID and alt allele in TSV file
         """
         args = csv_columns_parser.parse_args()
         try:
