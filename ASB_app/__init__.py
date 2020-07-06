@@ -23,7 +23,7 @@ session = db.session
 
 
 blueprint = Blueprint('api', __name__, url_prefix='/api/v1')
-api = Api(blueprint, version='1.0', title='AD ASTRA API', description='AD ASTRA API')
+api = Api(blueprint, version='1.2', title='AD ASTRA API', description='AD ASTRA API')
 app.register_blueprint(blueprint)
 
 
