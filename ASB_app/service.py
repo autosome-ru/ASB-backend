@@ -1,4 +1,4 @@
-from ASB_app import db
+from ASB_app import db, session
 from ASB_app.models import TranscriptionFactorSNP, CellLineSNP, SNP, TranscriptionFactor, CellLine
 from ASB_app.exceptions import ParsingError
 from ASB_app.utils.aggregates import db_name_property_dict, TsvDialect
@@ -9,7 +9,7 @@ from flask import send_file
 
 
 def get_filters_by_rs_id(rs_id):
-    return (SNP.rs_id == rs_id, )
+    return (SNP.rs_id == rs_id,)
 
 
 def get_full_snp(rs_id, alt):
@@ -78,17 +78,72 @@ def construct_advanced_filters(filters_object):
 
 
 def get_snps_by_advanced_filters_tsv(filters_object):
-    found_snps = SNP.query.filter(*construct_advanced_filters(filters_object)).all()
-
     file = tempfile.NamedTemporaryFile('wt', suffix='.tsv')
     csv_writer = csv.writer(file, dialect=TsvDialect)
 
     headers = ['chromosome', 'position', 'ref', 'alt']
 
-    csv_writer.writerow(headers)
+    show = {'TF': False, 'CL': False}
 
-    for snp in found_snps:
-        csv_writer.writerow([getattr(snp, header) for header in headers])
+    join_tuples = []
+    additional_columns = []
+    query_args = [SNP]
+
+    for what_for in ('TF', 'CL'):
+        filter_object_key = {'TF': 'transcription_factors', 'CL': 'cell_types'}[what_for]
+        aggregation_class = {'TF': TranscriptionFactor, 'CL': CellLine}[what_for]
+        aggregated_snp_class = {'TF': TranscriptionFactorSNP, 'CL': CellLineSNP}[what_for]
+        id_field = {'TF': 'tf_id', 'CL': 'cl_id'}[what_for]
+        if not filters_object[filter_object_key]:
+            show[what_for] = True
+            query_args.append(db.func.group_concat(aggregation_class.name))
+            join_tuples += [
+                (
+                    aggregated_snp_class,
+                    (aggregated_snp_class.chromosome == SNP.chromosome) &
+                    (aggregated_snp_class.position == SNP.position) &
+                    (aggregated_snp_class.alt == SNP.alt),
+                ),
+                (
+                    aggregation_class,
+                    getattr(aggregation_class, id_field) == getattr(aggregated_snp_class, id_field),
+                )
+            ]
+            continue
+        for name in filters_object[filter_object_key]:
+            aggregation_entity = aggregation_class.query.filter_by(name=name).one_or_none()
+            if not aggregation_entity:
+                continue
+            aggregation_id = getattr(aggregation_entity, id_field)
+            join_tuples.append(
+                (aggregated_snp_class,
+                 (getattr(
+                     aggregated_snp_class,
+                     {'TF': 'tf_id', 'CL': 'cl_id'}[what_for]
+                 ) == aggregation_id) &
+                 (aggregated_snp_class.chromosome == SNP.chromosome) &
+                 (aggregated_snp_class.position == SNP.position) &
+                 (aggregated_snp_class.alt == SNP.alt))
+            )
+            for field, label in [
+                ('log_p_value_ref', '{}_FDR_Ref'.format(name)),
+                ('log_p_value_alt', '{}_FDR_Alt'.format(name)),
+                ('es_ref', '{}_Effect_Size_Ref'.format(name)),
+                ('es_alt', '{}_Effect_Size_Alt'.format(name)),
+            ]:
+                headers.append(label)
+                additional_columns.append(getattr(aggregated_snp_class, field).label(label))
+
+    found_snps = session.query(*query_args)
+    for cls, condition in join_tuples:
+        found_snps = found_snps.join(cls, condition)
+    for column in additional_columns:
+        found_snps = found_snps.add_column(column)
+    found_snps = found_snps.filter(*construct_advanced_filters(filters_object))
+
+    csv_writer.writerow(headers)
+    for tup in found_snps:
+        csv_writer.writerow([len(tup) for header in headers])
 
     file.flush()
     return send_file(
@@ -97,6 +152,7 @@ def get_snps_by_advanced_filters_tsv(filters_object):
         mimetype="text/tsv",
         as_attachment=True
     )
+
 
 # import numpy as np
 # def save_for_sarus():
@@ -133,7 +189,8 @@ def get_hints(what_for, in_str, used_options):
 
 def get_overall_statistics():
     return {
-        'transcription_factors_count': TranscriptionFactor.query.filter(TranscriptionFactor.aggregated_snps_count > 0).count(),
+        'transcription_factors_count': TranscriptionFactor.query.filter(
+            TranscriptionFactor.aggregated_snps_count > 0).count(),
         'cell_types_count': CellLine.query.filter(CellLine.aggregated_snps_count > 0).count(),
         'snps_count': db.session.query(SNP.rs_id).distinct().count(),
     }

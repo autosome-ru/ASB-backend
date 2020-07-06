@@ -99,7 +99,7 @@ class AdvancedSearchSNPCSV(Resource):
     @api.expect(search_parser)
     def get(self):
         """
-        Get all SNPs with advanced filters short info in csv file
+        Get all SNPs with advanced filters short info in tsv file
         """
         try:
             return service.get_snps_by_advanced_filters_tsv(search_parser.parse_args())
