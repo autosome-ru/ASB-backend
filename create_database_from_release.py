@@ -335,6 +335,7 @@ if __name__ == '__main__':
         used = set()
         for f in os.listdir(os.path.expanduser('~/SARUS_ANNOTATION/')):
             with open(os.path.expanduser('~/SARUS_ANNOTATION/') + f) as file:
+                print(f)
                 line = file.readline()
                 while line:
                     line = line.strip('\n')
