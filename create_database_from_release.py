@@ -337,7 +337,7 @@ if __name__ == '__main__':
             with open(os.path.expanduser('~/SARUS_ANNOTATION/') + f) as file:
                 line = file.readline()
                 while line:
-                    if line.starts_with('>') and line[-3:] == 'ref' and line not in used:
+                    if line.startswith('>') and line[-3:] == 'ref' and line not in used:
                         used.add(line)
                         line = line.strip()
                         alt = line.split(';')[-1].split('_')[0]
