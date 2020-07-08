@@ -8,6 +8,7 @@ genome_polymorphism_location_model = api.model('Genome Mutation Position and id'
     'ref': fields.String(enumerate=nucleotides),
     'alt': fields.String(enumerate=nucleotides),
     'rs_id': fields.Integer,
+    'context': fields.String,
 })
 
 aggregated_snp_model = api.model('Agregated SNP (no genome info) ', {

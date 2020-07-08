@@ -116,6 +116,7 @@ class SNP(GenomePolymorphismLocation):
 
     ref = db.Column(db.Enum(*nucleotides), nullable=False)
     rs_id = db.Column(db.Integer, nullable=False)
+    context = db.Column(db.String(51))
 
     tf_aggregated_snps = db.relationship('TranscriptionFactorSNP',
                                          order_by='TranscriptionFactorSNP.best_p_value.desc()',

@@ -10,9 +10,10 @@ CL = 0
 tr = 0.05
 EXP = 0
 UNIPROT = 0
-TF_DICT = 1
-CL_DICT = 1
+TF_DICT = 0
+CL_DICT = 0
 PHEN = 0
+CONTEXT = 1
 
 release_path = os.path.expanduser('~/RESULTS/release-220620_Waddles/')
 parameters_path = os.path.expanduser('~/PARAMETERS/')
@@ -329,3 +330,21 @@ if __name__ == '__main__':
                 session.commit()
                 session.close()
                 processed += chunk_size
+
+    if CONTEXT:
+        used = set()
+        for file in os.path.expanduser('~/SARUS_ANNOTATION/'):
+            with open(os.path.expanduser('~/SARUS_ANNOTATION/') + file):
+                line = file.readline()
+                while line:
+                    if line.starts_with('>') and line[-3:] == 'ref' and line not in used:
+                        used.add(line)
+                        line = line.strip()
+                        alt = line.split(';')[-1].split('_')[0]
+                        rs = int(line.split(';')[0][3:])
+                        snp = SNP.query.filter(SNP.rs_id == rs, SNP.alt == alt).one_or_none()
+                        context = file.readline()
+                        if snp:
+                            snp.context = context
+                    line = file.readline()
+        session.commit()
