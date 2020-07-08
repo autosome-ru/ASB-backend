@@ -333,7 +333,7 @@ if __name__ == '__main__':
 
     if CONTEXT:
         used = set()
-        for f in os.path.expanduser('~/SARUS_ANNOTATION/'):
+        for f in os.listdir(os.path.expanduser('~/SARUS_ANNOTATION/')):
             with open(os.path.expanduser('~/SARUS_ANNOTATION/') + f) as file:
                 line = file.readline()
                 while line:
