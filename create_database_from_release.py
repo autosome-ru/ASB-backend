@@ -345,7 +345,6 @@ if __name__ == '__main__':
                         snp = SNP.query.filter(SNP.rs_id == rs, SNP.alt == alt).one_or_none()
                         context = file.readline().strip('\n')
                         if snp:
-                            print(snp, context)
                             snp.context = context
                     line = file.readline()
         session.commit()
