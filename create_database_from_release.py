@@ -333,8 +333,8 @@ if __name__ == '__main__':
 
     if CONTEXT:
         used = set()
-        for file in os.path.expanduser('~/SARUS_ANNOTATION/'):
-            with open(os.path.expanduser('~/SARUS_ANNOTATION/') + file):
+        for f in os.path.expanduser('~/SARUS_ANNOTATION/'):
+            with open(os.path.expanduser('~/SARUS_ANNOTATION/') + f) as file:
                 line = file.readline()
                 while line:
                     if line.starts_with('>') and line[-3:] == 'ref' and line not in used:
