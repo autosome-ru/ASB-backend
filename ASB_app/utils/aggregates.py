@@ -156,3 +156,40 @@ def update_phenotype_associations():
         session.close()
         offset += max_count
         count -= max_count
+
+
+# one-time
+def scale_effect_size():
+    scale = np.log(2)
+
+    q = session.query(TranscriptionFactorSNP)
+    count = q.count()
+    offset = 0
+    max_count = 999
+    while count > 0:
+        print(count)
+        for tf_snp in q.order_by(TranscriptionFactorSNP.tf_snp_id).limit(max_count).offset(offset):
+            if tf_snp.es_ref is not None:
+                tf_snp.es_ref = tf_snp.es_ref / scale
+            if tf_snp.es_alt is not None:
+                tf_snp.es_alt = tf_snp.es_alt / scale
+        session.commit()
+        session.close()
+        offset += max_count
+        count -= max_count
+
+    q = session.query(CellLineSNP)
+    count = q.count()
+    offset = 0
+    max_count = 999
+    while count > 0:
+        print(count)
+        for cl_snp in q.order_by(CellLineSNP.cl_snp_id).limit(max_count).offset(offset):
+            if cl_snp.es_ref is not None:
+                cl_snp.es_ref = cl_snp.es_ref / scale
+            if cl_snp.es_alt is not None:
+                cl_snp.es_alt = cl_snp.es_alt / scale
+        session.commit()
+        session.close()
+        offset += max_count
+        count -= max_count
