@@ -73,7 +73,7 @@ class Experiment(db.Model):
 
 
 class BAD_group(db.Model):
-    __tablename__ = 'bad_group'
+    __tablename__ = 'bad_groups'
 
     bad_group_id = db.Column(db.Integer, primary_key=True)
     bad_group_name = db.Column(db.String(100), nullable=False)
