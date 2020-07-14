@@ -62,9 +62,9 @@ class Experiment(db.Model):
     geo_gse = db.Column(db.String(10))
     encode = db.Column(db.String(11))
     is_control = db.Column(db.Boolean, nullable=False, server_default='0')
-    BAD_group_id = db.Column(db.Integer, db.ForeignKey('bad_groups'))
+    bad_group_id = db.Column(db.Integer, db.ForeignKey('bad_groups'))
 
-    # bad_group = db.relationship('BADGroup', backref='experiments')
+    bad_group = db.relationship('BADGroup', backref='experiments')
     transcription_factor = db.relationship('TranscriptionFactor', backref='experiments')
     cell_line = db.relationship('CellLine', backref='experiments')
 
