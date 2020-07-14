@@ -64,7 +64,7 @@ class Experiment(db.Model):
     is_control = db.Column(db.Boolean, nullable=False, server_default='0')
     BAD_group_id = db.Column(db.Integer, db.ForeignKey('bad_groups'))
 
-    bad_group = db.relationship('BADGroup', backref='experiments')
+    # bad_group = db.relationship('BADGroup', backref='experiments')
     transcription_factor = db.relationship('TranscriptionFactor', backref='experiments')
     cell_line = db.relationship('CellLine', backref='experiments')
 
