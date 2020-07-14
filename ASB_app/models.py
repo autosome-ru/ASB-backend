@@ -62,9 +62,9 @@ class Experiment(db.Model):
     geo_gse = db.Column(db.String(10))
     encode = db.Column(db.String(11))
     is_control = db.Column(db.Boolean, nullable=False, server_default='0')
-    BAD_group_id = db.Column(db.Integer, db.ForeignKey('bad_group'))
-
-    bad_group = db.relationship('bad_group', backref='experiments')
+    # BAD_group_id = db.Column(db.Integer, db.ForeignKey('bad_group'))
+    #
+    # bad_group = db.relationship('bad_group', backref='experiments')
     transcription_factor = db.relationship('TranscriptionFactor', backref='experiments')
     cell_line = db.relationship('CellLine', backref='experiments')
 
@@ -72,11 +72,11 @@ class Experiment(db.Model):
         return '<Experiment #{0.exp_id}>'.format(self)
 
 
-class BAD_group(db.model):
-    __tablename__ = 'bad_group'
-
-    bad_group_id = db.Column(db.Integer, primary_key=True)
-    bad_group_name = db.Column(db.string(100), nullable=False)
+# class BAD_group(db.model):
+#     __tablename__ = 'bad_group'
+#
+#     bad_group_id = db.Column(db.Integer, primary_key=True)
+#     bad_group_name = db.Column(db.string(100), nullable=False)
 
 
 class ExpSNP(db.Model):
