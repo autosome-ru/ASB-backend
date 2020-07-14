@@ -39,7 +39,7 @@ class CellLine(db.Model):
 
     non_input_experiments = db.relationship(
         'Experiment',
-        primary_join='(Experiment.cl_id == CellLine.cl_id) & (~Experiment.is_control)'
+        primaryjoin='(Experiment.cl_id == CellLine.cl_id) & (~Experiment.is_control)'
     )
 
     @aggregated('cl_aggregated_snps', db.Column(db.Integer))
