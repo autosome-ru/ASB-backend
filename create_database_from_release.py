@@ -13,7 +13,8 @@ UNIPROT = 0
 TF_DICT = 0
 CL_DICT = 0
 PHEN = 0
-CONTEXT = 1
+CONTEXT = 0
+
 
 release_path = os.path.expanduser('~/RESULTS/release-220620_Waddles/')
 parameters_path = os.path.expanduser('~/PARAMETERS/')
