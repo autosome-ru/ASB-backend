@@ -62,27 +62,6 @@ class Experiment(db.Model):
     geo_gse = db.Column(db.String(10))
     encode = db.Column(db.String(11))
     is_control = db.Column(db.Boolean, nullable=False, server_default='0')
-
-    transcription_factor = db.relationship('TranscriptionFactor', backref='experiments')
-    cell_line = db.relationship('CellLine', backref='experiments')
-
-    def __repr__(self):
-        return '<Experiment #{0.exp_id}>'.format(self)
-
-
-class Experiment(db.Model):
-    __tablename__ = 'experiments'
-    __table_args__ = (
-        db.Index('align_index', 'align'),
-    )
-
-    exp_id = db.Column(db.Integer, primary_key=True)
-    align = db.Column(db.Integer, nullable=False)
-    tf_id = db.Column(db.Integer, db.ForeignKey('transcription_factors.tf_id'), nullable=False)
-    cl_id = db.Column(db.Integer, db.ForeignKey('cell_lines.cl_id'), nullable=False)
-    geo_gse = db.Column(db.String(10))
-    encode = db.Column(db.String(11))
-    is_control = db.Column(db.Boolean, nullable=False, server_default='0')
     BAD_group_id = db.Column(db.Integer, db.ForeignKey('bad_group'))
 
     bad_group = db.relationship('bad_group', backref='experiments')
