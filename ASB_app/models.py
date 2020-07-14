@@ -72,7 +72,7 @@ class Experiment(db.Model):
         return '<Experiment #{0.exp_id}>'.format(self)
 
 
-class BAD_group(db.model):
+class BAD_group(db.Model):
     __tablename__ = 'bad_group'
 
     bad_group_id = db.Column(db.Integer, primary_key=True)
