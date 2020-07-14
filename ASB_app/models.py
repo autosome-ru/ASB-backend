@@ -81,7 +81,10 @@ class BADGroup(db.Model):
     __tablename__ = 'bad_groups'
 
     bad_group_id = db.Column(db.Integer, primary_key=True)
-    bad_group_name = db.Column(db.String(100), nullable=False)
+    bad_group_name = db.Column(db.String(100), nullable=False, unique=True)
+
+    def __repr__(self):
+        return '<BAD Group #{0.bad_group_id}: {0.bad_group_name}>'.format(self)
 
 
 class ExpSNP(db.Model):
