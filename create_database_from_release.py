@@ -14,6 +14,8 @@ TF_DICT = 0
 CL_DICT = 0
 PHEN = 0
 CONTEXT = 0
+CONTROLS = 0
+BAD_GROUP = 0
 
 
 release_path = os.path.expanduser('~/RESULTS/release-220620_Waddles/')
@@ -350,3 +352,31 @@ if __name__ == '__main__':
                             snp.context = context
                     line = file.readline()
         session.commit()
+
+if CONTROLS:
+    table = pd.read_table(parameters_path + 'Master-lines.tsv')
+    exps = []
+    cls = []
+    used_cl_ids = set([x[0] for x in session.query(CellLine.cl_id.distinct())])
+    for index, row in table.iterrows():
+        if (index + 1) % 1000 == 0:
+            print(index + 1)
+
+        if row['control_id']:
+            if row['control_cell_id'] not in used_cl_ids:
+                cls.append(CellLine(cl_id=int(row['control_cell_id']), name=row['control_cell_id']))
+                used_cl_ids.add(row['control_cell_id'])
+
+            exp = Experiment(exp_id=int(row['control_id'][3:]),
+                             align=int(row['control_ALIGNS'][6:]),
+                             geo_gse=row['control_GEO_GSE'] if row['control_GEO_GSE'] != 'None' else None,
+                             encode=row['control_ENCODE'] if row['control_ENCODE'] != 'None' else None,
+                             tf_id=None,
+                             cl_id=int(row['control_cell_id']),
+                             is_control=True)
+
+            exps.append(exp)
+
+    session.add_all(cls + exps)
+    session.commit()
+    session.close()
