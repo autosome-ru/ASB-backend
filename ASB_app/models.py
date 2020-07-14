@@ -72,11 +72,11 @@ class Experiment(db.Model):
         return '<Experiment #{0.exp_id}>'.format(self)
 
 
-# class BAD_group(db.model):
-#     __tablename__ = 'bad_group'
-#
-#     bad_group_id = db.Column(db.Integer, primary_key=True)
-#     bad_group_name = db.Column(db.string(100), nullable=False)
+class BAD_group(db.model):
+    __tablename__ = 'bad_group'
+
+    bad_group_id = db.Column(db.Integer, primary_key=True)
+    bad_group_name = db.Column(db.string(100), nullable=False)
 
 
 class ExpSNP(db.Model):
