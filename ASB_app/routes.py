@@ -73,6 +73,7 @@ search_parser.add_argument('chromosome', choices=chromosomes)
 search_parser.add_argument('start', type=inputs.positive)
 search_parser.add_argument('end', type=inputs.positive)
 search_parser.add_argument('phenotype_databases', action='split')
+search_parser.add_argument('motif_concordance', action='split')
 
 
 @search_nsp.route('/snps/advanced')
