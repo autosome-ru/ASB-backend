@@ -169,6 +169,10 @@ if __name__ == '__main__':
         'T': 'A',
         'C': 'G',
         'G': 'C',
+        'a': 't',
+        't': 'a',
+        'c': 'g',
+        'g': 'c',
     }
 
     for tf_snp, snp, tf in session.query(TranscriptionFactorSNP, SNP, TranscriptionFactor).filter(TranscriptionFactorSNP.motif_concordance.isnot(None) &
@@ -181,95 +185,115 @@ if __name__ == '__main__':
         TranscriptionFactor,
         TranscriptionFactor.tf_id == TranscriptionFactorSNP.tf_id
     ):
-        pcm_filename = name_dict[tf.name]
+        for draw_revcomp in True, False:
+            pcm_filename = name_dict[tf.name]
 
-        pcm_path = os.path.expanduser('~/pcm/{}'.format(pcm_filename))
+            pcm_path = os.path.expanduser('~/pcm/{}'.format(pcm_filename))
 
-        context = ' ' * 20 + snp.context + ' ' * 20
-        alt = snp.alt
-        pos_in_motif = tf_snp.motif_position
-        motif_pref = 1/np.power(10, tf_snp.motif_log_p_ref)
-        motif_palt = 1/np.power(10, tf_snp.motif_log_p_alt)
-        asb_is_ref = tf_snp.log_p_value_ref > tf_snp.log_p_value_alt
-        revcomp = not tf_snp.motif_orientation
+            context = ' ' * 20 + (''.join([get_revcomp[x] for x in snp.context[::-1]]) if draw_revcomp else snp.context) + ' ' * 20
+            print(context)
+            alt = get_revcomp[snp.alt] if draw_revcomp else snp.alt
+            pos_in_motif = tf_snp.motif_position
+            motif_pref = 1/np.power(10, tf_snp.motif_log_p_ref)
+            motif_palt = 1/np.power(10, tf_snp.motif_log_p_alt)
+            asb_is_ref = tf_snp.log_p_value_ref > tf_snp.log_p_value_alt
+            revcomp = tf_snp.motif_orientation == draw_revcomp
 
-        ef = tf_snp.es_ref if asb_is_ref else tf_snp.es_alt
+            ef = tf_snp.es_ref if asb_is_ref else tf_snp.es_alt
 
-        m, heights = get_heights(pcm_path, mode='KDIC')
-        print(full_gap, text_h, indent)
-        fig_x = (m + add_letters + add_letters + concordance_indent) * unit_width
-        fig_y = unit_height * (1 + full_gap + text_h + indent + hill_sum_height + strands_h + hill_gap + 0.35)
-        fig = transform.SVGFigure("{}px".format(fig_x), "{}px".format(fig_y))
-        txt_gen = transform.TextElement(fig_x - 0.1 * unit_width, fig_y - 0.1 * unit_height,
-                                        'ADASTra v1.3.0', size=str(p_value_text_h * unit_height) + 'px',
-                                        anchor='end', color='#c8c8c8', font='PT Sans, Arial')
-        fig.append(txt_gen)
+            m, heights = get_heights(pcm_path, mode='KDIC')
+            print(full_gap, text_h, indent)
+            fig_x = (m + add_letters + add_letters + concordance_indent) * unit_width
+            fig_y = unit_height * (1 + full_gap + text_h + indent + hill_sum_height + strands_h + hill_gap + 0.35)
+            fig = transform.SVGFigure("{}px".format(fig_x), "{}px".format(fig_y))
+            txt_gen = transform.TextElement(fig_x - 0.1 * unit_width, fig_y - 0.1 * unit_height,
+                                            'ADASTra v1.4.0', size=str(p_value_text_h * unit_height) + 'px',
+                                            anchor='end', color='#a8a8a8', font='PT Sans, Arial')
+            txt_snp = transform.TextElement(fig_x - 0.1 * unit_width, fig_y - (2 * p_value_text_h + 0.1) * unit_height,
+                                            'rs{}'.format(snp.rs_id), size=str(p_value_text_h * unit_height) + 'px',
+                                            anchor='end', color='#a8a8a8', font='PT Sans, Arial')
+            txt_tf = transform.TextElement(fig_x - 0.1 * unit_width, fig_y - (p_value_text_h + 0.1) * unit_height,
+                                           tf.name, size=str(p_value_text_h * unit_height) + 'px',
+                                           anchor='end', color='#a8a8a8', font='PT Sans, Arial')
+            txt_strand = transform.TextElement(0.1 * unit_width, fig_y - (0.1) * unit_height,
+                                           '({}) strand'.format('-' if draw_revcomp else '+'), size=str(p_value_text_h * unit_height) + 'px',
+                                           anchor='start', color='#a8a8a8', font='PT Sans, Arial')
+            fig.append([txt_gen, txt_snp, txt_tf, txt_strand])
 
-        pos_in_motif = m - pos_in_motif - 1 if revcomp else pos_in_motif
-        motif_context = context[44 - add_letters - pos_in_motif: 44 - pos_in_motif + m + add_letters]
-        pos_in_motif += add_letters
+            pos_in_motif = m - pos_in_motif - 1 if revcomp else pos_in_motif
+            motif_context = context[44 - add_letters - pos_in_motif: 44 - pos_in_motif + m + add_letters]
+            pos_in_motif += add_letters
 
-        hill_height = min(min(ef, 3) / 3, 1 - pseudocount)
-        hill_height = (hill_height + 1) / 2
-        ref_height = hill_sum_height * hill_height
-        alt_height = hill_sum_height * (1 - hill_height)
+            hill_height = min(min(ef, 3) / 3, 1 - pseudocount)
+            hill_height = (hill_height + 1) / 2
+            ref_height = hill_sum_height * hill_height
+            alt_height = hill_sum_height * (1 - hill_height)
 
-        hill_width = m
+            hill_width = m
 
-        print(motif_context, pos_in_motif)
+            print(motif_context, pos_in_motif)
 
-        place_letter_on_svg(fig, os.path.expanduser('~/letters/rect.svg'), (pos_in_motif + concordance_indent) * unit_width, 0, (1 + full_gap + text_h/2 + snp_gap/2 + snp_text_h) * unit_height, unit_width)
+            place_letter_on_svg(fig, os.path.expanduser('~/letters/rect.svg'), (pos_in_motif + concordance_indent) * unit_width, 0, (1 + full_gap + text_h/2 + snp_gap/2 + snp_text_h) * unit_height, unit_width)
 
-        for pos, pack in enumerate(heights[::-1] if revcomp else heights):
-            pos += add_letters + concordance_indent
-            current_height = 0
-            for letter, height in renorm(pack):
-                # Draw letter with offset of pos*unit_width, current_height*unit_height and height of height*unit_height
-                place_letter_on_svg(fig, letter_svgs[get_revcomp[letter] if revcomp else letter], pos*unit_width, (1-current_height - height)*unit_height, height*unit_height, unit_width)
-                current_height += height
+            for pos, pack in enumerate(heights[::-1] if revcomp else heights):
+                pos += add_letters + concordance_indent
+                current_height = 0
+                for letter, height in renorm(pack):
+                    # Draw letter with offset of pos*unit_width, current_height*unit_height and height of height*unit_height
+                    place_letter_on_svg(fig, letter_svgs[get_revcomp[letter] if revcomp else letter], pos*unit_width, (1-current_height - height)*unit_height, height*unit_height, unit_width)
+                    current_height += height
 
-        for pos, letter in enumerate(motif_context):
-            if letter == ' ':
-                continue
-            if pos != pos_in_motif:
-                place_letter_on_svg(fig, black_letter_svgs[letter.upper()], (pos + (1 - text_width) / 2 + concordance_indent) * unit_width, (1 + full_gap) * unit_height, text_h * unit_height, text_width * unit_width)
+            for pos, letter in enumerate(motif_context):
+                if letter == ' ':
+                    continue
+                if pos != pos_in_motif:
+                    place_letter_on_svg(fig, black_letter_svgs[letter.upper()], (pos + (1 - text_width) / 2 + concordance_indent) * unit_width, (1 + full_gap) * unit_height, text_h * unit_height, text_width * unit_width)
+                else:
+                    if not asb_is_ref:
+                        ref_height, alt_height = alt_height, ref_height
+                    place_hill_on_svg(fig, hill_svgs[letter], (concordance_indent + add_letters)*unit_width, (1 + full_gap + text_h + indent + hill_gap) * unit_height, ref_height * unit_height, hill_width * unit_width)
+                    place_hill_on_svg(fig, hill_svgs[alt], (concordance_indent + add_letters)*unit_width, (1 + full_gap + strands_h + alt_height + ref_height + text_h + indent + hill_gap) * unit_height, -alt_height * unit_height, hill_width * unit_width)
+                    place_letter_on_svg(fig, letter_svgs[letter], (pos + (1 - snp_text_width) / 2 + concordance_indent) * unit_width, (1 + full_gap + text_h/2 - snp_text_h - snp_gap/2) * unit_height, snp_text_h * unit_height, snp_text_width * unit_width)
+                    place_letter_on_svg(fig, letter_svgs[alt], (pos + (1 - snp_text_width) / 2 + concordance_indent) * unit_width, (1 + full_gap + text_h/2 + snp_gap/2) * unit_height, snp_text_h * unit_height, snp_text_width * unit_width)
+
+            for pos in range(m-1, -1, -1):
+                pos += add_letters + concordance_indent
+                place_dna_on_svg(fig, os.path.expanduser('~/letters/dna_grey.svg'), (pos - 13/120)*unit_width, (1 + full_gap + text_h + indent + hill_gap + ref_height) * unit_height, dna_h*unit_height, unit_width*(1 + 13/60))
+                place_dna_on_svg(fig, os.path.expanduser('~/letters/dna_grey.svg'), (pos - 13/120)*unit_width, (1 + full_gap + text_h + indent + hill_gap + ref_height + strands_h - dna_h) * unit_height, dna_h*unit_height, unit_width*(1 + 13/60))
+
+            text_x = pos_in_motif + 2 + concordance_indent
+            txt_ref = transform.TextElement(text_x * unit_width, (1.24 + (motif_gap + indent)/2 + p_value_text_h/2) * unit_height, 'P-value: ' + get_scientific_text(motif_pref), size=str(p_value_text_h*unit_height) + 'px', color='#000000de', font='PT Sans, Arial')
+            motif_word_ref = transform.TextElement(text_x * unit_width, (1.24 + (motif_gap + indent)/2 - p_value_text_h/2) * unit_height, 'Motif', size=str(p_value_text_h*unit_height) + 'px', color='#000000de', font='PT Sans, Arial')
+            txt_alt = transform.TextElement(text_x * unit_width, (1 + motif_gap + indent*3/2 + text_h + p_value_text_h/2) * unit_height, 'P-value: ' + get_scientific_text(motif_palt), size=str(p_value_text_h*unit_height) + 'px', color='#000000de', font='PT Sans, Arial')
+            motif_word_alt = transform.TextElement(text_x * unit_width, (1 + motif_gap + indent*3/2 + text_h - p_value_text_h/2) * unit_height, 'Motif', size=str(p_value_text_h*unit_height) + 'px', color='#000000de', font='PT Sans, Arial')
+            txt_ref_letter = transform.TextElement((text_x - 3) * unit_width,
+                                            (1.24 + (motif_gap + indent)/2 - p_value_text_h/2) * unit_height,
+                                            'Ref',
+                                            size=str(p_value_text_h * unit_height) + 'px', color='#000000de',
+                                            font='PT Sans, Arial')
+            txt_alt_letter = transform.TextElement((text_x - 3) * unit_width, (1 + motif_gap + indent*3/2 + text_h + p_value_text_h/2) * unit_height, 'Alt',
+                                                   size=str(p_value_text_h * unit_height) + 'px', color='#000000de',
+                                                   font='PT Sans, Arial')
+
+            fig.append([txt_ref, txt_alt, motif_word_ref, motif_word_alt, txt_ref_letter, txt_alt_letter])
+
+            if asb_is_ref:
+                ef_text_y = 1 + full_gap + text_h + indent + hill_gap + ref_height*1 - p_value_text_h/2
+                fdr_text_y = 1 + full_gap + text_h + indent + hill_gap + ref_height*(1-1/3) - p_value_text_h/2
             else:
-                if not asb_is_ref:
-                    ref_height, alt_height = alt_height, ref_height
-                place_hill_on_svg(fig, hill_svgs[letter], (concordance_indent + add_letters)*unit_width, (1 + full_gap + text_h + indent + hill_gap) * unit_height, ref_height * unit_height, hill_width * unit_width)
-                place_hill_on_svg(fig, hill_svgs[alt], (concordance_indent + add_letters)*unit_width, (1 + full_gap + strands_h + alt_height + ref_height + text_h + indent + hill_gap) * unit_height, -alt_height * unit_height, hill_width * unit_width)
-                place_letter_on_svg(fig, letter_svgs[letter], (pos + (1 - snp_text_width) / 2 + concordance_indent) * unit_width, (1 + full_gap + text_h/2 - snp_text_h - snp_gap/2) * unit_height, snp_text_h * unit_height, snp_text_width * unit_width)
-                place_letter_on_svg(fig, letter_svgs[alt], (pos + (1 - snp_text_width) / 2 + concordance_indent) * unit_width, (1 + full_gap + text_h/2 + snp_gap/2) * unit_height, snp_text_h * unit_height, snp_text_width * unit_width)
+                ef_text_y = 1 + full_gap + text_h + indent + hill_gap + ref_height + strands_h + alt_height*1/3 - p_value_text_h/2
+                fdr_text_y = 1 + full_gap + text_h + indent + hill_gap + ref_height + strands_h + alt_height*2/3 - p_value_text_h/2
 
-        for pos in range(m-1, -1, -1):
-            pos += add_letters + concordance_indent
-            place_dna_on_svg(fig, os.path.expanduser('~/letters/dna_grey.svg'), (pos - 13/120)*unit_width, (1 + full_gap + text_h + indent + hill_gap + ref_height) * unit_height, dna_h*unit_height, unit_width*(1 + 13/60))
-            place_dna_on_svg(fig, os.path.expanduser('~/letters/dna_grey.svg'), (pos - 13/120)*unit_width, (1 + full_gap + text_h + indent + hill_gap + ref_height + strands_h - dna_h) * unit_height, dna_h*unit_height, unit_width*(1 + 13/60))
+            txt_ef = transform.TextElement(((m-1)/2 + add_letters + 0.7 + concordance_indent) * unit_width, ef_text_y * unit_height, 'ASB Effect Size, log₂ : {:.2f}'.format(ef), size=str(p_value_text_h*unit_height) + 'px', anchor='middle', color='#000000de', font='PT Sans, Arial')
+            txt_fdr = transform.TextElement(((m-1)/2 + add_letters + 0.7 + concordance_indent) * unit_width, fdr_text_y * unit_height, 'ASB FDR: ' + get_scientific_text(motif_pref), size=str(p_value_text_h*unit_height) + 'px', anchor='middle', color='#000000de', font='PT Sans, Arial')
+            fig.append([txt_ef, txt_fdr])
 
-        text_x = pos_in_motif + 2 + concordance_indent
-        txt_ref = transform.TextElement(text_x * unit_width, (1.24 + (motif_gap + indent)/2 + p_value_text_h/2) * unit_height, 'P-value: ' + get_scientific_text(motif_pref), size=str(p_value_text_h*unit_height) + 'px', color='#000000de', font='PT Sans, Arial')
-        motif_word_ref = transform.TextElement(text_x * unit_width, (1.24 + (motif_gap + indent)/2 - p_value_text_h/2) * unit_height, 'Motif Ref', size=str(p_value_text_h*unit_height) + 'px', color='#000000de', font='PT Sans, Arial')
-        txt_alt = transform.TextElement(text_x * unit_width, (1 + motif_gap + indent*3/2 + text_h + p_value_text_h/2) * unit_height, 'P-value: ' + get_scientific_text(motif_palt), size=str(p_value_text_h*unit_height) + 'px', color='#000000de', font='PT Sans, Arial')
-        motif_word_alt = transform.TextElement(text_x * unit_width, (1 + motif_gap + indent*3/2 + text_h - p_value_text_h/2) * unit_height, 'Motif Alt', size=str(p_value_text_h*unit_height) + 'px', color='#000000de', font='PT Sans, Arial')
-        fig.append([txt_ref, txt_alt, motif_word_ref, motif_word_alt])
+            bracket_thick = 10
+            conc_label_space = 0.1
 
-        if asb_is_ref:
-            ef_text_y = 1 + full_gap + text_h + indent + hill_gap + ref_height*1 - p_value_text_h/2
-            fdr_text_y = 1 + full_gap + text_h + indent + hill_gap + ref_height*(1-1/3) - p_value_text_h/2
-        else:
-            ef_text_y = 1 + full_gap + text_h + indent + hill_gap + ref_height + strands_h + alt_height*1/3 - p_value_text_h/2
-            fdr_text_y = 1 + full_gap + text_h + indent + hill_gap + ref_height + strands_h + alt_height*2/3 - p_value_text_h/2
+            place_concordance_on_svg(fig, tf_snp.motif_concordance, conc_label_space*unit_width, (1/2 +(1/2 + full_gap + text_h + indent + hill_gap + strands_h/2 + ref_height)/2)*unit_height - concordance_h[tf_snp.motif_concordance]/2, concordance_h[tf_snp.motif_concordance], concordance_w)
+            place_letter_on_svg(fig, os.path.expanduser('~/letters/rect2.svg'), conc_label_space*2*unit_width+concordance_w, (1/2 + bracket_thick/600/2) * unit_height, (1/2 + full_gap + text_h + indent + hill_gap + strands_h/2 + ref_height - bracket_thick/600)*unit_height, bracket_thick/300*unit_width)
+            place_letter_on_svg(fig, os.path.expanduser('~/letters/rect2.svg'), conc_label_space*2*unit_width+concordance_w, (1/2 - bracket_thick/600/2) * unit_height, bracket_thick/600*unit_height, (add_letters + concordance_indent - 3*conc_label_space)*unit_width - concordance_w)
+            place_letter_on_svg(fig, os.path.expanduser('~/letters/rect2.svg'), conc_label_space*2*unit_width+concordance_w, (1 + full_gap + text_h + indent + hill_gap + strands_h/2 + ref_height - bracket_thick/600/2) * unit_height, bracket_thick/600*unit_height, (add_letters + concordance_indent - 3*conc_label_space)*unit_width - concordance_w)
 
-        txt_ef = transform.TextElement(((m-1)/2 + add_letters + 0.7 + concordance_indent) * unit_width, ef_text_y * unit_height, 'ASB Effect Size, log₂ : {:.2f}'.format(ef), size=str(p_value_text_h*unit_height) + 'px', anchor='middle', color='#000000de', font='PT Sans, Arial')
-        txt_fdr = transform.TextElement(((m-1)/2 + add_letters + 0.7 + concordance_indent) * unit_width, fdr_text_y * unit_height, 'ASB FDR: ' + get_scientific_text(motif_pref), size=str(p_value_text_h*unit_height) + 'px', anchor='middle', color='#000000de', font='PT Sans, Arial')
-        fig.append([txt_ef, txt_fdr])
-
-        bracket_thick = 10
-        conc_label_space = 0.1
-
-        place_concordance_on_svg(fig, tf_snp.motif_concordance, conc_label_space*unit_width, (1/2 +(1/2 + full_gap + text_h + indent + hill_gap + strands_h/2 + ref_height)/2)*unit_height - concordance_h[tf_snp.motif_concordance]/2, concordance_h[tf_snp.motif_concordance], concordance_w)
-        place_letter_on_svg(fig, os.path.expanduser('~/letters/rect2.svg'), conc_label_space*2*unit_width+concordance_w, (1/2 + bracket_thick/600/2) * unit_height, (1/2 + full_gap + text_h + indent + hill_gap + strands_h/2 + ref_height - bracket_thick/600)*unit_height, bracket_thick/300*unit_width)
-        place_letter_on_svg(fig, os.path.expanduser('~/letters/rect2.svg'), conc_label_space*2*unit_width+concordance_w, (1/2 - bracket_thick/600/2) * unit_height, bracket_thick/600*unit_height, (add_letters + concordance_indent - 3*conc_label_space)*unit_width - concordance_w)
-        place_letter_on_svg(fig, os.path.expanduser('~/letters/rect2.svg'), conc_label_space*2*unit_width+concordance_w, (1 + full_gap + text_h + indent + hill_gap + strands_h/2 + ref_height - bracket_thick/600/2) * unit_height, bracket_thick/600*unit_height, (add_letters + concordance_indent - 3*conc_label_space)*unit_width - concordance_w)
-
-        fig.save('D:\Sashok\svgs/{}_{}_{}.svg'.format(tf.name, snp.rs_id, snp.alt))
+            fig.save('D:\Sashok\svgs/{}_{}_{}{}.svg'.format(tf.name, snp.rs_id, snp.alt, '_revcomp' if draw_revcomp else ''))
