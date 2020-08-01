@@ -67,13 +67,13 @@ class SNPSearchSNPByGPCollection(Resource, PaginationMixin):
 
 
 search_parser = pagination_parser.copy()
-search_parser.add_argument('cell_types', action='split')
-search_parser.add_argument('transcription_factors', action='split')
-search_parser.add_argument('chromosome', choices=chromosomes)
-search_parser.add_argument('start', type=inputs.positive)
-search_parser.add_argument('end', type=inputs.positive)
-search_parser.add_argument('phenotype_databases', action='split')
-search_parser.add_argument('motif_concordance', action='split')
+search_parser.add_argument('cell_types', action='split', help='Comma-separated list of cell types, search SNPs ASB for every cell type scpecified')
+search_parser.add_argument('transcription_factors', action='split', help='Comma-separated list of cell types, search SNPs ASB for every cell type scpecified')
+search_parser.add_argument('chromosome', choices=chromosomes, help='Search only SNPs on the specified chromosome')
+search_parser.add_argument('start', type=inputs.positive, help='Search SNPs in interval from specified position, Requires "chromosome" and "end"')
+search_parser.add_argument('end', type=inputs.positive, help='Search SNPs in interval to specified position, Requiers "chromosome" and "start"')
+search_parser.add_argument('phenotype_databases', action='split', help='Comma-separated list of databases, possible choices {grasp, ebi, clinvar, phewas, finemapping, QTL}, earch SNPs that have phenotype associations in all specified databases')
+search_parser.add_argument('motif_concordance', action='split', help='Comma-separated list of motif concordance values, possible choices {Concordant. Discordant, Weak Concordant, Weak Discordant}, if no TF specified will search SNPs with any TF having any of the specified concordance valuese, else only SNPs ASB for the specified TFs and any of the specified concordance values for these TFs')
 
 
 @search_nsp.route('/snps/advanced')

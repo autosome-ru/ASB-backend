@@ -184,7 +184,8 @@ class TranscriptionFactorSNP(AggregatedSNP):
     __table_args__ = (db.ForeignKeyConstraint(['chromosome', 'position', 'alt'],
                                               ['snps.chromosome', 'snps.position', 'snps.alt']),
                       db.Index('unique_tf_mutation_index', 'chromosome', 'position', 'alt', 'tf_id'),
-                      db.Index('tf_id_index', 'tf_id')
+                      db.Index('tf_id_index', 'tf_id'),
+                      db.Index('motif_concordance_index', 'motif_concordance'),
                       )
 
     tf_snp_id = db.Column(db.Integer, primary_key=True)

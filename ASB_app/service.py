@@ -78,10 +78,10 @@ def construct_advanced_filters(filters_object):
 
     if filters_object['motif_concordance']:
         if filters_object['transcription_factors']:
-            filters += SNP.tf_aggregated_snps.any(TranscriptionFactorSNP.motif_concordance.in_(filters_object['motif_concordance']) &
-                                                  TranscriptionFactorSNP.transcription_factor.has(TranscriptionFactor.name.in_(filters_object['transcription_factors'])))
+            filters += [SNP.tf_aggregated_snps.any(TranscriptionFactorSNP.motif_concordance.in_(filters_object['motif_concordance']) &
+                                                  TranscriptionFactorSNP.transcription_factor.has(TranscriptionFactor.name.in_(filters_object['transcription_factors'])))]
         else:
-            filters += SNP.tf_aggregated_snps.any(TranscriptionFactorSNP.motif_concordance.in_(filters_object['motif_concordance']))
+            filters += [SNP.tf_aggregated_snps.any(TranscriptionFactorSNP.motif_concordance.in_(filters_object['motif_concordance']))]
 
     return filters
 
