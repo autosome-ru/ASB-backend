@@ -1,3 +1,5 @@
+import math
+
 from ASB_app import *
 from ASB_app.models import *
 import os
@@ -13,7 +15,10 @@ UNIPROT = 0
 TF_DICT = 0
 CL_DICT = 0
 PHEN = 0
-CONTEXT = 1
+CONTEXT = 0
+CONTROLS = 0
+BAD_GROUP = 1
+
 
 release_path = os.path.expanduser('~/RESULTS/release-220620_Waddles/')
 parameters_path = os.path.expanduser('~/PARAMETERS/')
@@ -349,3 +354,69 @@ if __name__ == '__main__':
                             snp.context = context
                     line = file.readline()
         session.commit()
+
+if CONTROLS:
+    table = pd.read_table(parameters_path + 'Master-lines.tsv')
+    exps = []
+    cls = []
+    used_exp_ids = set()
+    used_cl_ids = set([x[0] for x in session.query(CellLine.cl_id.distinct())])
+    for index, row in table.iterrows():
+        if (index + 1) % 1000 == 0:
+            print(index + 1)
+
+        if len(exps) >= 999:
+            session.add_all(exps)
+            session.commit()
+            exps = []
+            session.close()
+
+        if isinstance(row['control_id'], str) or not math.isnan(row['control_id']):
+            if row['control_id'] in used_exp_ids:
+                continue
+            used_exp_ids.add(row['control_id'])
+            if row['control_cell_id'] not in used_cl_ids:
+                cls.append(CellLine(cl_id=int(row['control_cell_id']), name=row['control_cell_id']))
+                used_cl_ids.add(row['control_cell_id'])
+
+            exp = Experiment(exp_id=int(row['control_id'][3:]),
+                             align=int(row['control_ALIGNS'][6:]),
+                             geo_gse=row['control_GEO_GSE'] if row['control_GEO_GSE'] != 'None' else None,
+                             encode=row['control_ENCODE'] if row['control_ENCODE'] != 'None' else None,
+                             tf_id=None,
+                             cl_id=int(row['control_cell_id']),
+                             is_control=True)
+
+            exps.append(exp)
+
+    session.add_all(cls + exps)
+    session.commit()
+    session.close()
+
+if BAD_GROUP:
+    with open(parameters_path + 'CELL_LINES.json') as f:
+        cell_lines_dict = json.loads(f.readline())
+    exps = []
+    bad_groups = []
+    for key, value in cell_lines_dict.items():
+        print(key)
+        name = key.replace('!', '@')
+        bad_group = BADGroup.query.filter(BADGroup.bad_group_name == name).one_or_none()
+        if not bad_group:
+            bad_group = BADGroup(
+                bad_group_name=name
+            )
+        bad_groups.append(bad_group)
+        for path in value:
+            if len(exps) >= 999:
+                session.add_all(exps)
+                session.commit()
+                exps = []
+                session.close()
+            exp_id = int(path.split('/')[-2][3:])
+            exp = Experiment.query.get(exp_id)
+            exp.bad_group = bad_group
+            exps.append(exp)
+    session.add_all(exps + bad_groups)
+    session.commit()
+    session.close()

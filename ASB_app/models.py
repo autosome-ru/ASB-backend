@@ -37,11 +37,16 @@ class CellLine(db.Model):
     cl_id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), nullable=False)
 
+    non_input_experiments = db.relationship(
+        'Experiment',
+        primaryjoin='(Experiment.cl_id == CellLine.cl_id) & (~Experiment.is_control)'
+    )
+
     @aggregated('cl_aggregated_snps', db.Column(db.Integer))
     def aggregated_snps_count(self):
         return db.func.count(CellLineSNP.cl_snp_id)
 
-    @aggregated('experiments', db.Column(db.Integer))
+    @aggregated('non_input_experiments', db.Column(db.Integer))
     def experiments_count(self):
         return db.func.count(Experiment.exp_id)
 
@@ -57,16 +62,29 @@ class Experiment(db.Model):
 
     exp_id = db.Column(db.Integer, primary_key=True)
     align = db.Column(db.Integer, nullable=False)
-    tf_id = db.Column(db.Integer, db.ForeignKey('transcription_factors.tf_id'), nullable=False)
+    tf_id = db.Column(db.Integer, db.ForeignKey('transcription_factors.tf_id'), nullable=True)
     cl_id = db.Column(db.Integer, db.ForeignKey('cell_lines.cl_id'), nullable=False)
     geo_gse = db.Column(db.String(10))
     encode = db.Column(db.String(11))
+    is_control = db.Column(db.Boolean, nullable=False, server_default='0')
+    bad_group_id = db.Column(db.Integer, db.ForeignKey('bad_groups.bad_group_id'))
 
+    bad_group = db.relationship('BADGroup', backref='experiments')
     transcription_factor = db.relationship('TranscriptionFactor', backref='experiments')
     cell_line = db.relationship('CellLine', backref='experiments')
 
     def __repr__(self):
         return '<Experiment #{0.exp_id}>'.format(self)
+
+
+class BADGroup(db.Model):
+    __tablename__ = 'bad_groups'
+
+    bad_group_id = db.Column(db.Integer, primary_key=True)
+    bad_group_name = db.Column(db.String(100), nullable=False, unique=True)
+
+    def __repr__(self):
+        return '<BAD Group #{0.bad_group_id}: {0.bad_group_name}>'.format(self)
 
 
 class ExpSNP(db.Model):
