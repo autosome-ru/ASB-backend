@@ -17,7 +17,9 @@ CL_DICT = 0
 PHEN = 0
 CONTEXT = 0
 CONTROLS = 0
-BAD_GROUP = 1
+BAD_GROUP = 0
+PEAKS_TF = 1
+PEAKS_CL = 1
 
 
 release_path = os.path.expanduser('~/RESULTS/release-220620_Waddles/')
@@ -355,68 +357,135 @@ if __name__ == '__main__':
                     line = file.readline()
         session.commit()
 
-if CONTROLS:
-    table = pd.read_table(parameters_path + 'Master-lines.tsv')
-    exps = []
-    cls = []
-    used_exp_ids = set()
-    used_cl_ids = set([x[0] for x in session.query(CellLine.cl_id.distinct())])
-    for index, row in table.iterrows():
-        if (index + 1) % 1000 == 0:
-            print(index + 1)
+    if CONTROLS:
+        table = pd.read_table(parameters_path + 'Master-lines.tsv')
+        exps = []
+        cls = []
+        used_exp_ids = set()
+        used_cl_ids = set([x[0] for x in session.query(CellLine.cl_id.distinct())])
+        for index, row in table.iterrows():
+            if (index + 1) % 1000 == 0:
+                print(index + 1)
 
-        if len(exps) >= 999:
-            session.add_all(exps)
-            session.commit()
-            exps = []
-            session.close()
-
-        if isinstance(row['control_id'], str) or not math.isnan(row['control_id']):
-            if row['control_id'] in used_exp_ids:
-                continue
-            used_exp_ids.add(row['control_id'])
-            if row['control_cell_id'] not in used_cl_ids:
-                cls.append(CellLine(cl_id=int(row['control_cell_id']), name=row['control_cell_id']))
-                used_cl_ids.add(row['control_cell_id'])
-
-            exp = Experiment(exp_id=int(row['control_id'][3:]),
-                             align=int(row['control_ALIGNS'][6:]),
-                             geo_gse=row['control_GEO_GSE'] if row['control_GEO_GSE'] != 'None' else None,
-                             encode=row['control_ENCODE'] if row['control_ENCODE'] != 'None' else None,
-                             tf_id=None,
-                             cl_id=int(row['control_cell_id']),
-                             is_control=True)
-
-            exps.append(exp)
-
-    session.add_all(cls + exps)
-    session.commit()
-    session.close()
-
-if BAD_GROUP:
-    with open(parameters_path + 'CELL_LINES.json') as f:
-        cell_lines_dict = json.loads(f.readline())
-    exps = []
-    bad_groups = []
-    for key, value in cell_lines_dict.items():
-        print(key)
-        name = key.replace('!', '@')
-        bad_group = BADGroup.query.filter(BADGroup.bad_group_name == name).one_or_none()
-        if not bad_group:
-            bad_group = BADGroup(
-                bad_group_name=name
-            )
-        bad_groups.append(bad_group)
-        for path in value:
             if len(exps) >= 999:
                 session.add_all(exps)
                 session.commit()
                 exps = []
                 session.close()
-            exp_id = int(path.split('/')[-2][3:])
-            exp = Experiment.query.get(exp_id)
-            exp.bad_group = bad_group
-            exps.append(exp)
-    session.add_all(exps + bad_groups)
-    session.commit()
-    session.close()
+
+            if isinstance(row['control_id'], str) or not math.isnan(row['control_id']):
+                if row['control_id'] in used_exp_ids:
+                    continue
+                used_exp_ids.add(row['control_id'])
+                if row['control_cell_id'] not in used_cl_ids:
+                    cls.append(CellLine(cl_id=int(row['control_cell_id']), name=row['control_cell_id']))
+                    used_cl_ids.add(row['control_cell_id'])
+
+                exp = Experiment(exp_id=int(row['control_id'][3:]),
+                                 align=int(row['control_ALIGNS'][6:]),
+                                 geo_gse=row['control_GEO_GSE'] if row['control_GEO_GSE'] != 'None' else None,
+                                 encode=row['control_ENCODE'] if row['control_ENCODE'] != 'None' else None,
+                                 tf_id=None,
+                                 cl_id=int(row['control_cell_id']),
+                                 is_control=True)
+
+                exps.append(exp)
+
+        session.add_all(cls + exps)
+        session.commit()
+        session.close()
+
+    if BAD_GROUP:
+        with open(parameters_path + 'CELL_LINES.json') as f:
+            cell_lines_dict = json.loads(f.readline())
+        exps = []
+        bad_groups = []
+        for key, value in cell_lines_dict.items():
+            print(key)
+            name = key.replace('!', '@')
+            bad_group = BADGroup.query.filter(BADGroup.bad_group_name == name).one_or_none()
+            if not bad_group:
+                bad_group = BADGroup(
+                    bad_group_name=name
+                )
+            bad_groups.append(bad_group)
+            for path in value:
+                if len(exps) >= 999:
+                    session.add_all(exps)
+                    session.commit()
+                    exps = []
+                    session.close()
+                exp_id = int(path.split('/')[-2][3:])
+                exp = Experiment.query.get(exp_id)
+                exp.bad_group = bad_group
+                exps.append(exp)
+        session.add_all(exps + bad_groups)
+        session.commit()
+        session.close()
+
+    for param in ['TF'] * PEAKS_TF + ['CL'] * PEAKS_CL:
+        pv_path = release_path + '{}_P-values/'.format(param)
+        for file in sorted(os.listdir(pv_path)):
+            with open(pv_path + file, 'r') as table:
+                name = file.replace('.tsv', '')
+                if param == 'CL':
+                    name = cl_dict_reverse[name]
+                print(name)
+
+                AgrClass = {'TF': TranscriptionFactor, 'CL': CellLine}[param]
+                SNPClass = {'TF': TranscriptionFactorSNP, 'CL': CellLineSNP}[param]
+
+                ag = AgrClass.query.filter(AgrClass.name == name).first()
+                assert ag
+                if param == 'CL':
+                    ag_id = ag.cl_id
+                else:
+                    ag_id = ag.tf_id
+
+                ag_snps = []
+                header = []
+                for index, row in enumerate(table):
+                    print(index + 1) if (index + 1) % 50000 == 0 else ...
+
+                    if row[0] == '#':
+                        header = row.strip('\n').split('\t')
+                        continue
+                    else:
+                        row = dict(zip(header, row.strip('\n').split('\t')))
+                    int_fields = ['n_peak_calls', 'n_peak_callers', 'pos']
+                    float_fields = ['fdrp_bh_ref', 'fdrp_bh_alt']
+
+                    for field in float_fields:
+                        if row[field] == '' or row[field] == '.':
+                            row[field] = None
+                        else:
+                            row[field] = float(row[field])
+
+                    min_pv = min(
+                        row['fdrp_bh_ref'] if row['fdrp_bh_ref'] else 1,
+                        row['fdrp_bh_alt'] if row['fdrp_bh_alt'] else 1,
+                    )
+
+                    if min_pv > tr:
+                        continue
+
+                    for field in int_fields:
+                        if row[field] == '' or row[field] == '.':
+                            row[field] = None
+                        else:
+                            row[field] = int(row[field])
+
+                    row['ID'] = int(row['ID'][2:])
+                    mutation = SNP.query.filter((SNP.rs_id == row['ID']) &
+                                                (SNP.alt == row['alt'])).first()
+                    assert mutation
+
+                    ag_snp = SNPClass.query.filter((SNPClass.chromosome == row['#chr']) &
+                                                   (SNPClass.position == row['pos']) &
+                                                   (SNPClass.alt == row['alt'])).first()
+                    assert ag_snp
+                    ag_snp.peak_calls = row['n_peak_calls']
+                    ag_snp.peak_callers = row['n_peak_callers']
+                    ag_snps.append(ag_snp)
+            session.commit()
+            session.close()

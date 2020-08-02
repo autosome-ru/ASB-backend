@@ -15,6 +15,8 @@ aggregated_snp_model = api.model('Agregated SNP (no genome info) ', {
     'log_p_value_ref': fields.Float,
     'log_p_value_alt': fields.Float,
     'is_asb': fields.Boolean,
+    'peak_calls': fields.Integer(min=0),
+    'peak_callers': fields.Integer(min=0),
 })
 
 transcription_factor_model = api.model('Transcription factor', {

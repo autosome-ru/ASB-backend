@@ -163,12 +163,8 @@ class AggregatedSNP(GenomePolymorphismLocation):
     es_ref = db.Column(db.Float)
     es_alt = db.Column(db.Float)
     mean_bad = db.Column(db.Float)
-    motif_log_p_ref = db.Column(db.Float)
-    motif_log_p_alt = db.Column(db.Float)
-    motif_log_2_fc = db.Column(db.Float)
-    motif_orientation = db.Column(db.Boolean)
-    motif_position = db.Column(db.Integer)
-    motif_concordance = db.Column(db.Enum('Concordant', 'Discordant', 'Weak Concordant', 'Weak Discordant', 'No Hit'), nullable=True)
+    peak_calls = db.Column(db.Integer)
+    peak_callers = db.Column(db.Integer)
 
     @hybrid_property
     def best_p_value(self):
@@ -190,6 +186,12 @@ class TranscriptionFactorSNP(AggregatedSNP):
 
     tf_snp_id = db.Column(db.Integer, primary_key=True)
     tf_id = db.Column(db.Integer, db.ForeignKey('transcription_factors.tf_id'), nullable=False)
+    motif_log_p_ref = db.Column(db.Float)
+    motif_log_p_alt = db.Column(db.Float)
+    motif_log_2_fc = db.Column(db.Float)
+    motif_orientation = db.Column(db.Boolean)
+    motif_position = db.Column(db.Integer)
+    motif_concordance = db.Column(db.Enum('Concordant', 'Discordant', 'Weak Concordant', 'Weak Discordant', 'No Hit'), nullable=True)
 
     snp = db.relationship('SNP', back_populates='tf_aggregated_snps')
     transcription_factor = db.relationship('TranscriptionFactor', backref='tf_aggregated_snps')
