@@ -207,7 +207,7 @@ if __name__ == '__main__':
             fig_y = unit_height * (1 + full_gap + text_h + indent + hill_sum_height + strands_h + hill_gap + 0.35)
             fig = transform.SVGFigure("{}px".format(fig_x), "{}px".format(fig_y))
             txt_gen = transform.TextElement(fig_x - 0.1 * unit_width, fig_y - 0.1 * unit_height,
-                                            'ADASTra v1.4.0', size=str(p_value_text_h * unit_height) + 'px',
+                                            'ADASTRA v1.4.0', size=str(p_value_text_h * unit_height) + 'px',
                                             anchor='end', color='#a8a8a8', font='PT Sans, Arial')
             txt_snp = transform.TextElement(fig_x - 0.1 * unit_width, fig_y - (2 * p_value_text_h + 0.1) * unit_height,
                                             'rs{}'.format(snp.rs_id), size=str(p_value_text_h * unit_height) + 'px',

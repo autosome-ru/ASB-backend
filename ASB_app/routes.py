@@ -53,7 +53,6 @@ class SNPSearchSNPByGPCollection(Resource, PaginationMixin):
     BaseEntity = service.SNP
 
     @api.marshal_with(search_results_model)
-    @api.response(507, 'Result too long')
     @api.expect(pagination_parser)
     def get(self, chr, pos1, pos2):
         """
