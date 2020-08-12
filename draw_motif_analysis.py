@@ -261,19 +261,20 @@ if __name__ == '__main__':
                 place_dna_on_svg(fig, os.path.expanduser('~/letters/dna_grey.svg'), (pos - 13/120)*unit_width, (1 + full_gap + text_h + indent + hill_gap + ref_height) * unit_height, dna_h*unit_height, unit_width*(1 + 13/60))
                 place_dna_on_svg(fig, os.path.expanduser('~/letters/dna_grey.svg'), (pos - 13/120)*unit_width, (1 + full_gap + text_h + indent + hill_gap + ref_height + strands_h - dna_h) * unit_height, dna_h*unit_height, unit_width*(1 + 13/60))
 
-            text_x = pos_in_motif + 2 + concordance_indent
+            text_x = pos_in_motif + 1 + concordance_indent
+            letter_text = pos_in_motif + 1 - 0.05
             txt_ref = transform.TextElement(text_x * unit_width, (1.24 + (motif_gap + indent)/2 + p_value_text_h/2) * unit_height, 'P-value: ' + get_scientific_text(motif_pref), size=str(p_value_text_h*unit_height) + 'px', color='#000000de', font='PT Sans, Arial')
             motif_word_ref = transform.TextElement(text_x * unit_width, (1.24 + (motif_gap + indent)/2 - p_value_text_h/2) * unit_height, 'Motif', size=str(p_value_text_h*unit_height) + 'px', color='#000000de', font='PT Sans, Arial')
             txt_alt = transform.TextElement(text_x * unit_width, (1 + motif_gap + indent*3/2 + text_h + p_value_text_h/2) * unit_height, 'P-value: ' + get_scientific_text(motif_palt), size=str(p_value_text_h*unit_height) + 'px', color='#000000de', font='PT Sans, Arial')
             motif_word_alt = transform.TextElement(text_x * unit_width, (1 + motif_gap + indent*3/2 + text_h - p_value_text_h/2) * unit_height, 'Motif', size=str(p_value_text_h*unit_height) + 'px', color='#000000de', font='PT Sans, Arial')
-            txt_ref_letter = transform.TextElement((text_x - 3) * unit_width,
+            txt_ref_letter = transform.TextElement((letter_text) * unit_width,
                                             (1.24 + (motif_gap + indent)/2 - p_value_text_h/2) * unit_height,
                                             'Ref',
                                             size=str(p_value_text_h * unit_height) + 'px', color='#000000de',
-                                            font='PT Sans, Arial')
-            txt_alt_letter = transform.TextElement((text_x - 3) * unit_width, (1 + motif_gap + indent*3/2 + text_h + p_value_text_h/2) * unit_height, 'Alt',
+                                            font='PT Sans, Arial', anchor='end')
+            txt_alt_letter = transform.TextElement((letter_text) * unit_width, (1 + motif_gap + indent*3/2 + text_h + p_value_text_h/2) * unit_height, 'Alt',
                                                    size=str(p_value_text_h * unit_height) + 'px', color='#000000de',
-                                                   font='PT Sans, Arial')
+                                                   font='PT Sans, Arial', anchor='end')
 
             fig.append([txt_ref, txt_alt, motif_word_ref, motif_word_alt, txt_ref_letter, txt_alt_letter])
 
