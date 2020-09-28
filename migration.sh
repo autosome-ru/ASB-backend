@@ -1,7 +1,7 @@
 export FLASK_APP=./run.py
 DB=~/AD_ASTRA_database/AD_ASTRA.db
 
-cp $DB "$HOME/ad_astra_backup_$(date +%d%m).db"
+#cp $DB "$HOME/ad_astra_backup_$(date +%d%m).db"
 
 . venv/bin/activate
 

@@ -34,6 +34,14 @@ cell_line_model = api.model('Cell line', {
     'experiments_count': fields.Integer(readonly=True),
 })
 
+gene_model = api.model('Gene', {
+    'gene_id': fields.String(readonly=True),
+    'gene_name': fields.String,
+    'chromosome': fields.String(enumerate=chromosomes),
+    'start_pos': fields.Integer,
+    'end_pos': fields.Integer
+})
+
 tf_snp_model = api.inherit('Transcription Factor SNP (no genome info)', aggregated_snp_model, {
     'tf_snp_id': fields.Integer(readonly=True),
     'motif_log_p_ref': fields.Float,
@@ -57,6 +65,7 @@ rs_snp_model = api.inherit('rs-SNP info for search', genome_polymorphism_locatio
 
 search_results_model = api.model('SNP search results model', {
     'total': fields.Integer,
+    'gene': fields.Nested(gene_model),
     'results': fields.List(fields.Nested(rs_snp_model))
 })
 
