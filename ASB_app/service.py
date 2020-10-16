@@ -1,7 +1,7 @@
 from sqlalchemy.orm import aliased
 
 from ASB_app import db, session
-from ASB_app.models import TranscriptionFactorSNP, CellLineSNP, SNP, TranscriptionFactor, CellLine
+from ASB_app.models import TranscriptionFactorSNP, CellLineSNP, SNP, TranscriptionFactor, CellLine, Gene
 from ASB_app.exceptions import ParsingError
 from ASB_app.utils.aggregates import db_name_property_dict, TsvDialect
 from sqlalchemy import not_
@@ -45,8 +45,16 @@ def get_full_snp_tsv(what_for, rs_id, alt, headers):
     )
 
 
-def get_filters_by_genome_position(chr, pos1, pos2):
-    return SNP.chromosome == chr, SNP.position.between(pos1, pos2)
+def get_gene_by_name(gene_name):
+    return Gene.query.filter_by(gene_name=gene_name).one_or_none()
+
+
+def get_gene_by_id(gene_id):
+    return Gene.query.get(gene_id)
+
+
+def get_filters_by_gene(gene):
+    return SNP.chromosome == gene.chromosome, SNP.position.between(max(gene.start_pos - 1000, 1), gene.end_pos)
 
 
 def construct_advanced_filters(filters_object):
@@ -202,6 +210,11 @@ def get_hints(what_for, in_str, used_options):
                ((not_(cls.name.in_(used_options)),) if used_options else ()) +
                (cls.aggregated_snps_count,))
     return cls.query.filter(*filters).order_by(cls.aggregated_snps_count.desc()).limit(3).all()
+
+
+def get_hints_for_gene_name(in_str):
+    filters = (Gene.gene_name.like(in_str),) if in_str else ()
+    return Gene.query.filter(*filters).order_by(Gene.gene_name).limit(3).all()
 
 
 def get_overall_statistics():

@@ -264,5 +264,15 @@ class PhenotypeSNPCorrespondence(GenomePolymorphismLocation):
                              nullable=False)
 
 
+class Gene(db.Model):
+    __tablename__ = 'genes'
+
+    gene_id = db.Column(db.String(30), primary_key=True)
+    gene_name = db.Column(db.String(30), index=True, nullable=False)
+    chromosome = db.Column(db.Enum(*chromosomes), nullable=False)
+    start_pos = db.Column(db.Integer, nullable=False)
+    end_pos = db.Column(db.Integer, nullable=False)
+
+
 db.create_all()
 db.session.commit()

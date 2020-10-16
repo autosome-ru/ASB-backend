@@ -18,8 +18,9 @@ PHEN = 0
 CONTEXT = 0
 CONTROLS = 0
 BAD_GROUP = 0
-PEAKS_TF = 1
-PEAKS_CL = 1
+PEAKS_TF = 0
+PEAKS_CL = 0
+GENES = 1
 
 
 release_path = os.path.expanduser('~/RESULTS/release-220620_Waddles/')
@@ -31,12 +32,12 @@ conv_bad = dict(zip(
 ))
 
 if __name__ == '__main__':
-    with open(parameters_path + 'CONVERT_CL_NAMES.json') as file:
-        cl_dict = json.loads(file.readline())
-
-    cl_dict_reverse = {}
-    for key, value in cl_dict.items():
-        cl_dict_reverse[value] = key
+    # with open(parameters_path + 'CONVERT_CL_NAMES.json') as file:
+    #     cl_dict = json.loads(file.readline())
+    #
+    # cl_dict_reverse = {}
+    # for key, value in cl_dict.items():
+    #     cl_dict_reverse[value] = key
 
     if EXP:
         table = pd.read_table(parameters_path + 'Master-lines.tsv')
@@ -490,3 +491,36 @@ if __name__ == '__main__':
                     ag_snps.append(ag_snp)
             session.commit()
             session.close()
+
+    if GENES:
+        genes = []
+        genes_ids = set()
+        with open(os.path.expanduser('~/Desktop/gencode.v35.annotation.gtf')) as inp:
+            for index, line in enumerate(inp):
+                if line.startswith('#'):
+                    continue
+                line = line.strip('\n').split('\t')
+                chrom, start_pos, end_pos = line[0], int(line[3]), int(line[4])
+                if chrom not in chromosomes or line[2] != 'gene':
+                    continue
+                if index % 1000 == 0:
+                    print(index, len(genes))
+                params_dict = dict(map(lambda x: tuple(x.split(' ')), line[8].split('; ')))
+                gene_name = params_dict['gene_name'].strip('"')
+                gene_id = params_dict['gene_id'].strip('"')
+                snps = SNP.query.filter(SNP.chromosome == chrom, SNP.position.between(start_pos - 1000, end_pos)).count()
+                if not snps:
+                    continue
+                gene = Gene(gene_id=gene_id, gene_name=gene_name, start_pos=start_pos, end_pos=end_pos, chromosome=chrom)
+                if gene_id in genes_ids:
+                    print(gene_id, chrom, start_pos, end_pos)
+                    continue
+                genes.append(gene)
+                # if len(genes) == 20:
+                #     session.add_all(genes)
+                #     session.commit()
+                #     genes = []
+                genes_ids.add(gene_id)
+
+        session.add_all(genes)
+        session.commit()
