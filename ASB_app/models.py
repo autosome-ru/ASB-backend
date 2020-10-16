@@ -113,6 +113,18 @@ class ExpSNP(db.Model):
     cl_aggregated_snp = db.relationship('CellLineSNP', backref='exp_snps')
     experiment = db.relationship('Experiment', backref='exp_snps')
 
+    cell_line = db.relationship(
+        'CellLine',
+        secondary='cl_snps',
+        backref='exp_snps'
+    )
+
+    transcription_factor = db.relationship(
+        'TranscriptionFactor',
+        secondary='tf_snps',
+        backref='exp_snps'
+    )
+
     def __repr__(self):
         return '<ExpSNP #{0.exp_snp_id}, {0.exp_id}, {0.tf_snp_id}, {0.cl_snp_id}>'.format(self)
 

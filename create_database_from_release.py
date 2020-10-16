@@ -206,7 +206,7 @@ if __name__ == '__main__':
             session.close()
 
     if PHEN:
-        table = pd.read_table(release_path + '00_QTL_TFCL_fdrp_bh_0.05snpphtfASB_220620_Waddles.tsv')
+        table = pd.read_table(os.path.join(release_path, '00_eQTL_TFCL_fdrp_bh_0.05snpphtfASB_220620_Waddles.tsv'))
         for index, row in table.iterrows():
             if (index + 1) % 1000 == 0:
                 print(index + 1)
@@ -482,7 +482,8 @@ if __name__ == '__main__':
 
                     ag_snp = SNPClass.query.filter((SNPClass.chromosome == row['#chr']) &
                                                    (SNPClass.position == row['pos']) &
-                                                   (SNPClass.alt == row['alt'])).first()
+                                                   (SNPClass.alt == row['alt']) &
+                                                   (getattr(SNPClass, {'TF': 'tf_id', 'CL':'cl_id'}[param]) == ag_id)).one()
                     assert ag_snp
                     ag_snp.peak_calls = row['n_peak_calls']
                     ag_snp.peak_callers = row['n_peak_callers']
