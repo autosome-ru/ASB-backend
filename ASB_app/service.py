@@ -101,7 +101,7 @@ def construct_advanced_filters(filters_object):
             filters += [SNP.tf_aggregated_snps.any(
                 TranscriptionFactorSNP.motif_concordance.in_(filters_object['motif_concordance']) |
                 (TranscriptionFactorSNP.motif_concordance.is_(None) if search_null else False)
-            )]
+            ) | (~SNP.tf_aggregated_snps.any() if search_null else False)]
 
     return filters
 
