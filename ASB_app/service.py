@@ -4,7 +4,7 @@ from ASB_app import db, session
 from ASB_app.models import TranscriptionFactorSNP, CellLineSNP, SNP, TranscriptionFactor, CellLine, Gene
 from ASB_app.exceptions import ParsingError
 from ASB_app.utils.aggregates import db_name_property_dict, TsvDialect
-from sqlalchemy import not_
+from sqlalchemy import not_, or_
 import csv
 import tempfile
 from flask import send_file
@@ -81,15 +81,24 @@ def construct_advanced_filters(filters_object):
                         SNP.position.between(filters_object['start'], filters_object['end'])]
 
     if filters_object['phenotype_databases']:
-        filters += [getattr(SNP, db_name_property_dict[phenotype_db])
-                    for phenotype_db in filters_object['phenotype_databases']]
+        filters += [or_(*(getattr(SNP, db_name_property_dict[phenotype_db])
+                    for phenotype_db in filters_object['phenotype_databases']))]
 
     if filters_object['motif_concordance']:
+        search_null = False
+        if 'None' in filters_object['motif_concordance']:
+            search_null = True
+            filters_object['motif_concordance'] = [x for x in filters_object['motif_concordance'] if x != 'None']
         if filters_object['transcription_factors']:
             filters += [SNP.tf_aggregated_snps.any(TranscriptionFactorSNP.motif_concordance.in_(filters_object['motif_concordance']) &
                                                   TranscriptionFactorSNP.transcription_factor.has(TranscriptionFactor.name.in_(filters_object['transcription_factors'])))]
+            if search_null:
+                filters += [SNP.tf_aggregated_snps.any(TranscriptionFactorSNP.motif_concordance.is_(None) &
+                                                  TranscriptionFactorSNP.transcription_factor.has(TranscriptionFactor.name.in_(filters_object['transcription_factors'])))]
         else:
             filters += [SNP.tf_aggregated_snps.any(TranscriptionFactorSNP.motif_concordance.in_(filters_object['motif_concordance']))]
+            if search_null:
+                filters += [SNP.tf_aggregated_snps.any(TranscriptionFactorSNP.motif_concordance.is_(None))]
 
     return filters
 
