@@ -19,8 +19,8 @@ CONTEXT = 0
 CONTROLS = 0
 BAD_GROUP = 0
 PEAKS_TF = 0
-PEAKS_CL = 0
-GENES = 1
+PEAKS_CL = 1
+GENES = 0
 
 
 release_path = os.path.expanduser('~/RESULTS/release-220620_Waddles/')
@@ -32,12 +32,12 @@ conv_bad = dict(zip(
 ))
 
 if __name__ == '__main__':
-    # with open(parameters_path + 'CONVERT_CL_NAMES.json') as file:
-    #     cl_dict = json.loads(file.readline())
-    #
-    # cl_dict_reverse = {}
-    # for key, value in cl_dict.items():
-    #     cl_dict_reverse[value] = key
+    with open(parameters_path + 'CONVERT_CL_NAMES.json') as file:
+        cl_dict = json.loads(file.readline())
+
+    cl_dict_reverse = {}
+    for key, value in cl_dict.items():
+        cl_dict_reverse[value] = key
 
     if EXP:
         table = pd.read_table(parameters_path + 'Master-lines.tsv')
@@ -484,7 +484,7 @@ if __name__ == '__main__':
                     ag_snp = SNPClass.query.filter((SNPClass.chromosome == row['#chr']) &
                                                    (SNPClass.position == row['pos']) &
                                                    (SNPClass.alt == row['alt']) &
-                                                   (getattr(SNPClass, {'TF': 'tf_id', 'CL':'cl_id'}[param]) == ag_id)).one()
+                                                   (getattr(SNPClass, {'TF': 'tf_id', 'CL': 'cl_id'}[param]) == ag_id)).one()
                     assert ag_snp
                     ag_snp.peak_calls = row['n_peak_calls']
                     ag_snp.peak_callers = row['n_peak_callers']
