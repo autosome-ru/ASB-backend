@@ -181,7 +181,6 @@ class TransctiptionFactorHint(Resource):
     @api.marshal_list_with(transcription_factor_model)
     def get(self):
         args = used_hints_parser.parse_args()
-        print(args)
         return service.get_hints('TF', args.get('search', ''), args.get('options', []))
 
 
