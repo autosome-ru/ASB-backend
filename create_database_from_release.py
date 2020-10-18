@@ -492,42 +492,41 @@ if __name__ == '__main__':
                 for index, row in enumerate(table):
                     print(index + 1) if (index + 1) % 50000 == 0 else ...
 
-                    if counter < 200:
-                        if row[0] == '#':
-                            header = row.strip('\n').split('\t')
-                            continue
-                        else:
-                            row = dict(zip(header, row.strip('\n').split('\t')))
-                        int_fields = ['n_peak_calls', 'n_peak_callers', 'pos']
-                        float_fields = ['fdrp_bh_ref', 'fdrp_bh_alt']
-
-                        for field in float_fields:
-                            if row[field] == '' or row[field] == '.':
-                                row[field] = None
-                            else:
-                                row[field] = float(row[field])
-
-                        min_pv = min(
-                            row['fdrp_bh_ref'] if row['fdrp_bh_ref'] else 1,
-                            row['fdrp_bh_alt'] if row['fdrp_bh_alt'] else 1,
-                        )
-
-                        if min_pv > tr:
-                            continue
-
-                        for field in int_fields:
-                            if row[field] == '' or row[field] == '.':
-                                row[field] = None
-                            else:
-                                row[field] = int(row[field])
-
-                        row['ID'] = int(row['ID'][2:])
-
-                        keys.append((row['#chr'], row['pos'], row['ID'], row['alt']))
-                        peak_calls.append(row['n_peak_calls'])
-                        peak_callers.append(row['n_peak_callers'])
-                        counter += 1
+                    if row[0] == '#':
+                        header = row.strip('\n').split('\t')
+                        continue
                     else:
+                        row = dict(zip(header, row.strip('\n').split('\t')))
+                    int_fields = ['n_peak_calls', 'n_peak_callers', 'pos']
+                    float_fields = ['fdrp_bh_ref', 'fdrp_bh_alt']
+
+                    for field in float_fields:
+                        if row[field] == '' or row[field] == '.':
+                            row[field] = None
+                        else:
+                            row[field] = float(row[field])
+
+                    min_pv = min(
+                        row['fdrp_bh_ref'] if row['fdrp_bh_ref'] else 1,
+                        row['fdrp_bh_alt'] if row['fdrp_bh_alt'] else 1,
+                    )
+
+                    if min_pv > tr:
+                        continue
+
+                    for field in int_fields:
+                        if row[field] == '' or row[field] == '.':
+                            row[field] = None
+                        else:
+                            row[field] = int(row[field])
+
+                    row['ID'] = int(row['ID'][2:])
+
+                    keys.append((row['#chr'], row['pos'], row['ID'], row['alt']))
+                    peak_calls.append(row['n_peak_calls'])
+                    peak_callers.append(row['n_peak_callers'])
+                    counter += 1
+                    if counter >= 200:
                         peak_update_queries(SNPClass, ag_id, keys, peak_calls, peak_callers)
                         keys = []
                         peak_calls = []
