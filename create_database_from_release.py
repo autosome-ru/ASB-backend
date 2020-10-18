@@ -7,6 +7,47 @@ import json
 import numpy as np
 import pandas as pd
 
+from sqlalchemy.sql import case
+
+
+def peak_update_queries(SNPClass, ag_id, keys, peak_calls, peak_callers):
+    session.query(SNPClass).filter(
+        SNPClass.tf_id == ag_id,
+        SNPClass.snp.has(SNP.rs_id.in_([id for chr, pos, id, alt in keys]))
+    ).update({
+        SNPClass.peak_calls: case(
+            [
+                (
+                    (SNPClass.chromosome == chr) &
+                    (SNPClass.position == pos) &
+                    (SNPClass.alt == alt),
+                    value
+                )
+                for (chr, pos, id, alt), value in zip(keys, peak_calls)
+            ],
+            else_=SNPClass.peak_calls
+        )
+    }, synchronize_session=False)
+
+    session.query(SNPClass).filter(
+        SNPClass.tf_id == ag_id,
+        SNPClass.snp.has(SNP.rs_id.in_([id for chr, pos, id, alt in keys]))
+    ).update({
+        SNPClass.peak_callers: case(
+            [
+                (
+                    (SNPClass.chromosome == chr) &
+                    (SNPClass.position == pos) &
+                    (SNPClass.alt == alt),
+                    value
+                )
+                for (chr, pos, id, alt), value in zip(keys, peak_callers)
+            ],
+            else_=SNPClass.peak_callers
+        )
+    }, synchronize_session=False)
+
+
 TF = 0
 CL = 0
 tr = 0.05
@@ -443,52 +484,58 @@ if __name__ == '__main__':
                 else:
                     ag_id = ag.tf_id
 
-                ag_snps = []
                 header = []
+                keys = []
+                peak_calls = []
+                peak_callers = []
+                counter = 0
                 for index, row in enumerate(table):
                     print(index + 1) if (index + 1) % 50000 == 0 else ...
 
-                    if row[0] == '#':
-                        header = row.strip('\n').split('\t')
-                        continue
+                    if counter < 200:
+                        if row[0] == '#':
+                            header = row.strip('\n').split('\t')
+                            continue
+                        else:
+                            row = dict(zip(header, row.strip('\n').split('\t')))
+                        int_fields = ['n_peak_calls', 'n_peak_callers', 'pos']
+                        float_fields = ['fdrp_bh_ref', 'fdrp_bh_alt']
+
+                        for field in float_fields:
+                            if row[field] == '' or row[field] == '.':
+                                row[field] = None
+                            else:
+                                row[field] = float(row[field])
+
+                        min_pv = min(
+                            row['fdrp_bh_ref'] if row['fdrp_bh_ref'] else 1,
+                            row['fdrp_bh_alt'] if row['fdrp_bh_alt'] else 1,
+                        )
+
+                        if min_pv > tr:
+                            continue
+
+                        for field in int_fields:
+                            if row[field] == '' or row[field] == '.':
+                                row[field] = None
+                            else:
+                                row[field] = int(row[field])
+
+                        row['ID'] = int(row['ID'][2:])
+
+                        keys.append((row['#chr'], row['pos'], row['ID'], row['alt']))
+                        peak_calls.append(row['n_peak_calls'])
+                        peak_callers.append(row['n_peak_callers'])
+                        counter += 1
                     else:
-                        row = dict(zip(header, row.strip('\n').split('\t')))
-                    int_fields = ['n_peak_calls', 'n_peak_callers', 'pos']
-                    float_fields = ['fdrp_bh_ref', 'fdrp_bh_alt']
+                        peak_update_queries(SNPClass, ag_id, keys, peak_calls, peak_callers)
+                        keys = []
+                        peak_calls = []
+                        peak_callers = []
+                        counter = 0
+                if counter > 0:
+                    peak_update_queries(SNPClass, ag_id, keys, peak_calls, peak_callers)
 
-                    for field in float_fields:
-                        if row[field] == '' or row[field] == '.':
-                            row[field] = None
-                        else:
-                            row[field] = float(row[field])
-
-                    min_pv = min(
-                        row['fdrp_bh_ref'] if row['fdrp_bh_ref'] else 1,
-                        row['fdrp_bh_alt'] if row['fdrp_bh_alt'] else 1,
-                    )
-
-                    if min_pv > tr:
-                        continue
-
-                    for field in int_fields:
-                        if row[field] == '' or row[field] == '.':
-                            row[field] = None
-                        else:
-                            row[field] = int(row[field])
-
-                    row['ID'] = int(row['ID'][2:])
-                    mutation = SNP.query.filter((SNP.rs_id == row['ID']) &
-                                                (SNP.alt == row['alt'])).first()
-                    assert mutation
-
-                    ag_snp = SNPClass.query.filter((SNPClass.chromosome == row['#chr']) &
-                                                   (SNPClass.position == row['pos']) &
-                                                   (SNPClass.alt == row['alt']) &
-                                                   (getattr(SNPClass, {'TF': 'tf_id', 'CL': 'cl_id'}[param]) == ag_id)).one()
-                    assert ag_snp
-                    ag_snp.peak_calls = row['n_peak_calls']
-                    ag_snp.peak_callers = row['n_peak_callers']
-                    ag_snps.append(ag_snp)
             session.commit()
             session.close()
 
