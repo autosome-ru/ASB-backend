@@ -10,9 +10,9 @@ import pandas as pd
 from sqlalchemy.sql import case
 
 
-def peak_update_queries(SNPClass, ag_id, keys, peak_calls, peak_callers):
+def peak_update_queries(param, SNPClass, ag_id, keys, peak_calls, peak_callers):
     session.query(SNPClass).filter(
-        SNPClass.tf_id == ag_id,
+        getattr(SNPClass, {'CL': 'cl_id', 'TF': 'tf_id'}[param]) == ag_id,
         SNPClass.snp.has(SNP.rs_id.in_([id for chr, pos, id, alt in keys]))
     ).update({
         SNPClass.peak_calls: case(
@@ -30,7 +30,7 @@ def peak_update_queries(SNPClass, ag_id, keys, peak_calls, peak_callers):
     }, synchronize_session=False)
 
     session.query(SNPClass).filter(
-        SNPClass.tf_id == ag_id,
+        getattr(SNPClass, {'CL': 'cl_id', 'TF': 'tf_id'}[param]),
         SNPClass.snp.has(SNP.rs_id.in_([id for chr, pos, id, alt in keys]))
     ).update({
         SNPClass.peak_callers: case(
@@ -527,13 +527,13 @@ if __name__ == '__main__':
                     peak_callers.append(row['n_peak_callers'])
                     counter += 1
                     if counter >= 200:
-                        peak_update_queries(SNPClass, ag_id, keys, peak_calls, peak_callers)
+                        peak_update_queries(param, SNPClass, ag_id, keys, peak_calls, peak_callers)
                         keys = []
                         peak_calls = []
                         peak_callers = []
                         counter = 0
                 if counter > 0:
-                    peak_update_queries(SNPClass, ag_id, keys, peak_calls, peak_callers)
+                    peak_update_queries(param, SNPClass, ag_id, keys, peak_calls, peak_callers)
 
             session.commit()
             session.close()
