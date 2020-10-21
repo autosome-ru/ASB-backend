@@ -73,7 +73,7 @@ class TicketItem(Resource):
 class ProcessingResultTF(Resource):
     def get(self, ticket_id):
         """
-        Get first 100 rows of TF result
+        Get first 1000 rows of TF result
         """
         ok, result = ananastra_service.get_result(ticket_id, 'tf')
         if not ok:
@@ -85,7 +85,7 @@ class ProcessingResultTF(Resource):
 class ProcessingResultCL(Resource):
     def get(self, ticket_id):
         """
-        Get first 100 rows of CL result
+        Get first 1000 rows of CL result
         """
         ok, result = ananastra_service.get_result(ticket_id, 'cl')
         if not ok:
