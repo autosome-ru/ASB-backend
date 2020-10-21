@@ -21,9 +21,16 @@ def create_processed_path(ticket_id, *subdirs):
             os.mkdir(path)
 
 
+def get_tickets_dir(suffix=''):
+    return os.path.join(os.path.expanduser('~/'), 'adastra', 'tickets', suffix)
+
+
+
 def get_path_by_ticket_id(ticket_id, path_type='input', ext='.tsv'):
+    if path_type == 'dir':
+        ext = ''
     return os.path.join(
-        os.path.expanduser('~/adastra/tickets'),
+        get_tickets_dir(),
         *{
             'input': ['accepted'],
             'dir': ['processed'],
@@ -48,3 +55,31 @@ def update_ticket_status(ticket_id, status):
     ticket = get_ticket(ticket_id)
     ticket.status = status
     session.commit()
+
+
+def delete_ticket(ticket_id):
+    ticket = get_ticket(ticket_id)
+    if ticket.status == 'Processing':
+        return False
+    input_file = get_path_by_ticket_id(ticket_id)
+    if os.path.isfile(input_file):
+        os.remove(input_file)
+    ticket_dir = get_path_by_ticket_id(ticket_id, path_type='dir')
+    if os.path.isdir(ticket_dir):
+        tf_report = get_path_by_ticket_id(ticket_id, path_type='tf')
+        cl_report = get_path_by_ticket_id(ticket_id, path_type='cl')
+        if os.path.isfile(tf_report):
+            os.remove(tf_report)
+        if os.path.isfile(cl_report):
+            os.remove(cl_report)
+        for dir in os.listdir(ticket_dir):
+            os.rmdir(dir)
+        os.remove(ticket_dir)
+    session.delete(ticket)
+    session.commit()
+    return True
+
+
+# def get_result(ticket_id, param):
+#     ticket = get_ticket(ticket_id)
+#     if ticket.status != ''

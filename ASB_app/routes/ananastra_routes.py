@@ -10,7 +10,7 @@ from flask_restplus import Resource
 from ASB_app.executor_jobs import process_snp_file
 from ASB_app.serializers import ticket_model
 from ASB_app.service import ananastra_service
-from ASB_app.service import get_ticket_id_from_path
+from ASB_app.service import get_ticket_id_from_path, get_tickets_dir
 
 ananastra_nsp = api.namespace('ANANASTRA web-service', path='/ananastra', description='SNP annotation by ananastra')
 
@@ -29,7 +29,7 @@ class CommitFile(Resource):
         if 'file' not in request.files:
             api.abort(400, 'No files')
         else:
-            fd, filename = tempfile.mkstemp(suffix='.tsv', dir=os.path.expanduser('~/adastra/tickets/accepted'))
+            fd, filename = tempfile.mkstemp(suffix='.tsv', dir=get_tickets_dir('processed'))
             request.files['file'].save(filename)
             os.close(fd)
             ticket_id = get_ticket_id_from_path(filename)
@@ -50,8 +50,8 @@ class ProcessTicket(Resource):
         return {'message': 'success'}, 202
 
 
-@ananastra_nsp.route('/info/<string:ticket_id>')
-class TicketInfo(Resource):
+@ananastra_nsp.route('/ticket/<string:ticket_id>')
+class TicketItem(Resource):
     @api.marshal_with(ticket_model)
     def get(self, ticket_id):
         """
@@ -59,7 +59,23 @@ class TicketInfo(Resource):
         """
         return ananastra_service.get_ticket(ticket_id)
 
+    @api.response(403, 'File is processing')
+    def delete(self, ticket_id):
+        """
+        Delete ticket and corresponding files
+        """
+        if not ananastra_service.delete_ticket(ticket_id):
+            return {'message': 'file is processing'}, 403
+        return {'message': 'success'}, 200
 
-# @ananastra_nsp.route('/result/tf/<string:ticket_id>')
-# class ProcessingResult(Resource):
-#     @api.marshal_list_with()
+
+@ananastra_nsp.route('/result/<string:ticket_id>/tf')
+class ProcessingResultTF(Resource):
+    def get(self, ticket_id):
+        return ananastra_service.get_result(ticket_id, 'tf')
+
+
+@ananastra_nsp.route('/result/<string:ticket_id>/cl')
+class ProcessingResultCL(Resource):
+    def get(self, ticket_id):
+        return ananastra_service.get_result(ticket_id, 'cl')
