@@ -1,5 +1,7 @@
 import os
 import re
+from datetime import datetime
+
 from ASB_app import db, session, logger, executor
 from ASB_app.service import ananastra_service
 from ASB_app.models import TranscriptionFactor, TranscriptionFactorSNP, CellLine, CellLineSNP, \
@@ -208,6 +210,9 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
     except Exception as e:
         logger.error(e, exc_info=True)
         ticket.status = 'Failed'
+        session.commit()
+        return
 
     ticket.status = 'Processed'
+    ticket.meta_info = {'processing_time': str(datetime.now() - ticket.date_created)}
     session.commit()

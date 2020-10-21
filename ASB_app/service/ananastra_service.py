@@ -25,7 +25,6 @@ def get_tickets_dir(suffix=''):
     return os.path.join(os.path.expanduser('~/'), 'adastra', 'tickets', suffix)
 
 
-
 def get_path_by_ticket_id(ticket_id, path_type='input', ext='.tsv'):
     if path_type == 'dir':
         ext = ''
@@ -73,13 +72,26 @@ def delete_ticket(ticket_id):
         if os.path.isfile(cl_report):
             os.remove(cl_report)
         for dir in os.listdir(ticket_dir):
-            os.rmdir(dir)
-        os.remove(ticket_dir)
+            os.rmdir(os.path.join(ticket_dir, dir))
+        os.rmdir(ticket_dir)
     session.delete(ticket)
     session.commit()
     return True
 
 
-# def get_result(ticket_id, param):
-#     ticket = get_ticket(ticket_id)
-#     if ticket.status != ''
+def get_result(ticket_id, param):
+    ticket = get_ticket(ticket_id)
+    if ticket.status != 'Processed':
+        return False, {}
+    result = []
+    out_file = get_path_by_ticket_id(ticket_id, path_type=param)
+    with open(out_file) as out:
+        header = []
+        for number, line in enumerate(out):
+            if number == 1001:
+                break
+            if number == 0:
+                header = line.strip('\n').split('\t')
+                continue
+            result.append(dict(zip(header, line.strip('\n').split('\t'))))
+    return True, result

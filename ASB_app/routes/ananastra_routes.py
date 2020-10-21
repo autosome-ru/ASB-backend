@@ -29,7 +29,7 @@ class CommitFile(Resource):
         if 'file' not in request.files:
             api.abort(400, 'No files')
         else:
-            fd, filename = tempfile.mkstemp(suffix='.tsv', dir=get_tickets_dir('processed'))
+            fd, filename = tempfile.mkstemp(suffix='.tsv', dir=get_tickets_dir('accepted'))
             request.files['file'].save(filename)
             os.close(fd)
             ticket_id = get_ticket_id_from_path(filename)
@@ -72,10 +72,22 @@ class TicketItem(Resource):
 @ananastra_nsp.route('/result/<string:ticket_id>/tf')
 class ProcessingResultTF(Resource):
     def get(self, ticket_id):
-        return ananastra_service.get_result(ticket_id, 'tf')
+        """
+        Get first 100 rows of TF result
+        """
+        ok, result = ananastra_service.get_result(ticket_id, 'tf')
+        if not ok:
+            return {'message': 'file is processing'}, 403
+        return result, 200
 
 
 @ananastra_nsp.route('/result/<string:ticket_id>/cl')
 class ProcessingResultCL(Resource):
     def get(self, ticket_id):
-        return ananastra_service.get_result(ticket_id, 'cl')
+        """
+        Get first 100 rows of CL result
+        """
+        ok, result = ananastra_service.get_result(ticket_id, 'cl')
+        if not ok:
+            return {'message': 'file is processing'}, 403
+        return result, 200
