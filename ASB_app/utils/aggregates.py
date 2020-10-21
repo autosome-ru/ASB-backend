@@ -1,5 +1,3 @@
-from sqlalchemy import distinct
-
 from ASB_app import session, logger
 from sqlalchemy_utils.aggregates import manager
 

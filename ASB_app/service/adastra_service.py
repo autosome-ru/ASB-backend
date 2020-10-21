@@ -2,7 +2,6 @@ from sqlalchemy.orm import aliased
 
 from ASB_app import db, session
 from ASB_app.models import TranscriptionFactorSNP, CellLineSNP, SNP, TranscriptionFactor, CellLine, Gene
-from ASB_app.exceptions import ParsingError
 from ASB_app.utils.aggregates import db_name_property_dict, TsvDialect
 from sqlalchemy import not_, or_
 import csv
@@ -11,7 +10,7 @@ from flask import send_file
 
 
 def get_filters_by_rs_id(rs_id):
-    return (SNP.rs_id == rs_id,)
+    return (SNP.rs_id == rs_id, )
 
 
 def get_full_snp(rs_id, alt):

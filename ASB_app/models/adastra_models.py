@@ -272,7 +272,3 @@ class Gene(db.Model):
     chromosome = db.Column(db.Enum(*chromosomes), nullable=False)
     start_pos = db.Column(db.Integer, nullable=False)
     end_pos = db.Column(db.Integer, nullable=False)
-
-
-db.create_all()
-db.session.commit()

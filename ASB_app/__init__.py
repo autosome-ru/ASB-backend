@@ -3,6 +3,8 @@ from flask_migrate import Migrate
 from flask_restplus import Api
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import MetaData
+from flask_apscheduler import APScheduler
+from flask_executor import Executor
 
 from config import Config
 
@@ -29,6 +31,9 @@ app.register_blueprint(blueprint)
 
 migrate = Migrate(app, db)
 
+scheduler = APScheduler(app=app)
+executor = Executor(app)
+
 
 @app.after_request
 def apply_caching(response):
@@ -36,6 +41,6 @@ def apply_caching(response):
     return response
 
 
-import ASB_app.models as models
+from . import models
 from . import routes
 from . import utils

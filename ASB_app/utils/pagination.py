@@ -7,9 +7,9 @@ from sqlalchemy.inspection import inspect
 from sqlalchemy import desc
 from flask_sqlalchemy import Model
 
-from ASB_app import exceptions, session
+from ASB_app import exceptions
 from ._parser import FilterParser
-from ..models import TranscriptionFactor, CellLine, SNP, TranscriptionFactorSNP, CellLineSNP
+from ASB_app.models import TranscriptionFactor, CellLine, SNP, TranscriptionFactorSNP, CellLineSNP
 
 
 def is_field(entity_cls, attr):
