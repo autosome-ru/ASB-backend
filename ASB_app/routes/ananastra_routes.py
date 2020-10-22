@@ -2,7 +2,6 @@ import os
 import tempfile
 
 from flask import request
-from werkzeug.datastructures import FileStorage
 
 from ASB_app import api
 from flask_restplus import Resource
@@ -11,11 +10,12 @@ from ASB_app.executor_jobs import process_snp_file
 from ASB_app.serializers import ticket_model
 from ASB_app.service import ananastra_service
 from ASB_app.service import get_ticket_id_from_path, get_tickets_dir
+from ASB_app.utils import PaginationMixin
+from ASB_app.models import Ticket
+
+from ASB_app.routes import file_parser, pagination_parser
 
 ananastra_nsp = api.namespace('ANANASTRA web-service', path='/ananastra', description='SNP annotation by ananastra')
-
-file_parser = api.parser()
-file_parser.add_argument('file', type=FileStorage, location='files')
 
 
 @ananastra_nsp.route('/commit')
@@ -69,25 +69,28 @@ class TicketItem(Resource):
         return {'message': 'success'}, 200
 
 
-@ananastra_nsp.route('/result/<string:ticket_id>/tf')
-class ProcessingResultTF(Resource):
-    def get(self, ticket_id):
+@ananastra_nsp.route('/result/<string:ticket_id>/<string:result_param>')
+class ProcessingResult(Resource):
+    def get(self, ticket_id, result_param):
         """
-        Get first 1000 rows of TF result
+        Get first 1000 rows of result
         """
-        ok, result = ananastra_service.get_result(ticket_id, 'tf')
+        if result_param not in ('tf', 'cl'):
+            api.abort(400, 'Wrong result param')
+        ok, result = ananastra_service.get_result(ticket_id, result_param)
         if not ok:
-            return {'message': 'file is processing'}, 403
+            return {'message': 'file is not processed'}, 403
         return result, 200
 
 
-@ananastra_nsp.route('/result/<string:ticket_id>/cl')
-class ProcessingResultCL(Resource):
-    def get(self, ticket_id):
+@ananastra_nsp.route('/ticket')
+class TicketCollection(Resource, PaginationMixin):
+    BaseEntity = Ticket
+
+    @api.marshal_list_with(ticket_model)
+    @api.expect(pagination_parser)
+    def get(self):
         """
-        Get first 1000 rows of CL result
+        Get all tickets
         """
-        ok, result = ananastra_service.get_result(ticket_id, 'cl')
-        if not ok:
-            return {'message': 'file is processing'}, 403
-        return result, 200
+        return self.paginate(pagination_parser.parse_args())

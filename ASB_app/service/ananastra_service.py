@@ -91,7 +91,7 @@ def get_result(ticket_id, param):
             if number == 1001:
                 break
             if number == 0:
-                header = line.strip('\n').split('\t')
+                header = [x.lower() for x in line.strip('\n').split('\t')]
                 continue
             result.append(dict(zip(header, line.strip('\n').split('\t'))))
     return True, result

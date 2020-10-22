@@ -10,35 +10,12 @@ from sqlalchemy.orm.exc import NoResultFound
 
 from ASB_app.service import get_gene_by_id, get_gene_by_name
 from ASB_app.utils import PaginationMixin
+from ASB_app.routes import search_parser, csv_columns_parser, used_hints_parser, pagination_parser
 
 
 snp_nsp = api.namespace('SNPs', path='/snps', description='Access to Single Nucleotide Polymorphisms')
 search_nsp = api.namespace('Search', path='/search', description='Search SNPs')
 browse_nsp = api.namespace('Browse', path='/browse', description='Catalog of TFs and Cell types')
-
-pagination_parser = api.parser()
-pagination_parser.add_argument('page', type=inputs.positive, help='Page number', default=1)
-pagination_parser.add_argument('size', type=inputs.natural, help='Items per page or 0 for all items', default=0)
-pagination_parser.add_argument('offset', type=inputs.natural, help='Skip first N items', default=0)
-pagination_parser.add_argument('filter', help='Comma-separated filters: field1 EQ "value1", field2 GE "value2"')
-pagination_parser.add_argument('order_by', help='ORDER BY criterion: "field1", "-field2"')
-
-search_parser = pagination_parser.copy()
-search_parser.add_argument('cell_types', action='split', help='Comma-separated list of cell types, search SNPs ASB for every cell type scpecified')
-search_parser.add_argument('transcription_factors', action='split', help='Comma-separated list of cell types, search SNPs ASB for every cell type scpecified')
-search_parser.add_argument('chromosome', choices=chromosomes, help='Search only SNPs on the specified chromosome')
-search_parser.add_argument('start', type=inputs.positive, help='Search SNPs in interval from specified position, Requires "chromosome" and "end"')
-search_parser.add_argument('end', type=inputs.positive, help='Search SNPs in interval to specified position, Requiers "chromosome" and "start"')
-search_parser.add_argument('phenotype_databases', action='split', help='Comma-separated list of databases, possible choices {grasp, ebi, clinvar, phewas, finemapping, QTL}, earch SNPs that have phenotype associations in all specified databases')
-search_parser.add_argument('motif_concordance', action='split', help='Comma-separated list of motif concordance values, possible choices {Concordant. Discordant, Weak Concordant, Weak Discordant}, if no TF specified will search SNPs with any TF having any of the specified concordance valuese, else only SNPs ASB for the specified TFs and any of the specified concordance values for these TFs')
-
-used_hints_parser = api.parser()
-used_hints_parser.add_argument('options', action='split')
-used_hints_parser.add_argument('search')
-
-csv_columns_parser = api.parser()
-csv_columns_parser.add_argument('columns', action='split', required=True)
-csv_columns_parser.add_argument('filter')
 
 
 @snp_nsp.route('/<int:rs_id>/<string:alt>')
