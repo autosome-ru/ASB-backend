@@ -49,7 +49,7 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
         common_header_2 = ['PEAK_CALLS', 'MEAN_BAD', 'LOG10_FDR_REF', 'LOG10_FDR_ALT',
                            'EFFECT_SIZE_REF', 'EFFECT_SIZE_ALT']
         common_header_3 = ['GTEX EQTL', 'EBI', 'PHEWAS', 'FINEMAPPING', 'GRASP', 'CLINVAR']
-        cl_header = common_header_1 + ['CELL_LINE'] + common_header_2 + ['AGGREGATED_TFS'] + common_header_3
+        cl_header = common_header_1 + ['CELL_TYPE'] + common_header_2 + ['AGGREGATED_TFS'] + common_header_3
         tf_header = common_header_1 + ['TRANSCRIPTION_FACTOR'] + common_header_2 + \
                     ['MOTIF_LOG_P_REF', 'MOTIF_LOG_P_ALT', 'MOTIF_LOG2_FC', 'MOTIF_POSITION',
                      'MOTIF_ORIENTATION', 'MOTIF_CONCORDANCE', 'AGGREGATED_CELL_TYPES'] + common_header_3
