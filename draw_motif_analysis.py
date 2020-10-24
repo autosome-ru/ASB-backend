@@ -1,12 +1,15 @@
-from svgutils import compose, transform
+from svgutils import transform
 import numpy as np
-from scipy.special import gamma
 from math import lgamma
-import sys
 import os
 
 from ASB_app import *
-from ASB_app.models import *
+from ASB_app.releases import current_release
+
+session = current_release.session
+SNP = current_release.SNP
+TranscriptionFactor = current_release.TranscriptionFactor
+TranscriptionFactorSNP = current_release.TranscriptionFactorSNP
 
 
 def get_KDIC(counts, N):
