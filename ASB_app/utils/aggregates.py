@@ -1,11 +1,19 @@
-from ASB_app import session, logger
+from ASB_app import logger
 from sqlalchemy_utils.aggregates import manager
 
 import numpy as np
 
 from ASB_app.constants import db_name_property_dict
-from ASB_app.models import TranscriptionFactorSNP, CellLineSNP, TranscriptionFactor, CellLine, Phenotype, SNP, \
-    PhenotypeSNPCorrespondence, Experiment
+
+from ASB_app.releases import current_release
+
+session = current_release.session
+
+TranscriptionFactorSNP, CellLineSNP, TranscriptionFactor, CellLine, Phenotype, SNP, \
+PhenotypeSNPCorrespondence, Experiment = \
+    current_release.TranscriptionFactorSNP, current_release.CellLineSNP, current_release.TranscriptionFactor, \
+    current_release.CellLine, current_release.Phenotype, current_release.SNP, current_release.PhenotypeSNPCorrespondence, \
+    current_release.Experiment
 
 
 class TsvDialect:
@@ -123,7 +131,7 @@ def update_motif_concordance():
                         else 'Discordant'
                 else:
                     snp.motif_concordance = 'Weak Concordant' if (snp.motif_log_p_alt - snp.motif_log_p_ref) * \
-                                                            (snp.log_p_value_alt - snp.log_p_value_ref) > 0 \
+                                                                 (snp.log_p_value_alt - snp.log_p_value_ref) > 0 \
                         else 'Weak Discordant'
             else:
                 snp.motif_concordance = None

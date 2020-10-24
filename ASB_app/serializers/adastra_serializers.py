@@ -1,127 +1,131 @@
 from flask_restplus import fields
-from ASB_app import api
 from ASB_app.constants import chromosomes, bads, nucleotides
 
-genome_polymorphism_location_model = api.model('Genome Mutation Position and id', {
-    'chromosome': fields.String(enumerate=chromosomes),
-    'position': fields.Integer,
-    'ref': fields.String(enumerate=nucleotides),
-    'alt': fields.String(enumerate=nucleotides),
-    'rs_id': fields.Integer,
-    'context': fields.String,
-})
 
-aggregated_snp_model = api.model('Agregated SNP (no genome info) ', {
-    'log_p_value_ref': fields.Float,
-    'log_p_value_alt': fields.Float,
-    'is_asb': fields.Boolean,
-    'peak_calls': fields.Integer(min=0),
-    'peak_callers': fields.Integer(min=0),
-})
+class ReleaseSerializers:
+    def __init__(self, release):
+        api = release.api
 
-transcription_factor_model = api.model('Transcription factor', {
-    'tf_id': fields.Integer(readonly=True),
-    'name': fields.String,
-    'uniprot_ac': fields.String,
-    'aggregated_snps_count': fields.Integer(readonly=True),
-    'experiments_count': fields.Integer(readonly=True),
-})
+        self.genome_polymorphism_location_model = api.model('Genome Mutation Position and id', {
+            'chromosome': fields.String(enumerate=chromosomes),
+            'position': fields.Integer,
+            'ref': fields.String(enumerate=nucleotides),
+            'alt': fields.String(enumerate=nucleotides),
+            'rs_id': fields.Integer,
+            'context': fields.String,
+        })
 
-cell_line_model = api.model('Cell line', {
-    'cl_id': fields.Integer(readonly=True),
-    'name': fields.String,
-    'aggregated_snps_count': fields.Integer(readonly=True),
-    'experiments_count': fields.Integer(readonly=True),
-})
+        self.aggregated_snp_model = api.model('Agregated SNP (no genome info) ', {
+            'log_p_value_ref': fields.Float,
+            'log_p_value_alt': fields.Float,
+            'is_asb': fields.Boolean,
+            'peak_calls': fields.Integer(min=0),
+            'peak_callers': fields.Integer(min=0),
+        })
 
-gene_model = api.model('Gene', {
-    'gene_id': fields.String(readonly=True),
-    'gene_name': fields.String,
-    'chromosome': fields.String(enumerate=chromosomes),
-    'start_pos': fields.Integer,
-    'end_pos': fields.Integer
-})
+        self.transcription_factor_model = api.model('Transcription factor', {
+            'tf_id': fields.Integer(readonly=True),
+            'name': fields.String,
+            'uniprot_ac': fields.String,
+            'aggregated_snps_count': fields.Integer(readonly=True),
+            'experiments_count': fields.Integer(readonly=True),
+        })
 
-tf_snp_model = api.inherit('Transcription Factor SNP (no genome info)', aggregated_snp_model, {
-    'tf_snp_id': fields.Integer(readonly=True),
-    'motif_log_p_ref': fields.Float,
-    'motif_log_p_alt': fields.Float,
-    'motif_log_2_fc': fields.Float,
-    'motif_orientation': fields.Boolean,
-    'motif_position': fields.Integer,
-    'motif_concordance': fields.String,
-    'transcription_factor': fields.Nested(transcription_factor_model),
-})
+        self.cell_line_model = api.model('Cell line', {
+            'cl_id': fields.Integer(readonly=True),
+            'name': fields.String,
+            'aggregated_snps_count': fields.Integer(readonly=True),
+            'experiments_count': fields.Integer(readonly=True),
+        })
 
-cl_snp_model = api.inherit('Cell line SNP (no genome info)', aggregated_snp_model, {
-    'cl_snp_id': fields.Integer(readonly=True),
-    'cell_line': fields.Nested(cell_line_model),
-})
+        self.gene_model = api.model('Gene', {
+            'gene_id': fields.String(readonly=True),
+            'gene_name': fields.String,
+            'chromosome': fields.String(enumerate=chromosomes),
+            'start_pos': fields.Integer,
+            'end_pos': fields.Integer
+        })
 
-rs_snp_model = api.inherit('rs-SNP info for search', genome_polymorphism_location_model, {
-    'tf_aggregated_snps': fields.List(fields.Nested(tf_snp_model)),
-    'cl_aggregated_snps': fields.List(fields.Nested(cl_snp_model)),
-})
+        self.tf_snp_model = api.inherit('Transcription Factor SNP (no genome info)', self.aggregated_snp_model, {
+            'tf_snp_id': fields.Integer(readonly=True),
+            'motif_log_p_ref': fields.Float,
+            'motif_log_p_alt': fields.Float,
+            'motif_log_2_fc': fields.Float,
+            'motif_orientation': fields.Boolean,
+            'motif_position': fields.Integer,
+            'motif_concordance': fields.String,
+            'transcription_factor': fields.Nested(self.transcription_factor_model),
+        })
 
-search_results_model = api.model('SNP search results model', {
-    'total': fields.Integer,
-    'gene': fields.Nested(gene_model),
-    'results': fields.List(fields.Nested(rs_snp_model))
-})
+        self.cl_snp_model = api.inherit('Cell line SNP (no genome info)', self.aggregated_snp_model, {
+            'cl_snp_id': fields.Integer(readonly=True),
+            'cell_line': fields.Nested(self.cell_line_model),
+        })
 
-exp_model_short = api.model('Experiment (short info)', {
-    'exp_id': fields.Integer,
-    'align': fields.Integer,
-    'tf_name': fields.String(attribute='transcription_factor.name'),
-    'cl_name': fields.String(attribute='cell_line.name'),
-})
+        self.rs_snp_model = api.inherit('rs-SNP info for search', self.genome_polymorphism_location_model, {
+            'tf_aggregated_snps': fields.List(fields.Nested(self.tf_snp_model)),
+            'cl_aggregated_snps': fields.List(fields.Nested(self.cl_snp_model)),
+        })
 
-exp_snp_model = api.model('Experiment SNP', {
-    'exp_snp_id': fields.Integer(readonly=True),
-    'ref_readcount': fields.Integer,
-    'alt_readcount': fields.Integer,
-    'p_value_ref': fields.Float,
-    'p_value_alt': fields.Float,
-    'bad': fields.String(enumerate=bads),
-    'experiment': fields.Nested(exp_model_short)
-})
+        self.search_results_model = api.model('SNP search results model', {
+            'total': fields.Integer,
+            'gene': fields.Nested(self.gene_model),
+            'results': fields.List(fields.Nested(self.rs_snp_model))
+        })
 
-aggregated_snp_model_full = api.inherit('Agregated SNP (with exp snps)', aggregated_snp_model, {
-    'es_ref': fields.Float,
-    'es_alt': fields.Float,
-    'mean_bad': fields.Float,
-    'exp_snps': fields.List(fields.Nested(exp_snp_model))
-})
+        self.exp_model_short = api.model('Experiment (short info)', {
+            'exp_id': fields.Integer,
+            'align': fields.Integer,
+            'tf_name': fields.String(attribute='transcription_factor.name'),
+            'cl_name': fields.String(attribute='cell_line.name'),
+        })
 
-tf_snp_model_full = api.inherit('Transcription Factor SNP (with exp snps)', aggregated_snp_model_full, {
-    'tf_snp_id': fields.Integer(readonly=True),
-    'motif_log_p_ref': fields.Float,
-    'motif_log_p_alt': fields.Float,
-    'motif_log_2_fc': fields.Float,
-    'motif_orientation': fields.Boolean,
-    'motif_position': fields.Integer,
-    'motif_concordance': fields.String,
-    'transcription_factor': fields.Nested(transcription_factor_model),
-})
+        self.exp_snp_model = api.model('Experiment SNP', {
+            'exp_snp_id': fields.Integer(readonly=True),
+            'ref_readcount': fields.Integer,
+            'alt_readcount': fields.Integer,
+            'p_value_ref': fields.Float,
+            'p_value_alt': fields.Float,
+            'bad': fields.String(enumerate=bads),
+            'experiment': fields.Nested(self.exp_model_short)
+        })
 
-cl_snp_model_full = api.inherit('Cell line SNP (with exp snps)', aggregated_snp_model_full, {
-    'cl_snp_id': fields.Integer(readonly=True),
-    'cell_line': fields.Nested(cell_line_model),
-})
+        self.aggregated_snp_model_full = api.inherit('Agregated SNP (with exp snps)', self.aggregated_snp_model, {
+            'es_ref': fields.Float,
+            'es_alt': fields.Float,
+            'mean_bad': fields.Float,
+            'exp_snps': fields.List(fields.Nested(self.exp_snp_model))
+        })
 
-phenotype_model = api.model('Phenotype', {
-    'db_name': fields.String,
-    'phenotype_name': fields.String,
-})
+        self.tf_snp_model_full = api.inherit('Transcription Factor SNP (with exp snps)', self.aggregated_snp_model_full, {
+            'tf_snp_id': fields.Integer(readonly=True),
+            'motif_log_p_ref': fields.Float,
+            'motif_log_p_alt': fields.Float,
+            'motif_log_2_fc': fields.Float,
+            'motif_orientation': fields.Boolean,
+            'motif_position': fields.Integer,
+            'motif_concordance': fields.String,
+            'transcription_factor': fields.Nested(self.transcription_factor_model),
+        })
 
-rs_snp_model_full = api.inherit('Complete rs-SNP info (with exp snps)', genome_polymorphism_location_model, {
-    'tf_aggregated_snps': fields.List(fields.Nested(tf_snp_model_full)),
-    'cl_aggregated_snps': fields.List(fields.Nested(cl_snp_model_full)),
-    'phenotypes': fields.List(fields.Nested(phenotype_model))
-})
+        self.cl_snp_model_full = api.inherit('Cell line SNP (with exp snps)', self.aggregated_snp_model_full, {
+            'cl_snp_id': fields.Integer(readonly=True),
+            'cell_line': fields.Nested(self.cell_line_model),
+        })
 
-frontpage_statistics_model = api.inherit('Front page statistics', {
-    'transcription_factors_count': fields.Integer,
-    'cell_types_count': fields.Integer,
-    'snps_count': fields.Integer,
-})
+        self.phenotype_model = api.model('Phenotype', {
+            'db_name': fields.String,
+            'phenotype_name': fields.String,
+        })
+
+        self.rs_snp_model_full = api.inherit('Complete rs-SNP info (with exp snps)', self.genome_polymorphism_location_model, {
+            'tf_aggregated_snps': fields.List(fields.Nested(self.tf_snp_model_full)),
+            'cl_aggregated_snps': fields.List(fields.Nested(self.cl_snp_model_full)),
+            'phenotypes': fields.List(fields.Nested(self.phenotype_model))
+        })
+
+        self.frontpage_statistics_model = api.inherit('Front page statistics', {
+            'transcription_factors_count': fields.Integer,
+            'cell_types_count': fields.Integer,
+            'snps_count': fields.Integer,
+        })

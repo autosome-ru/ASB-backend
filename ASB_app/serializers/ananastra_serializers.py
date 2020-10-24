@@ -1,5 +1,7 @@
 from flask_restplus import fields
-from ASB_app import api
+from ASB_app.releases import current_release
+
+api = current_release.api
 
 ticket_model = api.model('ANANASTRA ticket', {
     'ticket_id': fields.String,

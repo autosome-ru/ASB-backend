@@ -3,7 +3,6 @@ import tempfile
 
 from flask import request
 
-from ASB_app import api
 from flask_restplus import Resource
 
 from ASB_app.executor_jobs import process_snp_file
@@ -13,7 +12,11 @@ from ASB_app.service import get_ticket_id_from_path, get_tickets_dir
 from ASB_app.utils import PaginationMixin
 from ASB_app.models import Ticket
 
+from ASB_app.releases import current_release
+
 from ASB_app.routes import file_parser, pagination_parser
+
+api = current_release.api
 
 ananastra_nsp = api.namespace('ANANASTRA web-service', path='/ananastra', description='SNP annotation by ananastra')
 

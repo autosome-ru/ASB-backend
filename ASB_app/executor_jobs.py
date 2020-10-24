@@ -1,14 +1,21 @@
 import os
 import re
 from datetime import datetime
-
-from ASB_app import db, session, logger, executor
+from ASB_app import logger, executor
 from ASB_app.service import ananastra_service
-from ASB_app.models import TranscriptionFactor, TranscriptionFactorSNP, CellLine, CellLineSNP, \
-    SNP, ExpSNP, Phenotype, PhenotypeSNPCorrespondence
 from ASB_app.utils import pack, process_row
 from sqlalchemy.orm import aliased
 import pandas as pd
+
+from ASB_app.releases import current_release
+
+session = current_release.session
+db = current_release.db
+
+TranscriptionFactor, TranscriptionFactorSNP, CellLine, CellLineSNP, \
+SNP, ExpSNP, Phenotype, PhenotypeSNPCorrespondence = \
+current_release.TranscriptionFactor, current_release.TranscriptionFactorSNP, current_release.CellLine, current_release.CellLineSNP, \
+    current_release.SNP, current_release.ExpSNP, current_release.Phenotype, current_release.PhenotypeSNPCorrespondence
 
 
 def convert_rs_to_int(rs_str):

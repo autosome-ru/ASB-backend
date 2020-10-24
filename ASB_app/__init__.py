@@ -6,6 +6,8 @@ from sqlalchemy import MetaData
 from flask_apscheduler import APScheduler
 from flask_executor import Executor
 
+from ASB_app.releases import Release
+
 from config import Config
 
 app = Flask(__name__)
@@ -20,16 +22,17 @@ naming_convention = {
     "fk": "fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s",
     "pk": "pk_%(table_name)s"
 }
-db = SQLAlchemy(app, metadata=MetaData(naming_convention=naming_convention))
-session = db.session
 
 
-blueprint = Blueprint('api', __name__, url_prefix='/api/v1')
-api = Api(blueprint, version='1.2', title='ADASTRA API', description='ADASTRA API')
-app.register_blueprint(blueprint)
-
-
-migrate = Migrate(app, db)
+for release in Release.__subclasses__():
+    blueprint = Blueprint('api_{}'.format(release.name), __name__, url_prefix='/api/v{}'.format(release.version))
+    new_api = Api(blueprint, version=release.full_version, title='ADASTRA API', description='ADASTRA API (release {})'.format(release.name))
+    setattr(release, 'api', new_api)
+    app.register_blueprint(blueprint)
+    new_db = SQLAlchemy(app, metadata=MetaData(naming_convention=naming_convention))
+    setattr(release, 'db', new_db)
+    setattr(release, 'session', new_db.session)
+    setattr(release, 'migrate', Migrate(app, new_db))
 
 scheduler = APScheduler(app=app)
 executor = Executor(app)

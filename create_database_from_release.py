@@ -1,6 +1,7 @@
 import math
 
 from ASB_app import *
+from ASB_app import constants
 from ASB_app.models import *
 import os
 import json
@@ -8,6 +9,32 @@ import numpy as np
 import pandas as pd
 
 from sqlalchemy.sql import case
+
+current_release = releases.current_release
+session = current_release.session
+
+TranscriptionFactor, \
+CellLine, \
+Experiment, \
+ExpSNP, \
+SNP, \
+TranscriptionFactorSNP, \
+CellLineSNP, \
+Phenotype, \
+PhenotypeSNPCorrespondence, \
+BADGroup, \
+Gene = \
+current_release.TranscriptionFactor, \
+current_release.CellLine, \
+current_release.Experiment, \
+current_release.ExpSNP, \
+current_release.SNP, \
+current_release.TranscriptionFactorSNP, \
+current_release.CellLineSNP, \
+current_release.Phenotype, \
+current_release.PhenotypeSNPCorrespondence, \
+current_release.BADGroup, \
+current_release.Gene
 
 
 def peak_update_queries(param, SNPClass, ag_id, keys, peak_calls, peak_callers):
@@ -547,7 +574,7 @@ if __name__ == '__main__':
                     continue
                 line = line.strip('\n').split('\t')
                 chrom, start_pos, end_pos = line[0], int(line[3]), int(line[4])
-                if chrom not in chromosomes or line[2] != 'gene':
+                if chrom not in constants.chromosomes or line[2] != 'gene':
                     continue
                 if index % 1000 == 0:
                     print(index, len(genes))

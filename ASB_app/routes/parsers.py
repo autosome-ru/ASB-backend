@@ -1,31 +1,35 @@
-from ASB_app import api
 from flask_restplus import inputs
 from ASB_app.constants import chromosomes
 from werkzeug.datastructures import FileStorage
 
-file_parser = api.parser()
-file_parser.add_argument('file', type=FileStorage, location='files')
+from ASB_app.releases import Release
 
-pagination_parser = api.parser()
-pagination_parser.add_argument('page', type=inputs.positive, help='Page number', default=1)
-pagination_parser.add_argument('size', type=inputs.natural, help='Items per page or 0 for all items', default=0)
-pagination_parser.add_argument('offset', type=inputs.natural, help='Skip first N items', default=0)
-pagination_parser.add_argument('filter', help='Comma-separated filters: field1 EQ "value1", field2 GE "value2"')
-pagination_parser.add_argument('order_by', help='ORDER BY criterion: "field1", "-field2"')
+for release in Release.__subclasses__():
+    api = release.api
 
-search_parser = pagination_parser.copy()
-search_parser.add_argument('cell_types', action='split', help='Comma-separated list of cell types, search SNPs ASB for every cell type scpecified')
-search_parser.add_argument('transcription_factors', action='split', help='Comma-separated list of cell types, search SNPs ASB for every cell type scpecified')
-search_parser.add_argument('chromosome', choices=chromosomes, help='Search only SNPs on the specified chromosome')
-search_parser.add_argument('start', type=inputs.positive, help='Search SNPs in interval from specified position, Requires "chromosome" and "end"')
-search_parser.add_argument('end', type=inputs.positive, help='Search SNPs in interval to specified position, Requiers "chromosome" and "start"')
-search_parser.add_argument('phenotype_databases', action='split', help='Comma-separated list of databases, possible choices {grasp, ebi, clinvar, phewas, finemapping, QTL}, earch SNPs that have phenotype associations in all specified databases')
-search_parser.add_argument('motif_concordance', action='split', help='Comma-separated list of motif concordance values, possible choices {Concordant. Discordant, Weak Concordant, Weak Discordant}, if no TF specified will search SNPs with any TF having any of the specified concordance valuese, else only SNPs ASB for the specified TFs and any of the specified concordance values for these TFs')
+    file_parser = api.parser()
+    file_parser.add_argument('file', type=FileStorage, location='files')
 
-used_hints_parser = api.parser()
-used_hints_parser.add_argument('options', action='split')
-used_hints_parser.add_argument('search')
+    pagination_parser = api.parser()
+    pagination_parser.add_argument('page', type=inputs.positive, help='Page number', default=1)
+    pagination_parser.add_argument('size', type=inputs.natural, help='Items per page or 0 for all items', default=0)
+    pagination_parser.add_argument('offset', type=inputs.natural, help='Skip first N items', default=0)
+    pagination_parser.add_argument('filter', help='Comma-separated filters: field1 EQ "value1", field2 GE "value2"')
+    pagination_parser.add_argument('order_by', help='ORDER BY criterion: "field1", "-field2"')
 
-csv_columns_parser = api.parser()
-csv_columns_parser.add_argument('columns', action='split', required=True)
-csv_columns_parser.add_argument('filter')
+    search_parser = pagination_parser.copy()
+    search_parser.add_argument('cell_types', action='split', help='Comma-separated list of cell types, search SNPs ASB for every cell type scpecified')
+    search_parser.add_argument('transcription_factors', action='split', help='Comma-separated list of cell types, search SNPs ASB for every cell type scpecified')
+    search_parser.add_argument('chromosome', choices=chromosomes, help='Search only SNPs on the specified chromosome')
+    search_parser.add_argument('start', type=inputs.positive, help='Search SNPs in interval from specified position, Requires "chromosome" and "end"')
+    search_parser.add_argument('end', type=inputs.positive, help='Search SNPs in interval to specified position, Requiers "chromosome" and "start"')
+    search_parser.add_argument('phenotype_databases', action='split', help='Comma-separated list of databases, possible choices {grasp, ebi, clinvar, phewas, finemapping, QTL}, earch SNPs that have phenotype associations in all specified databases')
+    search_parser.add_argument('motif_concordance', action='split', help='Comma-separated list of motif concordance values, possible choices {Concordant. Discordant, Weak Concordant, Weak Discordant}, if no TF specified will search SNPs with any TF having any of the specified concordance valuese, else only SNPs ASB for the specified TFs and any of the specified concordance values for these TFs')
+
+    used_hints_parser = api.parser()
+    used_hints_parser.add_argument('options', action='split')
+    used_hints_parser.add_argument('search')
+
+    csv_columns_parser = api.parser()
+    csv_columns_parser.add_argument('columns', action='split', required=True)
+    csv_columns_parser.add_argument('filter')

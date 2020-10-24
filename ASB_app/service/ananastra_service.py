@@ -1,6 +1,8 @@
 import os
 from ASB_app.models import Ticket
-from ASB_app import session
+from ASB_app.releases import current_release
+
+session = current_release.session
 
 
 def get_ticket_id_from_path(file_path):
