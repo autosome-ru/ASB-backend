@@ -5,7 +5,11 @@ from ASB_app import logger, executor
 from ASB_app.service import ananastra_service
 from ASB_app.utils import pack, process_row
 from sqlalchemy.orm import aliased
+import numpy as np
 import pandas as pd
+from scipy.stats import fisher_exact
+
+from ASB_app.models import CandidateSNP
 
 from ASB_app.releases import current_release
 
@@ -130,10 +134,20 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
 
             ananastra_service.create_processed_path(ticket_id, 'tf')
 
-            with open(ananastra_service.get_path_by_ticket_id(ticket_id, path_type='tf', ext='.tsv'), 'w') as out:
+            tf_path = ananastra_service.get_path_by_ticket_id(ticket_id, path_type='tf', ext='.tsv')
+
+            with open(tf_path, 'w') as out:
                 out.write(pack(tf_header))
                 for tup in q_tf:
                     out.write(pack(process_row(tup, 'TF', tf_header)))
+
+            ananastra_service.create_processed_path(ticket_id, 'tf_sum')
+
+            tf_table = pd.read_table(tf_path)
+            tf_table['BEST_FDR'] = tf_table[['LOG10_FDR_REF', 'LOG10_FDR_ALT']].max(axis=1)
+            idx = tf_table.groupby(['RS_ID', 'ALT'])['BEST_FDR'].transform(max) == tf_table['BEST_FDR']
+            tf_table.drop(columns=['BEST_FDR'], inplace=True)
+            tf_table[idx].to_csv(ananastra_service.get_path_by_ticket_id(ticket_id, 'tf_sum'), sep='\t', index=False)
 
         if annotate_cl:
             q_cl = session.query(
@@ -209,10 +223,72 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
 
             ananastra_service.create_processed_path(ticket_id, 'cl')
 
-            with open(ananastra_service.get_path_by_ticket_id(ticket_id, path_type='cl', ext='.tsv'), 'w') as out:
+            cl_path = ananastra_service.get_path_by_ticket_id(ticket_id, path_type='cl', ext='.tsv')
+
+            with open(cl_path, 'w') as out:
                 out.write(pack(cl_header))
                 for tup in q_cl:
                     out.write(pack(process_row(tup, 'CL', cl_header)))
+
+            ananastra_service.create_processed_path(ticket_id, 'cl_sum')
+
+            cl_table = pd.read_table(cl_path)
+            cl_table['BEST_FDR'] = cl_table[['LOG10_FDR_REF', 'LOG10_FDR_ALT']].max(axis=1)
+            idx = cl_table.groupby(['RS_ID', 'ALT'])['BEST_FDR'].transform(max) == cl_table['BEST_FDR']
+            cl_table.drop(columns=['BEST_FDR'], inplace=True)
+            cl_table[idx].to_csv(ananastra_service.get_path_by_ticket_id(ticket_id, 'cl_sum'), sep='\t', index=False)
+
+        tf_asbs = session.query(SNP.rs_id.distinct()).filter(
+            SNP.rs_id.in_(rs_ids),
+            SNP.tf_aggregated_snps.any()
+        ).count()
+
+        cl_asbs = session.query(SNP.rs_id.distinct()).filter(
+            SNP.rs_id.in_(rs_ids),
+            SNP.cl_aggregated_snps.any()
+        ).count()
+
+        all_asbs = session.query(SNP.rs_id.distinct()).filter(
+            SNP.rs_id.in_(rs_ids)
+        ).count()
+
+        tf_candidates = session.query(CandidateSNP.rs_id.distinct()).filter(
+            CandidateSNP.rs_id.in_(rs_ids),
+            CandidateSNP.ag_level == 'TF'
+        ).count()
+
+        cl_candidates = session.query(CandidateSNP.rs_id.distinct()).filter(
+            CandidateSNP.rs_id.in_(rs_ids),
+            CandidateSNP.ag_level == 'CL'
+        ).count()
+
+        all_candidates = session.query(CandidateSNP.rs_id.distinct()).filter(
+            CandidateSNP.rs_id.in_(rs_ids)
+        ).count()
+
+        possible_tf_asbs = session.query(SNP.rs_id.distinct()).filter(
+            SNP.tf_aggregated_snps.any()
+        ).count()
+
+        possible_cl_asbs = session.query(SNP.rs_id.distinct()).filter(
+            SNP.cl_aggregated_snps.any()
+        ).count()
+
+        possible_all_asbs = session.query(SNP.rs_id.distinct()).count()
+
+        possible_tf_candidates = session.query(CandidateSNP.rs_id.distinct()).filter(
+            CandidateSNP.ag_level == 'TF'
+        ).count()
+
+        possible_cl_candidates = session.query(CandidateSNP.rs_id.distinct()).filter(
+            CandidateSNP.ag_level == 'CL'
+        ).count()
+
+        possible_all_candidates = session.query(CandidateSNP.rs_id.distinct()).count()
+
+        tf_odds, tf_p = fisher_exact(((tf_asbs, tf_candidates), (possible_tf_asbs, possible_tf_candidates)))
+        cl_odds, cl_p = fisher_exact(((cl_asbs, cl_candidates), (possible_cl_asbs, possible_cl_candidates)))
+        all_odds, all_p = fisher_exact(((all_asbs, all_candidates), (possible_all_asbs, possible_all_candidates)))
 
     except Exception as e:
         logger.error(e, exc_info=True)
@@ -221,5 +297,19 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
         return
 
     ticket.status = 'Processed'
-    ticket.meta_info = {'processing_time': str(datetime.now() - ticket.date_created)}
+    ticket.meta_info = {
+        'processing_time': str(datetime.now() - ticket.date_created),
+        'tf_asbs': tf_asbs,
+        'cl_asbs': cl_asbs,
+        'all_asbs': all_asbs,
+        'tf_candidates': tf_candidates,
+        'cl_canidates': cl_candidates,
+        'all_candidates': all_candidates,
+        'tf_odds': tf_odds,
+        'tf_log10_p_value': -np.log10(tf_p),
+        'cl_odds': cl_odds,
+        'cl_log10_p_value': -np.log10(cl_p),
+        'all_odds': all_odds,
+        'all_log10_p_value': -np.log10(all_p),
+    }
     session.commit()

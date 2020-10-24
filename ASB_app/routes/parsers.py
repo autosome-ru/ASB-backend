@@ -2,7 +2,7 @@ from flask_restplus import inputs
 from ASB_app.constants import chromosomes
 from werkzeug.datastructures import FileStorage
 
-from ASB_app.releases import Release
+from ASB_app.releases import Release, current_release
 
 for release in Release.__subclasses__():
     api = release.api
@@ -33,3 +33,6 @@ for release in Release.__subclasses__():
     csv_columns_parser = api.parser()
     csv_columns_parser.add_argument('columns', action='split', required=True)
     csv_columns_parser.add_argument('filter')
+
+result_param_parser = current_release.api.parser()
+result_param_parser.add_argument('result_param', choices=('tf', 'cl', 'tf_sum', 'cl_sum'))

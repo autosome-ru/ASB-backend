@@ -37,6 +37,8 @@ def get_path_by_ticket_id(ticket_id, path_type='input', ext='.tsv'):
             'dir': ['processed'],
             'tf': ['processed', '{}'.format(ticket_id), 'tf'],
             'cl': ['processed', '{}'.format(ticket_id), 'cl'],
+            'tf_sum': ['processed', '{}'.format(ticket_id), 'tf_sum'],
+            'cl_sum': ['processed', '{}'.format(ticket_id), 'cl_sum'],
         }[path_type],
         '{}{}'.format(ticket_id, ext)
     )
@@ -67,12 +69,10 @@ def delete_ticket(ticket_id):
         os.remove(input_file)
     ticket_dir = get_path_by_ticket_id(ticket_id, path_type='dir')
     if os.path.isdir(ticket_dir):
-        tf_report = get_path_by_ticket_id(ticket_id, path_type='tf')
-        cl_report = get_path_by_ticket_id(ticket_id, path_type='cl')
-        if os.path.isfile(tf_report):
-            os.remove(tf_report)
-        if os.path.isfile(cl_report):
-            os.remove(cl_report)
+        for path_type in ('tf', 'cl', 'tf_sum', 'cl_sum'):
+            report = get_path_by_ticket_id(ticket_id, path_type=path_type)
+            if os.path.isfile(report):
+                os.remove(report)
         for dir in os.listdir(ticket_dir):
             os.rmdir(os.path.join(ticket_dir, dir))
         os.rmdir(ticket_dir)
@@ -97,3 +97,24 @@ def get_result(ticket_id, param):
                 continue
             result.append(dict(zip(header, line.strip('\n').split('\t'))))
     return True, result
+
+
+def delete_all_tickets():
+    for ticket in Ticket.query:
+        ticket_id = ticket.ticket_id
+        if ticket.status == 'Processing':
+            continue
+        input_file = get_path_by_ticket_id(ticket_id)
+        if os.path.isfile(input_file):
+            os.remove(input_file)
+        ticket_dir = get_path_by_ticket_id(ticket_id, path_type='dir')
+        if os.path.isdir(ticket_dir):
+            for path_type in ('tf', 'cl', 'tf_sum', 'cl_sum'):
+                report = get_path_by_ticket_id(ticket_id, path_type=path_type)
+                if os.path.isfile(report):
+                    os.remove(report)
+            for dir in os.listdir(ticket_dir):
+                os.rmdir(os.path.join(ticket_dir, dir))
+            os.rmdir(ticket_dir)
+        session.delete(ticket)
+        session.commit()

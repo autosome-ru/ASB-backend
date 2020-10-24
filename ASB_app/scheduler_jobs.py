@@ -14,3 +14,8 @@ def check_outdated_tickets():
         ok = ananastra_service.delete_ticket(ticket_id)
         if not ok:
             logger.info('Could not delete ticket: {}'.format(ticket_id))
+    for ticket_id in session.query(Ticket.ticket_id).filter(Ticket.status == 'Failed'):
+        ok = ananastra_service.delete_ticket(ticket_id)
+        if not ok:
+            logger.info('Could not delete ticket: {}'.format(ticket_id))
+    logger.info('Finished tickets check')

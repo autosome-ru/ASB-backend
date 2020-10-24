@@ -14,7 +14,7 @@ from ASB_app.models import Ticket
 
 from ASB_app.releases import current_release
 
-from ASB_app.routes import file_parser, pagination_parser
+from ASB_app.routes import file_parser, pagination_parser, result_param_parser
 
 api = current_release.api
 
@@ -72,13 +72,15 @@ class TicketItem(Resource):
         return {'message': 'success'}, 200
 
 
-@ananastra_nsp.route('/result/<string:ticket_id>/<string:result_param>')
+@ananastra_nsp.route('/result/<string:ticket_id>')
 class ProcessingResult(Resource):
-    def get(self, ticket_id, result_param):
+    @api.expect(result_param_parser)
+    def get(self, ticket_id):
         """
         Get first 1000 rows of result
         """
-        if result_param not in ('tf', 'cl'):
+        result_param = result_param_parser.parse_args()['result_param']
+        if result_param not in ('tf', 'cl', 'tf_sum', 'cl_sum'):
             api.abort(400, 'Wrong result param')
         ok, result = ananastra_service.get_result(ticket_id, result_param)
         if not ok:
@@ -97,3 +99,10 @@ class TicketCollection(Resource, PaginationMixin):
         Get all tickets
         """
         return self.paginate(pagination_parser.parse_args())
+
+    def delete(self):
+        """
+        Delete all tickets and corresponding files
+        """
+        ananastra_service.delete_all_tickets()
+        return {'message': 'success'}, 200
