@@ -31,10 +31,9 @@ class CandidateSNP(GenomePolymorphismLocation):
     __tablename__ = 'candidate_snps'
     __bind_key__ = 'candidates'
     __table_args__ = (
-        db.PrimaryKeyConstraint('chromosome', 'position', 'alt'),
+        db.PrimaryKeyConstraint('chromosome', 'position', 'alt', 'ag_id'),
         db.Index('rs_index', 'rs_id'),
         db.Index('ag_level_index', 'ag_level'),
-        db.Index('ag_id_index', 'ag_id')
     )
 
     ref = db.Column(db.Enum(*nucleotides), nullable=False)
