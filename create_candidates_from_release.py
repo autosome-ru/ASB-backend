@@ -54,6 +54,7 @@ if __name__ == '__main__':
 
     for param in ['TF'] * TF + ['CL'] * CL:
         pv_path = release_path + '{}_P-values/'.format(param)
+        snps = []
         for file in sorted(os.listdir(pv_path)):
             with open(pv_path + file, 'r') as table:
                 name = file.replace('.tsv', '')
@@ -73,7 +74,6 @@ if __name__ == '__main__':
                 else:
                     ag_id = ag.tf_id
 
-                snps = []
                 header = []
                 for index, row in enumerate(table):
                     print(index + 1) if (index + 1) % 50000 == 0 else ...
@@ -104,7 +104,7 @@ if __name__ == '__main__':
 
                     snps.append(mutation)
 
-            session.add_all(snps)
-            session.commit()
+        session.add_all(snps)
+        session.commit()
 
-            session.close()
+        session.close()
