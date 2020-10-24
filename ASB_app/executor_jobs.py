@@ -2,6 +2,8 @@ import os
 import re
 from datetime import datetime
 from ASB_app import logger, executor
+from ASB_app.models import possible_tf_asbs, possible_cl_asbs, possible_cl_candidates, possible_all_asbs, \
+    possible_all_candidates, possible_tf_candidates
 from ASB_app.service import ananastra_service
 from ASB_app.utils import pack, process_row
 from sqlalchemy.orm import aliased
@@ -238,53 +240,33 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
             cl_table.drop(columns=['BEST_FDR'], inplace=True)
             cl_table[idx].to_csv(ananastra_service.get_path_by_ticket_id(ticket_id, 'cl_sum'), sep='\t', index=False)
 
-        tf_asbs = session.query(SNP.rs_id.distinct()).filter(
+        tf_asbs = SNP.query.filter(
             SNP.rs_id.in_(rs_ids),
             SNP.tf_aggregated_snps.any()
-        ).count()
+        ).group_by(SNP.rs_id).count()
 
-        cl_asbs = session.query(SNP.rs_id.distinct()).filter(
+        cl_asbs = SNP.query.filter(
             SNP.rs_id.in_(rs_ids),
             SNP.cl_aggregated_snps.any()
-        ).count()
+        ).group_by(SNP.rs_id).count()
 
-        all_asbs = session.query(SNP.rs_id.distinct()).filter(
+        all_asbs = SNP.query.filter(
             SNP.rs_id.in_(rs_ids)
-        ).count()
+        ).group_by(SNP.rs_id).count()
 
-        tf_candidates = session.query(CandidateSNP.rs_id.distinct()).filter(
-            CandidateSNP.rs_id.in_(rs_ids),
-            CandidateSNP.ag_level == 'TF'
-        ).count()
-
-        cl_candidates = session.query(CandidateSNP.rs_id.distinct()).filter(
-            CandidateSNP.rs_id.in_(rs_ids),
-            CandidateSNP.ag_level == 'CL'
-        ).count()
-
-        all_candidates = session.query(CandidateSNP.rs_id.distinct()).filter(
+        tf_candidates = CandidateSNP.query.filter(
+            CandidateSNP.ag_level == 'TF',
             CandidateSNP.rs_id.in_(rs_ids)
-        ).count()
+        ).group_by(CandidateSNP.rs_id).count()
 
-        possible_tf_asbs = session.query(SNP.rs_id.distinct()).filter(
-            SNP.tf_aggregated_snps.any()
-        ).count()
+        cl_candidates = CandidateSNP.query.filter(
+            CandidateSNP.ag_level == 'TF',
+            CandidateSNP.rs_id.in_(rs_ids)
+        ).group_by(CandidateSNP.rs_id).count()
 
-        possible_cl_asbs = session.query(SNP.rs_id.distinct()).filter(
-            SNP.cl_aggregated_snps.any()
-        ).count()
-
-        possible_all_asbs = session.query(SNP.rs_id.distinct()).count()
-
-        possible_tf_candidates = session.query(CandidateSNP.rs_id.distinct()).filter(
-            CandidateSNP.ag_level == 'TF'
-        ).count()
-
-        possible_cl_candidates = session.query(CandidateSNP.rs_id.distinct()).filter(
-            CandidateSNP.ag_level == 'CL'
-        ).count()
-
-        possible_all_candidates = session.query(CandidateSNP.rs_id.distinct()).count()
+        all_candidates = CandidateSNP.query.filter(
+            CandidateSNP.rs_id.in_(rs_ids)
+        ).group_by(CandidateSNP.rs_id).count()
 
         tf_odds, tf_p = fisher_exact(((tf_asbs, tf_candidates), (possible_tf_asbs, possible_tf_candidates)))
         cl_odds, cl_p = fisher_exact(((cl_asbs, cl_candidates), (possible_cl_asbs, possible_cl_candidates)))
