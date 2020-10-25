@@ -5,6 +5,7 @@ api = current_release.api
 
 meta_info_model = api.model('Ticket meta info', {
     'processing_time': fields.String,
+    'all_rs': fields.Integer,
     'tf_asbs': fields.Integer,
     'cl_asbs': fields.Integer,
     'all_asbs': fields.Integer,

@@ -3,7 +3,7 @@ import tempfile
 
 from flask import request
 
-from flask_restplus import Resource
+from flask_restplus import Resource, inputs
 
 from ASB_app.executor_jobs import process_snp_file
 from ASB_app.serializers import ticket_model
@@ -21,9 +21,13 @@ api = current_release.api
 ananastra_nsp = api.namespace('ANANASTRA web-service', path='/ananastra', description='SNP annotation by ananastra')
 
 
+commit_parser = file_parser.copy()
+commit_parser.add_argument('user_id')
+
+
 @ananastra_nsp.route('/commit')
 class CommitFile(Resource):
-    @api.expect(file_parser)
+    @api.expect(commit_parser)
     @api.marshal_with(ticket_model)
     def post(self):
         """
@@ -53,6 +57,10 @@ class ProcessTicket(Resource):
         return {'message': 'success'}, 202
 
 
+user_id_parser = api.parser()
+user_id_parser.add_argument('user_id')
+
+
 @ananastra_nsp.route('/ticket/<string:ticket_id>')
 class TicketItem(Resource):
     @api.marshal_with(ticket_model)
@@ -62,11 +70,14 @@ class TicketItem(Resource):
         """
         return ananastra_service.get_ticket(ticket_id)
 
+    @api.expect(user_id_parser)
     @api.response(403, 'File is processing')
     def delete(self, ticket_id):
         """
         Delete ticket and corresponding files
         """
+        if not ananastra_service.get_ticket(ticket_id).user_id == user_id_parser.parse_args()['user_id']:
+            return {'message': 'user ids do not match'}, 403
         if not ananastra_service.delete_ticket(ticket_id):
             return {'message': 'file is processing'}, 403
         return {'message': 'success'}, 200
