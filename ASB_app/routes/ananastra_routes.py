@@ -111,9 +111,9 @@ class TicketCollection(Resource, PaginationMixin):
         """
         return self.paginate(pagination_parser.parse_args())
 
-    def delete(self):
-        """
-        Delete all tickets and corresponding files
-        """
-        ananastra_service.delete_all_tickets()
-        return {'message': 'success'}, 200
+    # def delete(self):
+    #     """
+    #     Delete all tickets and corresponding files
+    #     """
+    #     ananastra_service.delete_all_tickets()
+    #     return {'message': 'success'}, 200
