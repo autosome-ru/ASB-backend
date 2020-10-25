@@ -2,7 +2,7 @@ import os
 import re
 from datetime import datetime
 from ASB_app import logger, executor
-from ASB_app.models import possible_tf_asbs, possible_cl_asbs, possible_cl_candidates, possible_all_asbs, \
+from ASB_app.constants import possible_tf_asbs, possible_cl_asbs, possible_cl_candidates, possible_all_asbs, \
     possible_all_candidates, possible_tf_candidates
 from ASB_app.service import ananastra_service
 from ASB_app.utils import pack, process_row

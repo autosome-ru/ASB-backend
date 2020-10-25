@@ -12,3 +12,10 @@ db_name_property_dict = {
     x: 'has_{}_associations'.format(x.lower())
     for x in ['clinvar', 'ebi', 'finemapping', 'grasp', 'phewas', 'QTL']
 }
+
+possible_tf_asbs = 147909
+possible_cl_asbs = 252469
+possible_all_asbs = 269934
+possible_tf_candidates = 4976303
+possible_cl_candidates = 4976303
+possible_all_candidates = 4976303

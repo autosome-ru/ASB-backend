@@ -83,7 +83,7 @@ if __name__ == '__main__':
                         continue
                     else:
                         row = dict(zip(header, row.strip('\n').split('\t')))
-                    if ['fdrp_bh_ref'] == '':
+                    if row['fdrp_bh_ref'] == '':
                         continue
                     int_fields = ['pos']
                     for field in int_fields:
