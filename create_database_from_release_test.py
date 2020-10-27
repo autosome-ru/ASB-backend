@@ -69,7 +69,7 @@ if __name__ == '__main__':
         cl_dict_reverse[value] = key
 
     if EXP:
-        table = pd.read_table(parameters_path + 'master-list-annotated.tsv')
+        table = pd.read_table(parameters_path + 'master-list-annotated.txt')
         counter = 1
         exps = []
         tfs = []
