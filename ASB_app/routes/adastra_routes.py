@@ -239,7 +239,7 @@ for release in Release.__subclasses__():
         @api.marshal_list_with(release_serializers.gene_model)
         def get(self):
             args = used_hints_parser.parse_args()
-            return self.get_hints_for_gene_name(args.get('search', ''))
+            return self.release_service.get_hints_for_gene_name(args.get('search', ''))
 
 
     @snp_nsp.route('/<int:rs_id>/<string:alt>/<string:what_for>/tsv')
