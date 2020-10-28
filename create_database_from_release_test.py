@@ -90,7 +90,7 @@ if __name__ == '__main__':
                 counter += 1
             if row['CELL_ID'] not in used_cl_ids:
                 cls.append(CellLine(cl_id=int(row['CELL_ID']), name=row['CELLS']))
-                used_cl_ids.add(row['CELLS'])
+                used_cl_ids.add(row['CELL_ID'])
 
             exp = Experiment(exp_id=row['#EXP'],
                              align=row['ALIGNS'],
