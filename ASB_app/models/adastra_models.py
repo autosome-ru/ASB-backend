@@ -69,7 +69,7 @@ for release in Release.__subclasses__():
             db.Index('align_index', 'align'),
         )
         if float(release.version) >= 2:
-            exp_id = db.Column(db.Integer, primary_key=True)
+            exp_id = db.Column(db.String, primary_key=True)
             align = db.Column(db.String, nullable=False)
         else:
             exp_id = db.Column(db.Integer, primary_key=True)
