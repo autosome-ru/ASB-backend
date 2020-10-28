@@ -80,7 +80,7 @@ if __name__ == '__main__':
             if (index + 1) % 1000 == 0:
                 print(index + 1)
 
-            if row['TF_UNIPROT_NAME'] is None or np.isnan(row['TF_UNIPROT_NAME']):
+            if row['TF_UNIPROT_NAME'] is None or pd.isna(row['TF_UNIPROT_NAME']):
                 assert row['EXP_TYPE'] in ('chip_control', 'chipexo_control')
                 continue
 
