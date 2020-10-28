@@ -315,7 +315,8 @@ if __name__ == '__main__':
                         for i in range(len(value['aligns']))]
 
                     for parameter in parameters_list:
-                        exp_id = Experiment.query.filter(Experiment.align == parameter['aligns']).one().exp_id
+                        # FIXME TEMPORARY
+                        exp_id = Experiment.query.filter(Experiment.align == parameter['aligns'][0]).one().exp_id
 
                         exp_snp = ExpSNP.query.filter(
                             ExpSNP.exp_id == exp_id,
