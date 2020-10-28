@@ -88,8 +88,8 @@ if __name__ == '__main__':
                 cls.append(CellLine(cl_id=int(row['CELL_ID']), name=row['CELLS']))
                 used_cl_ids.add(row['CELLS'])
 
-            exp = Experiment(exp_id=int(row['#EXP'][3:]),
-                             align=int(row['ALIGNS'][6:]),
+            exp = Experiment(exp_id=row['#EXP'],
+                             align=row['ALIGNS'],
                              geo_gse=row['GEO'] if row['GEO'] != '' else None,
                              encode=row['ENCODE'] if row['ENCODE'] != '' else None,
                              tf_id=used_tf_names[row['TF_UNIPROT_NAME']],

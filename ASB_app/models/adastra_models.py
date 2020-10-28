@@ -68,9 +68,13 @@ for release in Release.__subclasses__():
         __table_args__ = (
             db.Index('align_index', 'align'),
         )
+        if float(release.version) >= 2:
+            exp_id = db.Column(db.Integer, primary_key=True)
+            align = db.Column(db.String, nullable=False)
+        else:
+            exp_id = db.Column(db.Integer, primary_key=True)
+            align = db.Column(db.Integer, nullable=False)
 
-        exp_id = db.Column(db.Integer, primary_key=True)
-        align = db.Column(db.Integer, nullable=False)
         tf_id = db.Column(db.Integer, db.ForeignKey('transcription_factors.tf_id'), nullable=True)
         cl_id = db.Column(db.Integer, db.ForeignKey('cell_lines.cl_id'), nullable=False)
         geo_gse = db.Column(db.String(10))
