@@ -37,10 +37,10 @@ current_release.BADGroup, \
 current_release.Gene
 
 
-TF = 1
-CL = 1
+TF = 0
+CL = 0
 tr = 0.05
-EXP = 1
+EXP = 0
 TF_DICT = 1
 CL_DICT = 1
 PHEN = 0
@@ -243,7 +243,7 @@ if __name__ == '__main__':
         pv_path = release_path + '{}_DICTS/'.format(param)
         for file in sorted(os.listdir(pv_path)):
 
-            name = file.replace('_DICT.json', '')
+            name = file.replace('.json', '')
             if param == 'CL':
                 name = cl_dict_reverse[name]
             print(name)
