@@ -80,15 +80,12 @@ if __name__ == '__main__':
             if (index + 1) % 1000 == 0:
                 print(index + 1)
 
-            if row['TF_UNIPROT_NAME'] is None:
+            if row['TF_UNIPROT_NAME'] is None or np.isnan(row['TF_UNIPROT_NAME']):
                 assert row['EXP_TYPE'] in ('chip_control', 'chipexo_control')
                 continue
 
             if row['TF_UNIPROT_NAME'] not in used_tf_names:
-                tf = TranscriptionFactor(tf_id=counter, uniprot_ac=row['TF_UNIPROT_ID'], name=row['TF_UNIPROT_NAME'])
-                if not tf.name:
-                    print('!!!', row['TF_UNIPROT_NAME'])
-                tfs.append(tf)
+                tfs.append(TranscriptionFactor(tf_id=counter, uniprot_ac=row['TF_UNIPROT_ID'], name=row['TF_UNIPROT_NAME']))
                 used_tf_names[row['TF_UNIPROT_NAME']] = counter
                 counter += 1
             if row['CELL_ID'] not in used_cl_ids:
