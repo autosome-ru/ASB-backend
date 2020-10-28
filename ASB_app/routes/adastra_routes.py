@@ -1,13 +1,43 @@
+from flask import render_template
+
 from ASB_app.service import ReleaseService
 from ASB_app.serializers import ReleaseSerializers
-from ASB_app.exceptions import ParsingError
+from ASB_app.exceptions import ParsingError, ReleaseNotFound
 from flask_restplus import Resource
 from sqlalchemy.orm.exc import NoResultFound
 
 from ASB_app.utils import PaginationMixin
 from ASB_app.routes import search_parser, csv_columns_parser, used_hints_parser, pagination_parser
 
-from ASB_app.releases import Release
+from ASB_app.releases import Release, get_release_by_version
+
+from ASB_app import app
+
+
+@app.route('/sitemap/v<version>/tfs')
+def get_tf_page(version):
+    try:
+        url_release = get_release_by_version(version)
+    except ReleaseNotFound as e:
+        return {'message': '{}'.format(e)}, 404
+    release_service = ReleaseService(url_release)
+    return render_template('tf_page.html', tfs=release_service.get_tf_links(), release_name=url_release.name)
+
+
+@app.route('/sitemap/v<version>/snps/<int:page>')
+def get_snp_page(version, page):
+    if page < 0:
+        return 'Page not found', 404
+    try:
+        url_release = get_release_by_version(version)
+    except ReleaseNotFound as e:
+        return {'message': '{}'.format(e)}, 404
+    release_service = ReleaseService(url_release)
+    snp_links, pages = release_service.get_snp_links(page)
+    if not snp_links:
+        return 'Page not found', 404
+    return render_template('snp_page.html', snps=snp_links, release=url_release, pages=pages, current_page=page)
+
 
 for release in Release.__subclasses__():
     api = release.api

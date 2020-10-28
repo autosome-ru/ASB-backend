@@ -12,3 +12,9 @@ class ParserError(ASBException):
     """
     Is raised while incorrect filters parsing
     """
+
+
+class ReleaseNotFound(ASBException):
+    """
+    Is raised when specified release version is not found
+    """

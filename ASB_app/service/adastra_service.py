@@ -7,11 +7,34 @@ import csv
 import tempfile
 from flask import send_file
 
+from math import ceil
+
 
 class ReleaseService:
     def __init__(self, release):
         for model in abstract_models:
+            self.release = release
             setattr(self, model.__name__, getattr(release, model.__name__))
+
+    def generate_tf_link(self, tf_name):
+        return 'https://adastra.autosome.ru/{}/search/advanced?tf={}'.format(self.release.name, tf_name)
+
+    def generate_snp_name(self, snp):
+        return 'rs{0.rs_id}:{0.ref}>{0.alt}'.format(snp)
+
+    def generate_snp_link(self, snp):
+        return 'https://adastra.autosome.ru/{0.name}/snps/rs{1.rs_id}/{1.alt}'.format(self.release, snp)
+
+    def get_tf_links(self):
+        return [{'name': tf.name,  'link': self.generate_tf_link(tf.name)} for tf in
+                self.TranscriptionFactor.query.filter(self.TranscriptionFactor.aggregated_snps_count > 0).order_by(self.TranscriptionFactor.name)]
+
+    def get_snp_links(self, page, on_page=20000):
+        return (
+            [{'name': self.generate_snp_name(snp), 'link': self.generate_snp_link(snp)} for snp in
+                self.SNP.query.order_by(self.SNP.rs_id).offset(on_page * page).limit(on_page)],
+            ceil(self.SNP.query.count() / on_page)
+        )
 
     def get_filters_by_rs_id(self, rs_id):
         return (self.SNP.rs_id == rs_id,)
