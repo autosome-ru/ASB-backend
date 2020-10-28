@@ -94,8 +94,8 @@ if __name__ == '__main__':
 
             exp = Experiment(exp_id=row['#EXP'],
                              align=row['ALIGNS'],
-                             geo_gse=row['GEO'] if row['GEO'] != '' else None,
-                             encode=row['ENCODE'] if row['ENCODE'] != '' else None,
+                             geo_gse=row['GEO'] if row['GEO'] != '' and not pd.isna(row['GEO']) else None,
+                             encode=row['ENCODE'] if row['ENCODE'] != '' and not pd.isna(row['GEO']) else None,
                              tf_id=used_tf_names[row['TF_UNIPROT_NAME']],
                              cl_id=int(row['CELL_ID']))
 
