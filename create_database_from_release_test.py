@@ -86,7 +86,7 @@ if __name__ == '__main__':
 
             if row['TF_UNIPROT_NAME'] not in used_tf_names:
                 tf = TranscriptionFactor(tf_id=counter, uniprot_ac=row['TF_UNIPROT_ID'], name=row['TF_UNIPROT_NAME'])
-                if tf.name.is_(None):
+                if not tf.name:
                     print('!!!', row['TF_UNIPROT_NAME'])
                 tfs.append(tf)
                 used_tf_names[row['TF_UNIPROT_NAME']] = counter
