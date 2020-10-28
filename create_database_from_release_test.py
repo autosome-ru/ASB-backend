@@ -148,7 +148,7 @@ if __name__ == '__main__':
                         float_fields += ['motif_log_pref', 'motif_log_palt', 'motif_fc']
                         int_fields += ['motif_pos']
                         row['motif_orient'] = {'+': True, '-': False, '': None}[row['motif_orient']]
-                        row['motif_conc'] = None if row['motif_conc'] == 'None' else row['motif_conc']
+                        row['motif_conc'] = None if row['motif_conc'] in ('None', '') else row['motif_conc']
 
                     for field in float_fields:
                         if row[field] == '' or row[field] == '.':
