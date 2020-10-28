@@ -85,6 +85,8 @@ if __name__ == '__main__':
                 continue
 
             if row['TF_UNIPROT_NAME'] not in used_tf_names:
+                if not row['TF_UNIPROT_NAME']:
+                    print(row['TF_UNIPROT_NAME'])
                 tfs.append(TranscriptionFactor(tf_id=counter, uniprot_ac=row['TF_UNIPROT_ID'], name=row['TF_UNIPROT_NAME']))
                 used_tf_names[row['TF_UNIPROT_NAME']] = counter
                 counter += 1
