@@ -9,7 +9,6 @@ from flask_sqlalchemy import Model
 
 from ASB_app import exceptions
 from ._parser import FilterParser
-from ASB_app.models import TranscriptionFactor, CellLine, SNP, TranscriptionFactorSNP, CellLineSNP
 
 
 def is_field(entity_cls, attr):
@@ -51,6 +50,7 @@ def get_entity_from_relationship(entity_cls, attr):
 
 class PaginationMixin(FilterParser):
     BaseEntity = None
+    used_release = None
 
     def __init__(self, base_entity_cls=None):
         """
@@ -137,16 +137,16 @@ class PaginationMixin(FilterParser):
                 variable = getattr(self.BaseEntity, criterion)
                 order_clauses.append(variable.desc() if descending else variable)
             elif re.search('^(CL|TF)@log_p_value_(ref|alt)@[^@]+$', criterion) is not None:
-                if self.BaseEntity != SNP:
+                if self.BaseEntity != self.used_release.SNP:
                     continue
                 what_for, field, name = criterion.split('@')
-                aggregation_class = {'TF': TranscriptionFactor, 'CL': CellLine}[what_for]
+                aggregation_class = {'TF': self.used_release.TranscriptionFactor, 'CL': self.used_release.CellLine}[what_for]
                 aggregation_entity = aggregation_class.query.filter_by(name=name).one_or_none()
                 if not aggregation_entity:
                     continue
                 aggregation_id = getattr(aggregation_entity, {'TF': 'tf_id', 'CL': 'cl_id'}[what_for])
 
-                aggregated_snp_class = {'TF': TranscriptionFactorSNP, 'CL': CellLineSNP}[what_for]
+                aggregated_snp_class = {'TF': self.used_release.TranscriptionFactorSNP, 'CL': self.used_release.CellLineSNP}[what_for]
                 additional_join_tuples.append(
                     (
                         aggregated_snp_class,
@@ -154,9 +154,9 @@ class PaginationMixin(FilterParser):
                             aggregated_snp_class,
                             {'TF': 'tf_id', 'CL': 'cl_id'}[what_for]
                         ) == aggregation_id) &
-                        (aggregated_snp_class.chromosome == SNP.chromosome) &
-                        (aggregated_snp_class.position == SNP.position) &
-                        (aggregated_snp_class.alt == SNP.alt)
+                        (aggregated_snp_class.chromosome == self.used_release.SNP.chromosome) &
+                        (aggregated_snp_class.position == self.used_release.SNP.position) &
+                        (aggregated_snp_class.alt == self.used_release.SNP.alt)
                     )
                 )
                 label = '_'.join(map(str, [what_for, field, aggregation_id]))

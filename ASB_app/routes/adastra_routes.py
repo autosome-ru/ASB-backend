@@ -14,6 +14,13 @@ from ASB_app.releases import Release, get_release_by_version
 from ASB_app import app
 
 
+def set_release_service(release_service):
+    def wrapper(cls):
+        cls.release_service = release_service
+        return cls
+    return wrapper
+
+
 @app.route('/sitemap/v<version>/tfs')
 def get_tf_page(version):
     try:
@@ -50,6 +57,7 @@ for release in Release.__subclasses__():
     release_serializers = ReleaseSerializers(release)
 
     @snp_nsp.route('/<int:rs_id>/<string:alt>')
+    @set_release_service(release_service)
     class SNPItem(Resource):
         @api.marshal_with(release_serializers.rs_snp_model_full)
         def get(self, rs_id, alt):
@@ -57,14 +65,16 @@ for release in Release.__subclasses__():
             Get complete imformation about an SNP by rs-ID and alt allele
             """
             try:
-                return release_service.get_full_snp(rs_id, alt)
+                return self.release_service.get_full_snp(rs_id, alt)
             except NoResultFound:
                 api.abort(404)
 
 
     @search_nsp.route('/snps/rs/<int:rs_id>')
+    @set_release_service(release_service)
     class SearchSNPByIdCollection(Resource, PaginationMixin):
         BaseEntity = release_service.SNP
+        used_release = release
 
         @api.marshal_with(release_serializers.search_results_model, PaginationMixin)
         @api.expect(pagination_parser)
@@ -73,14 +83,16 @@ for release in Release.__subclasses__():
             Get all SNPs by rs-ID short info
             """
             all_args = pagination_parser.parse_args()
-            filters = release_service.get_filters_by_rs_id(rs_id)
+            filters = self.release_service.get_filters_by_rs_id(rs_id)
             result = self.paginate(all_args, extra_filters=filters)
             return {'results': result, 'total': self.items_count(extra_filters=filters)}
 
 
     @search_nsp.route('/snps/gene_id/<string:gene_id>')
+    @set_release_service(release_service)
     class SearchSNPByGeneIdCollection(Resource, PaginationMixin):
         BaseEntity = release_service.SNP
+        used_release = release
 
         @api.marshal_with(release_serializers.search_results_model)
         @api.expect(pagination_parser)
@@ -89,19 +101,21 @@ for release in Release.__subclasses__():
             Get all SNPs by genome position short info
             """
             all_args = pagination_parser.parse_args()
-            gene = release_service.get_gene_by_id(gene_id)
+            gene = self.release_service.get_gene_by_id(gene_id)
             if gene is None:
                 return {'results': [], 'gene': None, 'total': 0}
 
-            filters = release_service.get_filters_by_gene(release_service.get_gene_by_id(gene_id))
+            filters = self.release_service.get_filters_by_gene(self.release_service.get_gene_by_id(gene_id))
             result = self.paginate(all_args, extra_filters=filters)
 
             return {'results': result, 'gene': gene, 'total': self.items_count(extra_filters=filters)}
 
 
     @search_nsp.route('/snps/gene_name/<string:gene_name>')
+    @set_release_service(release_service)
     class SearchSNPByGeneNameCollection(Resource, PaginationMixin):
         BaseEntity = release_service.SNP
+        used_release = release
 
         @api.marshal_with(release_serializers.search_results_model)
         @api.expect(pagination_parser)
@@ -110,18 +124,20 @@ for release in Release.__subclasses__():
             Get all SNPs by genome position short info
             """
             all_args = pagination_parser.parse_args()
-            gene = release_service.get_gene_by_name(gene_name)
+            gene = self.release_service.get_gene_by_name(gene_name)
             if gene is None:
                 return {'results': [], 'gene': None, 'total': 0}
-            filters = release_service.get_filters_by_gene(gene)
+            filters = self.release_service.get_filters_by_gene(gene)
             result = self.paginate(all_args, extra_filters=filters)
 
             return {'results': result, 'gene': gene, 'total': self.items_count(extra_filters=filters)}
 
 
     @search_nsp.route('/snps/advanced')
+    @set_release_service(release_service)
     class AdvancedSearchSNP(Resource, PaginationMixin):
         BaseEntity = release_service.SNP
+        used_release = release
 
         @api.marshal_with(release_serializers.search_results_model)
         @api.expect(search_parser)
@@ -131,7 +147,7 @@ for release in Release.__subclasses__():
             """
             all_args = search_parser.parse_args()
             try:
-                filters = release_service.construct_advanced_filters(all_args)
+                filters = self.release_service.construct_advanced_filters(all_args)
                 result = self.paginate(all_args, extra_filters=filters)
                 return {'results': result, 'total': self.items_count(extra_filters=filters)}
             except ParsingError:
@@ -139,6 +155,7 @@ for release in Release.__subclasses__():
 
 
     @search_nsp.route('/snps/advanced/tsv')
+    @set_release_service(release_service)
     class AdvancedSearchSNPCSV(Resource):
         @api.expect(search_parser)
         def get(self):
@@ -146,14 +163,16 @@ for release in Release.__subclasses__():
             Get all SNPs with advanced filters short info in tsv file
             """
             try:
-                return release_service.get_snps_by_advanced_filters_tsv(search_parser.parse_args())
+                return self.release_service.get_snps_by_advanced_filters_tsv(search_parser.parse_args())
             except ParsingError:
                 api.abort(400)
 
 
     @browse_nsp.route('/tf')
+    @set_release_service(release_service)
     class TransctiptionFactorBrowse(Resource, PaginationMixin):
         BaseEntity = release_service.TranscriptionFactor
+        used_release = release
 
         @api.marshal_list_with(release_serializers.transcription_factor_model)
         @api.expect(pagination_parser)
@@ -166,8 +185,10 @@ for release in Release.__subclasses__():
 
 
     @browse_nsp.route('/cl')
+    @set_release_service(release_service)
     class CellLineBrowse(Resource, PaginationMixin):
         BaseEntity = release_service.CellLine
+        used_release = release
 
         @api.marshal_list_with(release_serializers.cell_line_model)
         @api.expect(pagination_parser)
@@ -181,43 +202,48 @@ for release in Release.__subclasses__():
 
     @browse_nsp.route('/total')
     @api.hide
+    @set_release_service(release_service)
     class FrontPageStatistics(Resource):
         @api.marshal_with(release_serializers.frontpage_statistics_model)
         def get(self):
-            return release_service.get_overall_statistics()
+            return self.release_service.get_overall_statistics()
 
 
     @search_nsp.route('/tf/hint')
     @api.hide
+    @set_release_service(release_service)
     class TranscriptionFactorHint(Resource):
         @api.expect(used_hints_parser)
         @api.marshal_list_with(release_serializers.transcription_factor_model)
         def get(self):
             args = used_hints_parser.parse_args()
-            return release_service.get_hints('TF', args.get('search', ''), args.get('options', []))
+            return self.release_service.get_hints('TF', args.get('search', ''), args.get('options', []))
 
 
     @search_nsp.route('/cl/hint')
     @api.hide
+    @set_release_service(release_service)
     class CellLineHint(Resource):
         @api.expect(used_hints_parser)
         @api.marshal_list_with(release_serializers.cell_line_model)
         def get(self):
             args = used_hints_parser.parse_args()
-            return release_service.get_hints('CL', args.get('search', ''), args.get('options', []))
+            return self.release_service.get_hints('CL', args.get('search', ''), args.get('options', []))
 
 
     @search_nsp.route('/gene_name/hint')
     @api.hide
+    @set_release_service(release_service)
     class GeneNameHint(Resource):
         @api.expect(used_hints_parser)
         @api.marshal_list_with(release_serializers.gene_model)
         def get(self):
             args = used_hints_parser.parse_args()
-            return release_service.get_hints_for_gene_name(args.get('search', ''))
+            return self.get_hints_for_gene_name(args.get('search', ''))
 
 
     @snp_nsp.route('/<int:rs_id>/<string:alt>/<string:what_for>/tsv')
+    @set_release_service(release_service)
     class SNPItemCSV(Resource):
         @api.expect(csv_columns_parser)
         def get(self, rs_id, alt, what_for):
@@ -226,6 +252,6 @@ for release in Release.__subclasses__():
             """
             args = csv_columns_parser.parse_args()
             try:
-                return release_service.get_full_snp_tsv(what_for, rs_id, alt, args['columns'])
+                return self.release_service.get_full_snp_tsv(what_for, rs_id, alt, args['columns'])
             except NoResultFound:
                 api.abort(404)

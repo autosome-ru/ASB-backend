@@ -40,6 +40,8 @@ class ReleaseService:
         return (self.SNP.rs_id == rs_id,)
 
     def get_full_snp(self, rs_id, alt):
+        print(self.release.name)
+        print(self.SNP.query.count())
         return self.SNP.query.filter(
             (self.SNP.rs_id == rs_id) &
             (self.SNP.alt == alt)
