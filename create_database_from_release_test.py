@@ -82,6 +82,7 @@ if __name__ == '__main__':
 
             if row['TF_UNIPROT_NAME'] is None:
                 assert row['EXP_TYPE'] in ('chip_control', 'chipexo_control')
+                continue
 
             if row['TF_UNIPROT_NAME'] not in used_tf_names:
                 tfs.append(TranscriptionFactor(tf_id=counter, uniprot_ac=row['TF_UNIPROT_ID'], name=row['TF_UNIPROT_NAME']))
