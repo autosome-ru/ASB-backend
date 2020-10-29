@@ -1,5 +1,6 @@
 from ASB_app.exceptions import ReleaseNotFound
 
+
 class Release:
     db = None
     session = None
@@ -16,7 +17,7 @@ class ReleaseSoos(Release):
 
 
 class ReleaseTest(Release):
-    name = 'test'
+    name = 'beta'
     version = '2'
     full_version = '2.0'
 
