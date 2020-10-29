@@ -190,7 +190,7 @@ class ReleaseService:
                         headers.append(label)
                         additional_columns.append(getattr(aggregated_snp_class, field).label(label))
 
-        found_snps = self.session.query(*query_args)
+        found_snps = self.release.session.query(*query_args)
         found_snps = found_snps.filter(*self.construct_advanced_filters(self, filters_object))
         for cls, condition in join_tuples:
             found_snps = found_snps.join(cls, condition)
@@ -228,5 +228,5 @@ class ReleaseService:
             'transcription_factors_count': self.TranscriptionFactor.query.filter(
                 self.TranscriptionFactor.aggregated_snps_count > 0).count(),
             'cell_types_count': self.CellLine.query.filter(self.CellLine.aggregated_snps_count > 0).count(),
-            'snps_count': self.session.query(self.SNP.rs_id).distinct().count(),
+            'snps_count': self.release.session.query(self.SNP.rs_id).distinct().count(),
         }
