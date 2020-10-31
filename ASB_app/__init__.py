@@ -5,13 +5,14 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import MetaData
 from flask_apscheduler import APScheduler
 from flask_executor import Executor
-
+from flask_cors import CORS
 from ASB_app.releases import Release
 
 from config import Config
 
 app = Flask(__name__)
 app.config.from_object(Config)
+CORS(app)
 logger = app.logger
 logger.setLevel(app.config['LOGGER_LEVEL'])
 
@@ -38,10 +39,10 @@ scheduler = APScheduler(app=app)
 executor = Executor(app)
 
 
-@app.after_request
-def apply_caching(response):
-    response.headers['Access-Control-Allow-Origin'] = '*'
-    return response
+# @app.after_request
+# def apply_caching(response):
+#     response.headers['Access-Control-Allow-Origin'] = '*'
+#     return response
 
 
 from . import models
