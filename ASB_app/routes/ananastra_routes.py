@@ -136,4 +136,4 @@ class ContextFile(Resource):
             fd, filename = tempfile.mkstemp(suffix='.tsv')
             request.files['file'].save(filename)
             os.close(fd)
-            return ananastra_service.annotate_with_context(filename, context_parser.parse_args()['field']), 200
+            return ananastra_service.annotate_with_context(filename, context_parser.parse_args()['field'])
