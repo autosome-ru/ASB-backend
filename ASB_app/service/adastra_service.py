@@ -48,7 +48,7 @@ class ReleaseService:
         ).one()
 
     def get_full_snp_tsv(self, what_for, rs_id, alt, headers):
-        agg_snps = getattr(self.get_full_snp(self, rs_id, alt), what_for + '_aggregated_snps')
+        agg_snps = getattr(self.get_full_snp(rs_id, alt), what_for + '_aggregated_snps')
 
         file = tempfile.NamedTemporaryFile('wt', suffix='.tsv')
         csv_writer = csv.writer(file, dialect=TsvDialect)
