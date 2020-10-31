@@ -31,8 +31,11 @@ def get_tf_page(version):
     return render_template('tf_page.html', tfs=release_service.get_tf_links(), release_name=url_release.name)
 
 
+@app.route('/sitemap/v<version>/snps')
 @app.route('/sitemap/v<version>/snps/<int:page>')
-def get_snp_page(version, page):
+def get_snp_page(version, page=None):
+    if page is None:
+        page = 0
     if page < 0:
         return 'Page not found', 404
     try:
