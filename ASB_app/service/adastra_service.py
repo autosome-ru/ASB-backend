@@ -144,7 +144,7 @@ class ReleaseService:
             aggregation_class = {'TF': self.TranscriptionFactor, 'CL': self.CellLine}[what_for]
             aggregated_snp_class = {'TF': self.TranscriptionFactorSNP, 'CL': self.CellLineSNP}[what_for]
             id_field = {'TF': 'tf_id', 'CL': 'cl_id'}[what_for]
-            query_args.append(self.db.func.group_concat(aggregation_class.name.distinct()))
+            query_args.append(self.release.db.func.group_concat(aggregation_class.name.distinct()))
             headers.append('ASB in {}'.format({'TF': 'transcription factors', 'CL': 'cell types'}[what_for]))
             join_tuples += [
                 (
