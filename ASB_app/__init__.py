@@ -37,7 +37,6 @@ for release in Release.__subclasses__():
 
 scheduler = APScheduler(app=app)
 executor = Executor(app)
-scheduler.start()
 
 
 # @app.after_request
@@ -49,3 +48,4 @@ scheduler.start()
 from . import models
 from . import routes
 from . import utils
+from . import scheduler_jobs
