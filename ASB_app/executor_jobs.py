@@ -313,9 +313,20 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
         cl_candidates = sum(divide_query(get_cl_candidates, rs_ids))
         all_candidates = sum(divide_query(get_all_candidates, rs_ids))
 
-        tf_odds, tf_p = fisher_exact(((tf_asbs, tf_candidates), (possible_tf_asbs, possible_tf_candidates)))
-        cl_odds, cl_p = fisher_exact(((cl_asbs, cl_candidates), (possible_cl_asbs, possible_cl_candidates)))
-        all_odds, all_p = fisher_exact(((all_asbs, all_candidates), (possible_all_asbs, possible_all_candidates)))
+        if tf_candidates:
+            tf_odds, tf_p = fisher_exact(((tf_asbs, tf_candidates), (possible_tf_asbs, possible_tf_candidates)))
+        else:
+            tf_odds, tf_p = 0, 1
+
+        if cl_candidates:
+            cl_odds, cl_p = fisher_exact(((cl_asbs, cl_candidates), (possible_cl_asbs, possible_cl_candidates)))
+        else:
+            cl_odds, cl_p = 0, 1
+
+        if all_candidates:
+            all_odds, all_p = fisher_exact(((all_asbs, all_candidates), (possible_all_asbs, possible_all_candidates)))
+        else:
+            all_odds, all_p = 0, 1
 
     except Exception as e:
         logger.error(e, exc_info=True)
