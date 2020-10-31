@@ -117,3 +117,23 @@ class TicketCollection(Resource, PaginationMixin):
     #     """
     #     ananastra_service.delete_all_tickets()
     #     return {'message': 'success'}, 200
+
+
+context_parser = file_parser.copy()
+context_parser.add_argument('field', default='RS-ID', help='Name of column corresponding to SNP rs id in tsv file')
+
+
+@ananastra_nsp.route('/context')
+class ContextFile(Resource):
+    @api.expect(context_parser)
+    def post(self):
+        """
+        Accepts a tsv file with rs-ids of SNPs to annotate with context
+        """
+        if 'file' not in request.files:
+            api.abort(400, 'No files')
+        else:
+            fd, filename = tempfile.mkstemp(suffix='.tsv')
+            request.files['file'].save(filename)
+            os.close(fd)
+            return ananastra_service.annotate_with_context(filename, context_parser.parse_args()['field']), 200
