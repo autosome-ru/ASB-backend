@@ -191,7 +191,7 @@ class ReleaseService:
                         additional_columns.append(getattr(aggregated_snp_class, field).label(label))
 
         found_snps = self.release.session.query(*query_args)
-        found_snps = found_snps.filter(*self.construct_advanced_filters(self, filters_object))
+        found_snps = found_snps.filter(*self.construct_advanced_filters(filters_object))
         for cls, condition in join_tuples:
             found_snps = found_snps.join(cls, condition)
         for column in additional_columns:
