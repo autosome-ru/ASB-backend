@@ -430,8 +430,11 @@ if __name__ == '__main__':
                     session.close()
                 exp_id = path.split('/')[-2]
                 exp = Experiment.query.get(exp_id)
+                if not exp:
+                    continue
                 exp.bad_group = bad_group
                 exps.append(exp)
+                print(exp)
         session.add_all(exps + bad_groups)
         session.commit()
         session.close()
