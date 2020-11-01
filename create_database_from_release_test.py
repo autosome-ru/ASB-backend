@@ -217,7 +217,7 @@ if __name__ == '__main__':
             session.close()
 
     if PHEN:
-        table = pd.read_table(os.path.join(release_path, 'release_stats', 'phenotype_stats.tsv'))
+        table = pd.read_table(os.path.join(release_path, 'release_stats', 'phenotypes_stats.tsv'))
         for index, row in table.iterrows():
             if (index + 1) % 1000 == 0:
                 print(index + 1)
