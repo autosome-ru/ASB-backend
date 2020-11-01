@@ -44,12 +44,12 @@ EXP = 0
 TF_DICT = 0
 CL_DICT = 0
 PHEN = 0
-CONTEXT = 0
-CONTROLS = 0
-BAD_GROUP = 0
+CONTEXT = 1
+CONTROLS = 1
+BAD_GROUP = 1
 PEAKS_TF = 0
 PEAKS_CL = 0
-GENES = 1
+GENES = 0
 
 
 release_path = os.path.expanduser('~/Data/')
