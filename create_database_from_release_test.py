@@ -383,7 +383,7 @@ if __name__ == '__main__':
                 exps = []
                 session.close()
 
-            if not row['TF_UNIPROT_NAME'] is None or pd.isna(row['TF_UNIPROT_NAME']):
+            if not (row['TF_UNIPROT_NAME'] is None or pd.isna(row['TF_UNIPROT_NAME'])):
                 continue
             assert row['EXP_TYPE'] in ('chip_control', 'chipexo_control')
 
