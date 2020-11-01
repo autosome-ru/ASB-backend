@@ -44,8 +44,8 @@ EXP = 0
 TF_DICT = 0
 CL_DICT = 0
 PHEN = 0
-CONTEXT = 1
-CONTROLS = 1
+CONTEXT = 0
+CONTROLS = 0
 BAD_GROUP = 1
 PEAKS_TF = 0
 PEAKS_CL = 0
@@ -415,6 +415,7 @@ if __name__ == '__main__':
         bad_groups = []
         for key, value in cell_lines_dict.items():
             print(key)
+            name = key
             bad_group = BADGroup.query.filter(BADGroup.bad_group_name == name).one_or_none()
             if not bad_group:
                 bad_group = BADGroup(
