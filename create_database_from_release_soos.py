@@ -87,7 +87,7 @@ CONTEXT = 0
 CONTROLS = 0
 BAD_GROUP = 0
 PEAKS_TF = 0
-PEAKS_CL = 1
+PEAKS_CL = 0
 GENES = 0
 
 
@@ -573,7 +573,7 @@ if __name__ == '__main__':
                 if line.startswith('#'):
                     continue
                 line = line.strip('\n').split('\t')
-                chrom, start_pos, end_pos = line[0], int(line[3]), int(line[4])
+                chrom, start_pos, end_pos, orient = line[0], int(line[3]), int(line[4]), line[6]
                 if chrom not in constants.chromosomes or line[2] != 'gene':
                     continue
                 if index % 1000 == 0:
@@ -581,7 +581,12 @@ if __name__ == '__main__':
                 params_dict = dict(map(lambda x: tuple(x.split(' ')), line[8].split('; ')))
                 gene_name = params_dict['gene_name'].strip('"')
                 gene_id = params_dict['gene_id'].strip('"')
-                snps = SNP.query.filter(SNP.chromosome == chrom, SNP.position.between(start_pos - 1000, end_pos)).count()
+                if orient == '+':
+                    snps = SNP.query.filter(SNP.chromosome == chrom, SNP.position.between(start_pos - 5000, end_pos)).count()
+                elif orient == '-':
+                    snps = SNP.query.filter(SNP.chromosome == chrom, SNP.position.between(start_pos, end_pos + 5000)).count()
+                else:
+                    raise ValueError
                 if not snps:
                     continue
                 gene = Gene(gene_id=gene_id, gene_name=gene_name, start_pos=start_pos, end_pos=end_pos, chromosome=chrom)
@@ -589,10 +594,6 @@ if __name__ == '__main__':
                     print(gene_id, chrom, start_pos, end_pos)
                     continue
                 genes.append(gene)
-                # if len(genes) == 20:
-                #     session.add_all(genes)
-                #     session.commit()
-                #     genes = []
                 genes_ids.add(gene_id)
 
         session.add_all(genes)
