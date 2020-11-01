@@ -43,13 +43,13 @@ tr = 0.05
 EXP = 0
 TF_DICT = 0
 CL_DICT = 0
-PHEN = 1
+PHEN = 0
 CONTEXT = 0
 CONTROLS = 0
 BAD_GROUP = 0
 PEAKS_TF = 0
 PEAKS_CL = 0
-GENES = 0
+GENES = 1
 
 
 release_path = os.path.expanduser('~/Data/')
@@ -352,25 +352,23 @@ if __name__ == '__main__':
 
     if CONTEXT:
         used = set()
-        for f in os.listdir(os.path.expanduser('~/SARUS_ANNOTATION/')):
-            with open(os.path.expanduser('~/SARUS_ANNOTATION/') + f) as file:
-                print(f)
+        with open(os.path.join(release_path, 'Sarus', 'all_tfs.fasta')) as file:
+            line = file.readline()
+            while line:
+                line = line.strip('\n')
+                if line.startswith('>') and line[-3:] == 'ref' and line not in used:
+                    used.add(line)
+                    alt = line.split(';')[-1].split('_')[0]
+                    rs = int(line.split(';')[0][3:])
+                    snp = SNP.query.filter(SNP.rs_id == rs, SNP.alt == alt).one_or_none()
+                    context = file.readline().strip('\n')
+                    if snp:
+                        snp.context = context
                 line = file.readline()
-                while line:
-                    line = line.strip('\n')
-                    if line.startswith('>') and line[-3:] == 'ref' and line not in used:
-                        used.add(line)
-                        alt = line.split(';')[-1].split('_')[0]
-                        rs = int(line.split(';')[0][3:])
-                        snp = SNP.query.filter(SNP.rs_id == rs, SNP.alt == alt).one_or_none()
-                        context = file.readline().strip('\n')
-                        if snp:
-                            snp.context = context
-                    line = file.readline()
         session.commit()
 
     if CONTROLS:
-        table = pd.read_table(parameters_path + 'Master-lines.tsv')
+        table = pd.read_table(parameters_path + 'master-list-annotated.txt')
         exps = []
         cls = []
         used_exp_ids = set()
@@ -379,42 +377,44 @@ if __name__ == '__main__':
             if (index + 1) % 1000 == 0:
                 print(index + 1)
 
-            if len(exps) >= 999:
+            if len(exps) >= 990:
                 session.add_all(exps)
                 session.commit()
                 exps = []
                 session.close()
 
-            if isinstance(row['control_id'], str) or not math.isnan(row['control_id']):
-                if row['control_id'] in used_exp_ids:
-                    continue
-                used_exp_ids.add(row['control_id'])
-                if row['control_cell_id'] not in used_cl_ids:
-                    cls.append(CellLine(cl_id=int(row['control_cell_id']), name=row['control_cell_id']))
-                    used_cl_ids.add(row['control_cell_id'])
+            if not row['TF_UNIPROT_NAME'] is None or pd.isna(row['TF_UNIPROT_NAME']):
+                continue
+            assert row['EXP_TYPE'] in ('chip_control', 'chipexo_control')
 
-                exp = Experiment(exp_id=int(row['control_id'][3:]),
-                                 align=int(row['control_ALIGNS'][6:]),
-                                 geo_gse=row['control_GEO_GSE'] if row['control_GEO_GSE'] != 'None' else None,
-                                 encode=row['control_ENCODE'] if row['control_ENCODE'] != 'None' else None,
-                                 tf_id=None,
-                                 cl_id=int(row['control_cell_id']),
-                                 is_control=True)
+            if row['#EXP'] in used_exp_ids:
+                continue
+            used_exp_ids.add(row['#EXP'])
+            if row['CELL_ID'] not in used_cl_ids:
+                cls.append(CellLine(cl_id=int(row['CELL_ID']), name=row['CELLS']))
+                used_cl_ids.add(row['CELL_ID'])
 
-                exps.append(exp)
+            exp = Experiment(exp_id=row['#EXP'],
+                             align=row['ALIGNS'],
+                             geo_gse=row['GEO'] if row['GEO'] != '' and not pd.isna(row['GEO']) else None,
+                             encode=row['ENCODE'] if row['ENCODE'] != '' and not pd.isna(row['ENCODE']) else None,
+                             tf_id=None,
+                             cl_id=int(row['CELL_ID']),
+                             is_control=True)
+
+            exps.append(exp)
 
         session.add_all(cls + exps)
         session.commit()
         session.close()
 
     if BAD_GROUP:
-        with open(parameters_path + 'CELL_LINES.json') as f:
+        with open(os.path.join(release_path, 'release_stats', 'badmaps_dict.json')) as f:
             cell_lines_dict = json.loads(f.readline())
         exps = []
         bad_groups = []
         for key, value in cell_lines_dict.items():
             print(key)
-            name = key.replace('!', '@')
             bad_group = BADGroup.query.filter(BADGroup.bad_group_name == name).one_or_none()
             if not bad_group:
                 bad_group = BADGroup(
@@ -422,12 +422,12 @@ if __name__ == '__main__':
                 )
             bad_groups.append(bad_group)
             for path in value:
-                if len(exps) >= 999:
+                if len(exps) >= 990:
                     session.add_all(exps)
                     session.commit()
                     exps = []
                     session.close()
-                exp_id = int(path.split('/')[-2][3:])
+                exp_id = path.split('/')[-2]
                 exp = Experiment.query.get(exp_id)
                 exp.bad_group = bad_group
                 exps.append(exp)
