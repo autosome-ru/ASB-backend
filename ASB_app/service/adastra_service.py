@@ -77,8 +77,12 @@ class ReleaseService:
         return self.Gene.query.get(gene_id)
 
     def get_filters_by_gene(self, gene):
-        return self.SNP.chromosome == gene.chromosome, self.SNP.position.between(max(gene.start_pos - 1000, 1),
+        if gene.orientation:
+            return self.SNP.chromosome == gene.chromosome, self.SNP.position.between(max(gene.start_pos - 5000, 1),
                                                                                  gene.end_pos)
+        else:
+            return self.SNP.chromosome == gene.chromosome, self.SNP.position.between(max(gene.start_pos, 1),
+                                                                                 gene.end_pos + 5000)
 
     def construct_advanced_filters(self, filters_object):
         filters = []

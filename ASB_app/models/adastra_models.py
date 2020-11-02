@@ -293,6 +293,8 @@ for release in Release.__subclasses__():
         chromosome = db.Column(db.Enum(*chromosomes), nullable=False)
         start_pos = db.Column(db.Integer, nullable=False)
         end_pos = db.Column(db.Integer, nullable=False)
+        orientation = db.Column(db.Boolean, nullable=False)
+        snps_count = db.Column(db.Integer)
 
     models = [
         TranscriptionFactor,

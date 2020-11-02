@@ -582,19 +582,33 @@ if __name__ == '__main__':
                 gene_name = params_dict['gene_name'].strip('"')
                 gene_id = params_dict['gene_id'].strip('"')
                 if orient == '+':
-                    snps = SNP.query.filter(SNP.chromosome == chrom, SNP.position.between(start_pos - 5000, end_pos)).count()
+                    start_pos = max(start_pos - 5000, 1)
                 elif orient == '-':
-                    snps = SNP.query.filter(SNP.chromosome == chrom, SNP.position.between(start_pos, end_pos + 5000)).count()
+                    end_pos = end_pos + 5000
                 else:
                     raise ValueError
-                if not snps:
-                    continue
-                gene = Gene(gene_id=gene_id, gene_name=gene_name, start_pos=start_pos, end_pos=end_pos, chromosome=chrom)
+
+                snps = SNP.query.filter(SNP.chromosome == chrom,
+                                        SNP.position.between(start_pos, end_pos)).count()
+
+                gene = Gene(gene_id=gene_id, gene_name=gene_name, start_pos=start_pos, end_pos=end_pos, chromosome=chrom,
+                            orientation = True if orient == '+' else False if orient == '-' else None, snps_count=snps)
                 if gene_id in genes_ids:
                     print(gene_id, chrom, start_pos, end_pos)
                     continue
                 genes.append(gene)
                 genes_ids.add(gene_id)
+
+        gene_names = [g.gene_name for g in genes]
+        repeating_gene_names = set()
+        used_names = set()
+        for name in gene_names:
+            if name in used_names:
+                repeating_gene_names.add(name)
+            else:
+                used_names.add(name)
+
+        genes = [g for g in genes if g.gene_name not in repeating_gene_names]
 
         session.add_all(genes)
         session.commit()
