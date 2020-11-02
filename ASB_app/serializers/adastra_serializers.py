@@ -43,7 +43,8 @@ class ReleaseSerializers:
             'gene_name': fields.String,
             'chromosome': fields.String(enumerate=chromosomes),
             'start_pos': fields.Integer,
-            'end_pos': fields.Integer
+            'end_pos': fields.Integer,
+            'snps_count': fields.Integer,
         })
 
         self.tf_snp_model = api.inherit('Transcription Factor SNP (no genome info)', self.aggregated_snp_model, {
