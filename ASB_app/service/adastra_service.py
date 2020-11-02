@@ -47,13 +47,23 @@ class ReleaseService:
             (self.SNP.alt == alt)
         ).one()
 
+    @staticmethod
+    def format_header(header):
+        format_dict = {
+            'transcription_factor.name': 'transcription_factor',
+            'cell_line.name': 'cell_type'
+        }
+        if header in format_dict:
+            return format_dict[header]
+        return header
+
     def get_full_snp_tsv(self, what_for, rs_id, alt, headers):
         agg_snps = getattr(self.get_full_snp(rs_id, alt), what_for + '_aggregated_snps')
 
         file = tempfile.NamedTemporaryFile('wt', suffix='.tsv')
         csv_writer = csv.writer(file, dialect=TsvDialect)
 
-        csv_writer.writerow(headers)
+        csv_writer.writerow([self.format_header(h) for h in headers])
 
         getter = lambda snp, header: getter(getattr(snp, header[:header.find('.')]),
                                             header[header.find('.') + 1:]) if '.' in header else getattr(snp, header)
@@ -136,8 +146,8 @@ class ReleaseService:
         file = tempfile.NamedTemporaryFile('wt', suffix='.tsv')
         csv_writer = csv.writer(file, dialect=TsvDialect)
 
-        headers = ['Chromosome', 'Position', 'Ref', 'Alt']
-        names = dict(zip(headers, ['chromosome', 'position', 'ref', 'alt']))
+        headers = ['Chromosome', 'Position', 'Ref', 'Alt', 'rsID']
+        names = dict(zip(headers, ['chromosome', 'position', 'ref', 'alt', 'rs_id']))
 
         join_tuples = []
         additional_columns = []
@@ -149,7 +159,7 @@ class ReleaseService:
             aggregated_snp_class = {'TF': self.TranscriptionFactorSNP, 'CL': self.CellLineSNP}[what_for]
             id_field = {'TF': 'tf_id', 'CL': 'cl_id'}[what_for]
             query_args.append(self.release.db.func.group_concat(aggregation_class.name.distinct()))
-            headers.append('ASB in {}'.format({'TF': 'transcription factors', 'CL': 'cell types'}[what_for]))
+            headers.append('{}-ASBs'.format({'TF': 'TF', 'CL': 'Cell type'}[what_for]))
             join_tuples += [
                 (
                     aggregated_snp_class,
@@ -197,7 +207,7 @@ class ReleaseService:
         found_snps = self.release.session.query(*query_args)
         found_snps = found_snps.filter(*self.construct_advanced_filters(filters_object))
         for cls, condition in join_tuples:
-            found_snps = found_snps.join(cls, condition)
+            found_snps = found_snps.join(cls, condition, isouter=True)
         for column in additional_columns:
             found_snps = found_snps.add_column(column)
         found_snps = found_snps.group_by(self.SNP)
