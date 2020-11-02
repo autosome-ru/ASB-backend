@@ -216,7 +216,7 @@ class ReleaseService:
         for tup in found_snps:
             snp = tup[0]
             columns = tup[1:]
-            csv_writer.writerow([getattr(snp, names[header]) for header in headers[:len(names.keys())]] + list(columns))
+            csv_writer.writerow([getattr(snp, names[header]) if names[header] != 'rs_id' else 'rs' + str(getattr(snp, names[header])) for header in headers[:len(names.keys())]] + list(columns))
 
         file.flush()
         return send_file(
