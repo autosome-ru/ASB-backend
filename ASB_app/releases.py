@@ -13,13 +13,13 @@ class Release:
 class ReleaseSoos(Release):
     name = 'soos'
     version = '1'
-    full_version = '1.2'
+    full_version = '1.4'
 
 
 class ReleaseTest(Release):
     name = 'beta'
     version = '2'
-    full_version = '2.0'
+    full_version = '2.1'
 
 
 def get_release_by_version(version):

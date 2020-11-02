@@ -216,7 +216,7 @@ class ReleaseService:
         for tup in found_snps:
             snp = tup[0]
             columns = tup[1:]
-            csv_writer.writerow([getattr(snp, names[header]) for header in headers[:4]] + list(columns))
+            csv_writer.writerow([getattr(snp, names[header]) for header in headers[:len(names.keys())]] + list(columns))
 
         file.flush()
         return send_file(
@@ -235,7 +235,7 @@ class ReleaseService:
 
     def get_hints_for_gene_name(self, in_str):
         filters = (self.Gene.gene_name.like(in_str),) if in_str else ()
-        return self.Gene.query.filter(*filters).order_by(self.Gene.gene_name).limit(3).all()
+        return self.Gene.query.filter(*filters).order_by(self.Gene.gene_name).order_by(self.Gene.snps_count).limit(3).all()
 
     def get_overall_statistics(self):
         return {
