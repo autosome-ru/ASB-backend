@@ -17,7 +17,7 @@ class ReleaseSoos(Release):
 
 
 class ReleaseTest(Release):
-    name = 'beta'
+    name = 'ford'
     version = '2'
     full_version = '2.1'
 

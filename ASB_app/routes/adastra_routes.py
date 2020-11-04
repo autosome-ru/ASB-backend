@@ -21,6 +21,11 @@ def set_release_service(release_service):
     return wrapper
 
 
+@app.route('/api')
+def get_api_page():
+    return render_template('api_page.html', releases=[release for release in Release.__subclasses__()])
+
+
 @app.route('/sitemap/v<version>/tfs')
 def get_tf_page(version):
     try:
