@@ -21,12 +21,12 @@ def set_release_service(release_service):
     return wrapper
 
 
-@app.route('/api')
+@app.route('/api', strict_slashes=False)
 def get_api_page():
     return render_template('api_page.html', releases=[release for release in Release.__subclasses__()])
 
 
-@app.route('/sitemap/v<version>/tfs')
+@app.route('/sitemap/v<version>/tfs', strict_slashes=False)
 def get_tf_page(version):
     try:
         url_release = get_release_by_version(version)
@@ -36,8 +36,8 @@ def get_tf_page(version):
     return render_template('tf_page.html', tfs=release_service.get_tf_links(), release_name=url_release.name)
 
 
-@app.route('/sitemap/v<version>/snps')
-@app.route('/sitemap/v<version>/snps/<int:page>')
+@app.route('/sitemap/v<version>/snps', strict_slashes=False)
+@app.route('/sitemap/v<version>/snps/<int:page>', strict_slashes=False)
 def get_snp_page(version, page=None):
     if page is None:
         page = 0
