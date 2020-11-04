@@ -16,7 +16,7 @@ class ReleaseSoos(Release):
     full_version = '1.4'
 
 
-class ReleaseTest(Release):
+class ReleaseFord(Release):
     name = 'ford'
     version = '2'
     full_version = '2.1'
