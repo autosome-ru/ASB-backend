@@ -1,11 +1,7 @@
 import os
-import tempfile
-
-from flask import send_file
 
 from ASB_app.models import Ticket
 from ASB_app.releases import current_release
-import pandas as pd
 
 session = current_release.session
 
@@ -123,20 +119,3 @@ def delete_all_tickets():
             os.rmdir(ticket_dir)
         session.delete(ticket)
         session.commit()
-
-
-def annotate_with_context(filename, field):
-    SNP = current_release.SNP
-    t = pd.read_table(os.path.expanduser(filename))
-    rs_ids = [int(x[2:]) for x in t[field].tolist()]
-    ann = ['rs' + str(snp.rs_id) + ' ' + snp.context[:24] + '[' + snp.context[24] + '/' + snp.alt + ']' + snp.context[25:] for snp in SNP.query.filter(SNP.rs_id.in_(rs_ids))]
-    file = tempfile.NamedTemporaryFile('wt', suffix='.tsv')
-    file.write('\n'.join(ann))
-    file.flush()
-
-    return send_file(
-        file.name,
-        cache_timeout=0,
-        mimetype="text/tsv",
-        as_attachment=True
-    )
