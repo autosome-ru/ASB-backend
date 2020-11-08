@@ -36,8 +36,8 @@ TF = 1
 CL = 1
 
 
-release_path = os.path.expanduser('~/RESULTS/release-220620_Waddles/')
-parameters_path = os.path.expanduser('~/PARAMETERS/')
+release_path = os.path.expanduser('~/DataChIP/')
+parameters_path = os.path.expanduser('~/DataChIP/release_stats')
 
 conv_bad = dict(zip(
     (1, 4 / 3, 3 / 2, 2, 5 / 2, 3, 4, 5, 6),
@@ -45,7 +45,7 @@ conv_bad = dict(zip(
 ))
 
 if __name__ == '__main__':
-    with open(parameters_path + 'CONVERT_CL_NAMES.json') as file:
+    with open(parameters_path + 'convert_cl_names.json') as file:
         cl_dict = json.loads(file.readline())
 
     cl_dict_reverse = {}
