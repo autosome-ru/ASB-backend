@@ -10,7 +10,7 @@ if [ -f ./pre-migration.sql ]; then
 fi
 
 flask db migrate
-flask db upgrade
+#flask db upgrade
 
 if [ -f ./post-migration.sql ]; then
     sqlite3 $DB <post-migration.sql;

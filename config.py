@@ -6,8 +6,8 @@ dir = pathlib.Path(__file__).parent.absolute()
 class Config(object):
     # SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(dir, 'AD_ASTRA.db')
     SQLALCHEMY_BINDS = {
-        'soos': 'sqlite:///' + os.path.join(dir, 'AD_ASTRA.db'),
-        'ford': 'sqlite:///' + os.path.join(dir, 'AD_ASTRA_test.db'),
+        'soos': 'sqlite:///' + os.path.join(dir, 'AD_ASTRA_soos.db'),
+        'ford': 'sqlite:///' + os.path.join(dir, 'AD_ASTRA_ford.db'),
         'candidates': 'sqlite:///' + os.path.join(dir, 'AD_ASTRA_candidates.db'),
     }
     SQLALCHEMY_TRACK_MODIFICATIONS = False

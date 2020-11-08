@@ -178,6 +178,8 @@ for release in Release.__subclasses__():
         has_grasp_associations = db.Column(db.Boolean)
         has_finemapping_associations = db.Column(db.Boolean)
 
+        has_concordance = db.Column(db.Boolean, index=True)
+
         def __repr__(self):
             return '<SNP rs{0.rs_id}, {0.chromosome}, {0.position}, {0.ref}, {0.alt}>'.format(self)
 

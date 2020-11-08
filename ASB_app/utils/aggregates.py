@@ -8,6 +8,7 @@ from ASB_app.constants import db_name_property_dict
 from ASB_app.releases import current_release
 
 session = current_release.session
+db = current_release.db
 
 TranscriptionFactorSNP, CellLineSNP, TranscriptionFactor, CellLine, Phenotype, SNP, \
 PhenotypeSNPCorrespondence, Experiment = \
@@ -158,6 +159,29 @@ def update_phenotype_associations():
         print(count)
         for snp, db_name in q.order_by(SNP.rs_id).limit(max_count).offset(offset):
             setattr(snp, db_name_property_dict[db_name], True)
+        session.commit()
+        session.close()
+        offset += max_count
+        count -= max_count
+
+
+def update_has_concordance():
+    q = session.query(SNP, TranscriptionFactorSNP).join(
+        TranscriptionFactorSNP,
+        (SNP.chromosome == TranscriptionFactorSNP.chromosome) &
+        (SNP.position == TranscriptionFactorSNP.position) &
+        (SNP.alt == TranscriptionFactorSNP.alt)
+    ).filter(
+        TranscriptionFactorSNP.motif_concordance.in_({'Concordant', 'Weak Concordant'})
+    ).group_by(SNP)
+    count = q.count()
+    print(count)
+    offset = 0
+    max_count = 999
+    while count > 0:
+        print(count)
+        for snp, tf_snp in q.order_by(SNP.rs_id).limit(max_count).offset(offset):
+            setattr(snp, 'has_concordance', True)
         session.commit()
         session.close()
         offset += max_count
