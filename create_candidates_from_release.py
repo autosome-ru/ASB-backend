@@ -37,7 +37,7 @@ CL = 1
 
 
 release_path = os.path.expanduser('~/DataChIP/')
-parameters_path = os.path.expanduser('~/DataChIP/release_stats')
+parameters_path = os.path.expanduser('~/DataChIP/release_stats/')
 
 conv_bad = dict(zip(
     (1, 4 / 3, 3 / 2, 2, 5 / 2, 3, 4, 5, 6),
