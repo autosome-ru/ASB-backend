@@ -5,7 +5,7 @@ import json
 from ASB_app.models import CandidateSNP
 
 
-current_release = releases.current_release
+current_release = releases.ReleaseFord
 session = current_release.session
 
 TranscriptionFactor, \
