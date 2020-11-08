@@ -13,6 +13,7 @@ class ReleaseSerializers:
             'alt': fields.String(enumerate=nucleotides),
             'rs_id': fields.Integer,
             'context': fields.String,
+            'has_concordance': fields.Boolean,
         })
 
         self.aggregated_snp_model = api.model('Agregated SNP (no genome info) ', {
