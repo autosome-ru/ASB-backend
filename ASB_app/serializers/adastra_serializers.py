@@ -13,7 +13,6 @@ class ReleaseSerializers:
             'alt': fields.String(enumerate=nucleotides),
             'rs_id': fields.Integer,
             'context': fields.String,
-            'has_concordance': fields.Boolean,
         })
 
         self.aggregated_snp_model = api.model('Agregated SNP (no genome info) ', {
@@ -67,6 +66,7 @@ class ReleaseSerializers:
         self.rs_snp_model = api.inherit('rs-SNP info for search', self.genome_polymorphism_location_model, {
             'tf_aggregated_snps': fields.List(fields.Nested(self.tf_snp_model)),
             'cl_aggregated_snps': fields.List(fields.Nested(self.cl_snp_model)),
+            'has_concordance': fields.Boolean,
         })
 
         self.search_results_model = api.model('SNP search results model', {
