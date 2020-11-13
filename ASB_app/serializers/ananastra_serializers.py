@@ -10,7 +10,7 @@ meta_info_model = api.model('Ticket meta info', {
     'cl_asbs': fields.Integer,
     'all_asbs': fields.Integer,
     'tf_candidates': fields.Integer,
-    'cl_canidates': fields.Integer,
+    'cl_candidates': fields.Integer,
     'all_candidates': fields.Integer,
     'tf_odds': fields.Float,
     'tf_log10_p_value': fields.Float,

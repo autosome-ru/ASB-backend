@@ -342,7 +342,7 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
         'cl_asbs': cl_asbs,
         'all_asbs': all_asbs,
         'tf_candidates': tf_candidates,
-        'cl_canidates': cl_candidates,
+        'cl_candidates': cl_candidates,
         'all_candidates': all_candidates,
         'tf_odds': tf_odds,
         'tf_log10_p_value': -np.log10(tf_p),
