@@ -5,7 +5,7 @@ from ASB_app import logger, executor
 from ASB_app.constants import possible_tf_asbs, possible_cl_asbs, possible_cl_candidates, possible_all_asbs, \
     possible_all_candidates, possible_tf_candidates
 from ASB_app.service import ananastra_service
-from ASB_app.utils import pack, process_row
+from ASB_app.utils import pack, process_row, group_concat_distinct_sep
 from sqlalchemy.orm import aliased
 import numpy as np
 import pandas as pd
@@ -57,13 +57,13 @@ def get_tf_query(rs_ids):
         db.func.group_concat(db.func.distinct(TranscriptionFactorSNP.motif_position)),
         db.func.group_concat(db.func.distinct(TranscriptionFactorSNP.motif_orientation)),
         db.func.group_concat(db.func.distinct(TranscriptionFactorSNP.motif_concordance)),
-        db.func.group_concat(db.func.distinct(CellLine.name)),
-        db.func.group_concat(db.func.distinct(qtl.phenotype_name)),
-        db.func.group_concat(db.func.distinct(ebi.phenotype_name)),
-        db.func.group_concat(db.func.distinct(phewas.phenotype_name)),
-        db.func.group_concat(db.func.distinct(finemapping.phenotype_name)),
-        db.func.group_concat(db.func.distinct(grasp.phenotype_name)),
-        db.func.group_concat(db.func.distinct(clinvar.phenotype_name)),
+        group_concat_distinct_sep(CellLine.name, ', '),
+        group_concat_distinct_sep(qtl.phenotype_name, ', '),
+        group_concat_distinct_sep(ebi.phenotype_name, ', '),
+        group_concat_distinct_sep(phewas.phenotype_name, ', '),
+        group_concat_distinct_sep(finemapping.phenotype_name, ', '),
+        group_concat_distinct_sep(grasp.phenotype_name, ', '),
+        group_concat_distinct_sep(clinvar.phenotype_name, ', '),
     ).join(
         SNP,
         TranscriptionFactorSNP.snp
@@ -137,13 +137,13 @@ def get_cl_query(rs_ids):
         db.func.group_concat(db.func.distinct(CellLineSNP.log_p_value_alt)),
         db.func.group_concat(db.func.distinct(CellLineSNP.es_ref)),
         db.func.group_concat(db.func.distinct(CellLineSNP.es_alt)),
-        db.func.group_concat(db.func.distinct(TranscriptionFactor.name)),
-        db.func.group_concat(db.func.distinct(qtl.phenotype_name)),
-        db.func.group_concat(db.func.distinct(ebi.phenotype_name)),
-        db.func.group_concat(db.func.distinct(phewas.phenotype_name)),
-        db.func.group_concat(db.func.distinct(finemapping.phenotype_name)),
-        db.func.group_concat(db.func.distinct(grasp.phenotype_name)),
-        db.func.group_concat(db.func.distinct(clinvar.phenotype_name)),
+        group_concat_distinct_sep(TranscriptionFactor.name, ', '),
+        group_concat_distinct_sep(qtl.phenotype_name, ', '),
+        group_concat_distinct_sep(ebi.phenotype_name, ', '),
+        group_concat_distinct_sep(phewas.phenotype_name, ', '),
+        group_concat_distinct_sep(finemapping.phenotype_name, ', '),
+        group_concat_distinct_sep(grasp.phenotype_name, ', '),
+        group_concat_distinct_sep(clinvar.phenotype_name, ', '),
     ).join(
         SNP,
         CellLineSNP.snp
@@ -242,12 +242,13 @@ def divide_chunks(l, n):
 
 
 def divide_query(get_query, rs_ids):
-    for chunk in divide_chunks(rs_ids, 990):
+    for chunk in divide_chunks(rs_ids, 900):
         yield get_query(chunk)
 
 
 @executor.job
 def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
+    processing_start_time = datetime.now()
     input_file_name = ananastra_service.get_path_by_ticket_id(ticket_id)
     ticket = ananastra_service.get_ticket(ticket_id)
     ticket.status = 'Processing'
@@ -336,7 +337,7 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
 
     ticket.status = 'Processed'
     ticket.meta_info = {
-        'processing_time': str(datetime.now() - ticket.date_created),
+        'processing_time': str(datetime.now() - processing_start_time),
         'all_rs': all_rs,
         'tf_asbs': tf_asbs,
         'cl_asbs': cl_asbs,
