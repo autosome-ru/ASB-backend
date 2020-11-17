@@ -88,12 +88,13 @@ class ProcessingResult(Resource):
     @api.expect(result_param_parser)
     def get(self, ticket_id):
         """
-        Get first 1000 rows of result
+        Get first <limit> rows of result
         """
-        result_param = result_param_parser.parse_args()['result_param']
-        if result_param not in ('tf', 'cl', 'tf_sum', 'cl_sum'):
-            api.abort(400, 'Wrong result param')
-        ok, result = ananastra_service.get_result(ticket_id, result_param)
+        args = result_param_parser.parse_args()
+        result_param = args['result_param']
+        format = args['format']
+        limit = args['limit']
+        ok, result = ananastra_service.get_result(ticket_id, result_param, limit, format)
         if not ok:
             return {'message': 'file is not processed'}, 403
         return result, 200

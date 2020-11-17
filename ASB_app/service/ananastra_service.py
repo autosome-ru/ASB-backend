@@ -1,7 +1,12 @@
+import csv
 import os
+import tempfile
+
+from flask import send_file
 
 from ASB_app.models import Ticket
 from ASB_app.releases import current_release
+from ASB_app.utils.aggregates import TsvDialect
 
 session = current_release.session
 
@@ -82,22 +87,41 @@ def delete_ticket(ticket_id):
     return True
 
 
-def get_result(ticket_id, param):
+def get_result(ticket_id, param, limit, format):
     ticket = get_ticket(ticket_id)
     if ticket.status != 'Processed':
         return False, {}
-    result = []
     out_file = get_path_by_ticket_id(ticket_id, path_type=param)
-    with open(out_file) as out:
-        header = []
-        for number, line in enumerate(out):
-            if number == 1001:
-                break
-            if number == 0:
-                header = [x.lower() for x in line.strip('\n').split('\t')]
-                continue
-            result.append(dict(zip(header, line.strip('\n').split('\t'))))
-    return True, result
+    if format == 'json':
+        result = []
+        with open(out_file) as out:
+            header = []
+            for number, line in enumerate(out):
+                if number == limit + 1:
+                    break
+                if number == 0:
+                    header = [x.lower() for x in line.strip('\n').split('\t')]
+                    continue
+                result.append(dict(zip(header, line.strip('\n').split('\t'))))
+        return True, result
+    elif format == 'tsv':
+        file = tempfile.NamedTemporaryFile('wt', suffix='.tsv')
+        csv_writer = csv.writer(file, dialect=TsvDialect)
+        with open(out_file) as out:
+            for number, line in enumerate(out):
+                if number == limit + 1:
+                    break
+                if number == 0:
+                    csv_writer.writerow([x.lower() for x in line.strip('\n').split('\t')])
+                    continue
+                csv_writer.writerow(line.strip('\n').split('\t'))
+        file.flush()
+        return send_file(
+            file.name,
+            cache_timeout=0,
+            mimetype="text/tsv",
+            as_attachment=True
+        )
 
 
 def delete_all_tickets():
