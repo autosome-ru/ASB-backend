@@ -152,6 +152,7 @@ def run_migrations_online():
                 downgrade_token="%s_downgrades" % name,
                 target_metadata=get_metadata(name),
                 process_revision_directives=process_revision_directives,
+                render_as_batch=True,
                 **current_app.extensions['migrate'].configure_args
             )
             context.run_migrations(engine_name=name)

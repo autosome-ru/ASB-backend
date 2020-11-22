@@ -42,6 +42,10 @@ class Gene:
     pass
 
 
+class GeneSNPCorrespondence:
+    pass
+
+
 abstract_models = [
     TranscriptionFactor,
     CellLine,
@@ -54,4 +58,5 @@ abstract_models = [
     PhenotypeSNPCorrespondence,
     BADGroup,
     Gene,
+    GeneSNPCorrespondence,
 ]

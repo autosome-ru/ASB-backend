@@ -10,7 +10,7 @@ import pandas as pd
 
 from sqlalchemy.sql import case
 
-current_release = releases.ReleaseTest
+current_release = releases.ReleaseFord
 session = current_release.session
 
 TranscriptionFactor, \
@@ -23,6 +23,7 @@ CellLineSNP, \
 Phenotype, \
 PhenotypeSNPCorrespondence, \
 BADGroup, \
+GeneSNPCorrespondence, \
 Gene = \
 current_release.TranscriptionFactor, \
 current_release.CellLine, \
@@ -34,6 +35,7 @@ current_release.CellLineSNP, \
 current_release.Phenotype, \
 current_release.PhenotypeSNPCorrespondence, \
 current_release.BADGroup, \
+current_release.GeneSNPCorrespondence, \
 current_release.Gene
 
 
@@ -50,6 +52,7 @@ BAD_GROUP = 0
 PEAKS_TF = 0
 PEAKS_CL = 0
 GENES = 0
+TARGET_GENES = 1
 
 
 release_path = os.path.expanduser('~/Data/')
@@ -61,12 +64,12 @@ conv_bad = dict(zip(
 ))
 
 if __name__ == '__main__':
-    with open(os.path.join(release_path, 'release_stats', 'convert_cl_names.json')) as file:
-        cl_dict = json.loads(file.readline())
-
-    cl_dict_reverse = {}
-    for key, value in cl_dict.items():
-        cl_dict_reverse[value] = key
+    # with open(os.path.join(release_path, 'release_stats', 'convert_cl_names.json')) as file:
+    #     cl_dict = json.loads(file.readline())
+    #
+    # cl_dict_reverse = {}
+    # for key, value in cl_dict.items():
+    #     cl_dict_reverse[value] = key
 
     if EXP:
         table = pd.read_table(parameters_path + 'master-list-annotated.txt')
@@ -485,4 +488,31 @@ if __name__ == '__main__':
         genes = [g for g in genes if g.gene_name not in repeating_gene_names]
 
         session.add_all(genes)
+        session.commit()
+
+    if TARGET_GENES:
+        qtl_genes = {}
+        # table = pd.read_table(os.path.join(release_path, 'release_stats', 'phenotypes_stats.tsv'))
+        table = pd.read_table(os.path.expanduser('~/Desktop/stats/phenotypes_stats.tsv'))
+        for index, row in table.iterrows():
+            if (index + 1) % 1000 == 0:
+                print(index + 1)
+            if str(row['QTLg']) in ('nan', '', 'None'):
+                continue
+
+            target_genes = Gene.query.filter(Gene.gene_id.in_(row['QTLg'].strip('\n').split(';'))).all()
+            if not target_genes:
+                print('No genes for ', row['QTLg'])
+
+            elif len(target_genes) < len(row['QTLg'].strip('\n').split(';')):
+                print('Not enough genes for ', row['QTLg'])
+
+            assert len(target_genes) <= len(row['QTLg'].strip('\n').split(';'))
+
+            mutations = SNP.query.filter(SNP.rs_id == int(row['RSID'][2:])).all()
+            if not mutations:
+                print('No snps for ', int(row['RSID'][2:]))
+
+            for mutation in mutations:
+                mutation.target_genes = target_genes
         session.commit()

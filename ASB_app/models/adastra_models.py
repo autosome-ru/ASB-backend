@@ -298,6 +298,28 @@ for release in Release.__subclasses__():
         orientation = db.Column(db.Boolean, nullable=False)
         snps_count = db.Column(db.Integer)
 
+        snps_by_target = db.relationship(
+            'SNP',
+            secondary='genes_SNPs',
+            backref='target_genes'
+        )
+
+
+    class GeneSNPCorrespondence(GenomePolymorphismLocation):
+        __tablename__ = 'genes_SNPs'
+        __bind_key__ = release.name
+        __table_args__ = (db.ForeignKeyConstraint(['chromosome', 'position', 'alt'],
+                                                  ['snps.chromosome', 'snps.position', 'snps.alt']),
+                          db.UniqueConstraint('chromosome', 'position', 'alt', 'gene_id',
+                                              name='unique_gene_snp_pair'),
+                          db.Index('snp_genes_SNPs_index', 'chromosome', 'position', 'alt'),
+                          db.Index('gene_index', 'gene_id')
+                          )
+
+        pair_id = db.Column(db.Integer, primary_key=True)
+        gene_id = db.Column(db.Integer, db.ForeignKey('genes.gene_id'),
+                                 nullable=False)
+
     models = [
         TranscriptionFactor,
         CellLine,
@@ -310,6 +332,7 @@ for release in Release.__subclasses__():
         PhenotypeSNPCorrespondence,
         BADGroup,
         Gene,
+        GeneSNPCorrespondence,
     ]
 
     for abstract_model, model in zip(abstract_models, models):

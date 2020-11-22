@@ -4,7 +4,8 @@ from math import lgamma
 import os
 
 from ASB_app import *
-from ASB_app.releases import current_release
+from ASB_app.releases import ReleaseFord
+current_release = ReleaseFord
 
 session = current_release.session
 SNP = current_release.SNP
@@ -210,7 +211,7 @@ if __name__ == '__main__':
             fig_y = unit_height * (1 + full_gap + text_h + indent + hill_sum_height + strands_h + hill_gap + 0.35)
             fig = transform.SVGFigure("{}px".format(fig_x), "{}px".format(fig_y))
             txt_gen = transform.TextElement(fig_x - 0.1 * unit_width, fig_y - 0.1 * unit_height,
-                                            'ADASTRA v1.4.0', size=str(p_value_text_h * unit_height) + 'px',
+                                            'ADASTRA v2.1.0', size=str(p_value_text_h * unit_height) + 'px',
                                             anchor='end', color='#a8a8a8', font='PT Sans, Arial')
             txt_snp = transform.TextElement(fig_x - 0.1 * unit_width, fig_y - (2 * p_value_text_h + 0.1) * unit_height,
                                             'rs{}'.format(snp.rs_id), size=str(p_value_text_h * unit_height) + 'px',
@@ -300,4 +301,4 @@ if __name__ == '__main__':
             place_letter_on_svg(fig, os.path.expanduser('~/letters/rect2.svg'), conc_label_space*2*unit_width+concordance_w, (1/2 - bracket_thick/600/2) * unit_height, bracket_thick/600*unit_height, (add_letters + concordance_indent - 3*conc_label_space)*unit_width - concordance_w)
             place_letter_on_svg(fig, os.path.expanduser('~/letters/rect2.svg'), conc_label_space*2*unit_width+concordance_w, (1 + full_gap + text_h + indent + hill_gap + strands_h/2 + ref_height - bracket_thick/600/2) * unit_height, bracket_thick/600*unit_height, (add_letters + concordance_indent - 3*conc_label_space)*unit_width - concordance_w)
 
-            fig.save('D:\Sashok\svgs/{}_{}_{}{}.svg'.format(tf.name, snp.rs_id, snp.alt, '_revcomp' if draw_revcomp else ''))
+            fig.save('D:\Shashok\svgs/{}_{}_{}{}.svg'.format(tf.name, snp.rs_id, snp.alt, '_revcomp' if draw_revcomp else ''))

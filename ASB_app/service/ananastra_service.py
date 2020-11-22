@@ -1,6 +1,7 @@
 import csv
 import os
 import tempfile
+from datetime import datetime, timedelta
 
 from flask import send_file
 
@@ -54,6 +55,7 @@ def create_ticket(ticket_id):
     ticket = Ticket(
         ticket_id=ticket_id,
         status='Created',
+        expiration_date=datetime.now() + timedelta(days=2)
     )
     session.add(ticket)
     session.commit()

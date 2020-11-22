@@ -80,6 +80,8 @@ def get_tf_query(rs_ids):
     ).join(
         ExpSNP,
         TranscriptionFactorSNP.exp_snps
+    ).filter(
+        (ExpSNP.p_value_ref - ExpSNP.p_value_alt) * (TranscriptionFactorSNP.log_p_value_alt - TranscriptionFactorSNP.log_p_value_ref) > 0
     ).join(
         CellLine,
         ExpSNP.cell_line
@@ -160,6 +162,8 @@ def get_cl_query(rs_ids):
     ).join(
         ExpSNP,
         CellLineSNP.exp_snps
+    ).filter(
+        (ExpSNP.p_value_ref - ExpSNP.p_value_alt) * (CellLineSNP.log_p_value_alt - CellLineSNP.log_p_value_ref) > 0
     ).join(
         TranscriptionFactor,
         ExpSNP.transcription_factor
@@ -261,11 +265,13 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
         common_header_2 = ['PEAK_CALLS', 'MEAN_BAD', 'LOG10_FDR_REF', 'LOG10_FDR_ALT',
                            'EFFECT_SIZE_REF', 'EFFECT_SIZE_ALT']
         common_header_3 = ['GTEX EQTL', 'EBI', 'PHEWAS', 'FINEMAPPING', 'GRASP', 'CLINVAR']
-        cl_header = common_header_1 + ['CELL_TYPE'] + common_header_2 + ['AGGREGATED_TFS'] + common_header_3
+        cl_header = common_header_1 + ['CELL_TYPE'] + common_header_2 + ['SUPPORTING_TFS'] + common_header_3
         tf_header = common_header_1 + ['TRANSCRIPTION_FACTOR'] + common_header_2 + \
                     ['MOTIF_LOG_P_REF', 'MOTIF_LOG_P_ALT', 'MOTIF_LOG2_FC', 'MOTIF_POSITION',
-                     'MOTIF_ORIENTATION', 'MOTIF_CONCORDANCE', 'AGGREGATED_CELL_TYPES'] + common_header_3
+                     'MOTIF_ORIENTATION', 'MOTIF_CONCORDANCE', 'SUPPORTING_CELL_TYPES'] + common_header_3
 
+        tf_asb_counts = {}
+        conc_asbs = []
         if annotate_tf:
             ananastra_service.create_processed_path(ticket_id, 'tf')
             tf_path = ananastra_service.get_path_by_ticket_id(ticket_id, path_type='tf', ext='.tsv')
@@ -276,7 +282,25 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
             for q_tf in divide_query(get_tf_query, rs_ids):
                 with open(tf_path, 'a') as out:
                     for tup in q_tf:
+                        tf_name = tup[5]
+                        rs_id = tup[2]
+                        alt = tup[4]
+                        conc = tup[17]
+                        tf_asb_counts.setdefault(tf_name, {
+                            'name': tf_name,
+                            'count': 0
+                        })['count'] += 1
+                        if conc not in ('No Hit', None):
+                            conc_asbs.append({
+                                    'tf_name': tf_name,
+                                    'rs_id': rs_id,
+                                    'alt': alt,
+                                    'concordance': conc,
+                                })
+
                         out.write(pack(process_row(tup, 'TF', tf_header)))
+
+            logger.debug('Ticket {}: tf done'.format(ticket_id))
 
             ananastra_service.create_processed_path(ticket_id, 'tf_sum')
 
@@ -286,6 +310,9 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
             tf_table.drop(columns=['BEST_FDR'], inplace=True)
             tf_table[idx].to_csv(ananastra_service.get_path_by_ticket_id(ticket_id, 'tf_sum'), sep='\t', index=False)
 
+            logger.debug('Ticket {}: tf_sum done'.format(ticket_id))
+
+        cl_asb_counts = {}
         if annotate_cl:
             ananastra_service.create_processed_path(ticket_id, 'cl')
             cl_path = ananastra_service.get_path_by_ticket_id(ticket_id, path_type='cl', ext='.tsv')
@@ -296,7 +323,15 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
             for q_cl in divide_query(get_cl_query, rs_ids):
                 with open(cl_path, 'a') as out:
                     for tup in q_cl:
+                        cl_name = tup[5]
+                        cl_asb_counts.setdefault(cl_name, {
+                            'name': cl_name,
+                            'count': 0
+                        })['count'] += 1
+
                         out.write(pack(process_row(tup, 'CL', cl_header)))
+
+            logger.debug('Ticket {}: cl done'.format(ticket_id))
 
             ananastra_service.create_processed_path(ticket_id, 'cl_sum')
 
@@ -306,13 +341,20 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
             cl_table.drop(columns=['BEST_FDR'], inplace=True)
             cl_table[idx].to_csv(ananastra_service.get_path_by_ticket_id(ticket_id, 'cl_sum'), sep='\t', index=False)
 
+            logger.debug('Ticket {}: cl_sum done'.format(ticket_id))
+
         all_rs = len(rs_ids)
         tf_asbs = sum(divide_query(get_tf_asbs, rs_ids))
         cl_asbs = sum(divide_query(get_cl_asbs, rs_ids))
         all_asbs = sum(divide_query(get_all_asbs, rs_ids))
+
+        logger.debug('Ticket {}: query count asb done'.format(ticket_id))
+
         tf_candidates = sum(divide_query(get_tf_candidates, rs_ids))
         cl_candidates = sum(divide_query(get_cl_candidates, rs_ids))
         all_candidates = sum(divide_query(get_all_candidates, rs_ids))
+
+        logger.debug('Ticket {}: quary count candidates done'.format(ticket_id))
 
         if tf_candidates:
             tf_odds, tf_p = fisher_exact(((tf_asbs, tf_candidates), (possible_tf_asbs, possible_tf_candidates)))
@@ -329,6 +371,8 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
         else:
             all_odds, all_p = 0, 1
 
+        logger.debug('Ticket {}: tests done'.format(ticket_id))
+
     except Exception as e:
         logger.error(e, exc_info=True)
         ticket.status = 'Failed'
@@ -336,6 +380,7 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
         return
 
     ticket.status = 'Processed'
+
     ticket.meta_info = {
         'processing_time': str(datetime.now() - processing_start_time),
         'all_rs': all_rs,
@@ -351,5 +396,11 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
         'cl_log10_p_value': -np.log10(cl_p),
         'all_odds': all_odds,
         'all_log10_p_value': -np.log10(all_p),
+        'tf_asb_counts': list(tf_asb_counts.values()),
+        'cl_asb_counts': list(cl_asb_counts.values()),
+        'concordant_asbs': conc_asbs,
     }
+    logger.debug('Ticket {}: ticket info changed'.format(ticket_id))
     session.commit()
+
+    logger.debug('Ticket {}: session commited'.format(ticket_id))

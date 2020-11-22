@@ -13,6 +13,7 @@ class Ticket(db.Model):
     ticket_id = db.Column(db.String(50), primary_key=True)
     status = db.Column(db.Enum('Created', 'Processing', 'Processed', 'Failed'), server_default='Created', nullable=False)
     date_created = db.Column(db.DATETIME, default=datetime.now(), nullable=False)
+    expiration_date = db.Column(db.DATETIME, default=datetime.now())
     meta_info = db.Column(db.JSON, server_default='{}')
     user_id = db.Column(db.String(36))
 

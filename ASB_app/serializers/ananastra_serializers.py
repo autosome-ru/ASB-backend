@@ -3,6 +3,18 @@ from ASB_app.releases import current_release
 
 api = current_release.api
 
+asb_count_model = api.model('ASB count entity', {
+    'name': fields.String,
+    'count': fields.Integer,
+})
+
+concordant_asb_model = api.model('Motif-concordant ASB', {
+    'tf_name': fields.String,
+    'rs_id': fields.String,
+    'alt': fields.String(enum=('A', 'C', 'G', 'T')),
+    'concordance': fields.String(enum=('Concordant', 'Discordant', 'Weak Concordant', 'Weak Discordant'))
+})
+
 meta_info_model = api.model('Ticket meta info', {
     'processing_time': fields.String,
     'all_rs': fields.Integer,
@@ -18,11 +30,15 @@ meta_info_model = api.model('Ticket meta info', {
     'cl_log10_p_value': fields.Float,
     'all_odds': fields.Float,
     'all_log10_p_value': fields.Float,
+    'tf_asb_counts': fields.List(fields.Nested(asb_count_model)),
+    'cl_asb_counts': fields.List(fields.Nested(asb_count_model)),
+    'concordant_asbs': fields.List(fields.Nested(concordant_asb_model)),
 })
 
 ticket_model = api.model('ANANASTRA ticket', {
     'ticket_id': fields.String,
     'date_created': fields.DateTime,
+    'expiration_date': fields.DateTime,
     'status': fields.String(enum=('Created', 'Processing', 'Processed', 'Failed')),
     'meta_info': fields.Nested(meta_info_model),
 })
