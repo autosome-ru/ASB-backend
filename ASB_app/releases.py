@@ -13,7 +13,7 @@ class Release:
 class ReleaseSoos(Release):
     name = 'soos'
     version = '1'
-    full_version = '1.4'
+    full_version = '1.6'
 
 
 class ReleaseFord(Release):
