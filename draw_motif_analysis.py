@@ -4,7 +4,7 @@ from math import lgamma
 import os
 
 from ASB_app import *
-from ASB_app.releases import ReleaseFord
+from ASB_app.releases import ReleaseFord, ReleaseSoos
 current_release = ReleaseFord
 
 session = current_release.session
@@ -204,6 +204,7 @@ if __name__ == '__main__':
             revcomp = tf_snp.motif_orientation == draw_revcomp
 
             ef = tf_snp.es_ref if asb_is_ref else tf_snp.es_alt
+            fdr = 1/np.power(10, tf_snp.log_p_value_ref) if asb_is_ref else 1/np.power(10, tf_snp.log_p_value_alt)
 
             m, heights = get_heights(pcm_path, mode='KDIC')
             print(full_gap, text_h, indent)
@@ -211,7 +212,7 @@ if __name__ == '__main__':
             fig_y = unit_height * (1 + full_gap + text_h + indent + hill_sum_height + strands_h + hill_gap + 0.35)
             fig = transform.SVGFigure("{}px".format(fig_x), "{}px".format(fig_y))
             txt_gen = transform.TextElement(fig_x - 0.1 * unit_width, fig_y - 0.1 * unit_height,
-                                            'ADASTRA v2.1.0', size=str(p_value_text_h * unit_height) + 'px',
+                                            'ADASTRA v{}'.format(current_release.full_version), size=str(p_value_text_h * unit_height) + 'px',
                                             anchor='end', color='#a8a8a8', font='PT Sans, Arial')
             txt_snp = transform.TextElement(fig_x - 0.1 * unit_width, fig_y - (2 * p_value_text_h + 0.1) * unit_height,
                                             'rs{}'.format(snp.rs_id), size=str(p_value_text_h * unit_height) + 'px',
@@ -290,7 +291,7 @@ if __name__ == '__main__':
                 fdr_text_y = 1 + full_gap + text_h + indent + hill_gap + ref_height + strands_h + alt_height*2/3 - p_value_text_h/2
 
             txt_ef = transform.TextElement(((m-1)/2 + add_letters + 0.7 + concordance_indent) * unit_width, ef_text_y * unit_height, 'ASB Effect Size, log₂ : {:.2f}'.format(ef), size=str(p_value_text_h*unit_height) + 'px', anchor='middle', color='#000000de', font='PT Sans, Arial')
-            txt_fdr = transform.TextElement(((m-1)/2 + add_letters + 0.7 + concordance_indent) * unit_width, fdr_text_y * unit_height, 'ASB FDR: ' + get_scientific_text(motif_pref), size=str(p_value_text_h*unit_height) + 'px', anchor='middle', color='#000000de', font='PT Sans, Arial')
+            txt_fdr = transform.TextElement(((m-1)/2 + add_letters + 0.7 + concordance_indent) * unit_width, fdr_text_y * unit_height, 'ASB FDR: ' + get_scientific_text(fdr), size=str(p_value_text_h*unit_height) + 'px', anchor='middle', color='#000000de', font='PT Sans, Arial')
             fig.append([txt_ef, txt_fdr])
 
             bracket_thick = 10
@@ -301,4 +302,4 @@ if __name__ == '__main__':
             place_letter_on_svg(fig, os.path.expanduser('~/letters/rect2.svg'), conc_label_space*2*unit_width+concordance_w, (1/2 - bracket_thick/600/2) * unit_height, bracket_thick/600*unit_height, (add_letters + concordance_indent - 3*conc_label_space)*unit_width - concordance_w)
             place_letter_on_svg(fig, os.path.expanduser('~/letters/rect2.svg'), conc_label_space*2*unit_width+concordance_w, (1 + full_gap + text_h + indent + hill_gap + strands_h/2 + ref_height - bracket_thick/600/2) * unit_height, bracket_thick/600*unit_height, (add_letters + concordance_indent - 3*conc_label_space)*unit_width - concordance_w)
 
-            fig.save('D:\Shashok\svgs/{}_{}_{}{}.svg'.format(tf.name, snp.rs_id, snp.alt, '_revcomp' if draw_revcomp else ''))
+            fig.save('D:\Shashok\svgs_{}/{}_{}_{}{}.svg'.format(current_release.name, tf.name, snp.rs_id, snp.alt, '_revcomp' if draw_revcomp else ''))
