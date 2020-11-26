@@ -19,9 +19,9 @@ session = current_release.session
 db = current_release.db
 
 TranscriptionFactor, TranscriptionFactorSNP, CellLine, CellLineSNP, \
-SNP, ExpSNP, Phenotype, PhenotypeSNPCorrespondence = \
+SNP, ExpSNP, Phenotype, PhenotypeSNPCorrespondence, Gene = \
     current_release.TranscriptionFactor, current_release.TranscriptionFactorSNP, current_release.CellLine, current_release.CellLineSNP, \
-    current_release.SNP, current_release.ExpSNP, current_release.Phenotype, current_release.PhenotypeSNPCorrespondence
+    current_release.SNP, current_release.ExpSNP, current_release.Phenotype, current_release.PhenotypeSNPCorrespondence, current_release.Gene
 
 
 def convert_rs_to_int(rs_str):
@@ -44,6 +44,7 @@ def get_tf_query(rs_ids):
         db.func.group_concat(db.func.distinct(SNP.rs_id)),
         db.func.group_concat(db.func.distinct(SNP.ref)),
         db.func.group_concat(db.func.distinct(TranscriptionFactorSNP.alt)),
+        db.func.group_concat(db.func.distinct(SNP.context)),
         db.func.group_concat(db.func.distinct(TranscriptionFactor.name)),
         db.func.group_concat(db.func.distinct(TranscriptionFactorSNP.peak_calls)),
         db.func.group_concat(db.func.distinct(TranscriptionFactorSNP.mean_bad)),
@@ -64,6 +65,7 @@ def get_tf_query(rs_ids):
         group_concat_distinct_sep(finemapping.phenotype_name, ', '),
         group_concat_distinct_sep(grasp.phenotype_name, ', '),
         group_concat_distinct_sep(clinvar.phenotype_name, ', '),
+        group_concat_distinct_sep(Gene.gene_name, ', '),
     ).join(
         SNP,
         TranscriptionFactorSNP.snp
@@ -76,15 +78,25 @@ def get_tf_query(rs_ids):
         PhenotypeSNPCorrespondence,
         (SNP.chromosome == PhenotypeSNPCorrespondence.chromosome) &
         (SNP.position == PhenotypeSNPCorrespondence.position) &
-        (SNP.alt == PhenotypeSNPCorrespondence.alt)
+        (SNP.alt == PhenotypeSNPCorrespondence.alt),
+        isouter=True
     ).join(
         ExpSNP,
         TranscriptionFactorSNP.exp_snps
     ).filter(
         (ExpSNP.p_value_ref - ExpSNP.p_value_alt) * (TranscriptionFactorSNP.log_p_value_alt - TranscriptionFactorSNP.log_p_value_ref) > 0
     ).join(
+        CellLineSNP,
+        ExpSNP.cl_aggregated_snp,
+        isouter=True
+    ).join(
         CellLine,
-        ExpSNP.cell_line
+        CellLineSNP.cell_line,
+        isouter=True
+    ).join(
+        Gene,
+        SNP.target_genes,
+        isouter=True
     ).join(
         qtl,
         (PhenotypeSNPCorrespondence.phenotype_id == qtl.phenotype_id) &
@@ -132,6 +144,7 @@ def get_cl_query(rs_ids):
         db.func.group_concat(db.func.distinct(SNP.rs_id)),
         db.func.group_concat(db.func.distinct(SNP.ref)),
         db.func.group_concat(db.func.distinct(CellLineSNP.alt)),
+        db.func.group_concat(db.func.distinct(SNP.context)),
         db.func.group_concat(db.func.distinct(CellLine.name)),
         db.func.group_concat(db.func.distinct(CellLineSNP.peak_calls)),
         db.func.group_concat(db.func.distinct(CellLineSNP.mean_bad)),
@@ -146,6 +159,7 @@ def get_cl_query(rs_ids):
         group_concat_distinct_sep(finemapping.phenotype_name, ', '),
         group_concat_distinct_sep(grasp.phenotype_name, ', '),
         group_concat_distinct_sep(clinvar.phenotype_name, ', '),
+        group_concat_distinct_sep(Gene.gene_name, ', '),
     ).join(
         SNP,
         CellLineSNP.snp
@@ -158,15 +172,25 @@ def get_cl_query(rs_ids):
         PhenotypeSNPCorrespondence,
         (SNP.chromosome == PhenotypeSNPCorrespondence.chromosome) &
         (SNP.position == PhenotypeSNPCorrespondence.position) &
-        (SNP.alt == PhenotypeSNPCorrespondence.alt)
+        (SNP.alt == PhenotypeSNPCorrespondence.alt),
+        isouter=True
     ).join(
         ExpSNP,
         CellLineSNP.exp_snps
     ).filter(
         (ExpSNP.p_value_ref - ExpSNP.p_value_alt) * (CellLineSNP.log_p_value_alt - CellLineSNP.log_p_value_ref) > 0
     ).join(
+        TranscriptionFactorSNP,
+        ExpSNP.tf_aggregated_snp,
+        isouter=True
+    ).join(
         TranscriptionFactor,
-        ExpSNP.transcription_factor
+        TranscriptionFactorSNP.transcription_factor,
+        isouter=True
+    ).join(
+        Gene,
+        SNP.target_genes,
+        isouter=True
     ).join(
         qtl,
         (PhenotypeSNPCorrespondence.phenotype_id == qtl.phenotype_id) &
@@ -250,6 +274,25 @@ def divide_query(get_query, rs_ids):
         yield get_query(chunk)
 
 
+def get_alleles(df):
+    assert len(set(df['REF'].tolist())) == 1
+    ref = df['REF'].tolist()[0]
+    alts = list(set(df['ALT'].tolist()))
+    return '/'.join([ref] + alts)
+
+
+def get_preferences(df):
+    ref = len(df[df['LOG10_FDR_REF'] > df['LOG10_FDR_ALT']].index) > 0
+    alt = len(df[df['LOG10_FDR_ALT'] > df['LOG10_FDR_REF']].index) > 0
+    assert ref or alt
+    if ref and alt:
+        return 'Both'
+    elif ref:
+        return 'Ref'
+    else:
+        return 'Alt'
+
+
 @executor.job
 def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
     processing_start_time = datetime.now()
@@ -261,10 +304,10 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
         assert len(data.columns) == 1
         rs_ids = data[0].apply(convert_rs_to_int).unique().tolist()
 
-        common_header_1 = ['CHROMOSOME', 'POSITION', 'RS_ID', 'REF', 'ALT']
+        common_header_1 = ['CHROMOSOME', 'POSITION', 'RS_ID', 'REF', 'ALT', 'SEQUENCE']
         common_header_2 = ['PEAK_CALLS', 'MEAN_BAD', 'LOG10_FDR_REF', 'LOG10_FDR_ALT',
                            'EFFECT_SIZE_REF', 'EFFECT_SIZE_ALT']
-        common_header_3 = ['GTEX EQTL', 'EBI', 'PHEWAS', 'FINEMAPPING', 'GRASP', 'CLINVAR']
+        common_header_3 = ['GTEX_EQTL', 'EBI', 'PHEWAS', 'FINEMAPPING', 'GRASP', 'CLINVAR', 'GTEX_EQTL_TARGET_GENES']
         cl_header = common_header_1 + ['CELL_TYPE'] + common_header_2 + ['SUPPORTING_TFS'] + common_header_3
         tf_header = common_header_1 + ['TRANSCRIPTION_FACTOR'] + common_header_2 + \
                     ['MOTIF_LOG_P_REF', 'MOTIF_LOG_P_ALT', 'MOTIF_LOG2_FC', 'MOTIF_POSITION',
@@ -272,6 +315,7 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
 
         tf_asb_counts = {}
         conc_asbs = []
+        logger.info('Ticket {}: processing started'.format(ticket_id))
         if annotate_tf:
             ananastra_service.create_processed_path(ticket_id, 'tf')
             tf_path = ananastra_service.get_path_by_ticket_id(ticket_id, path_type='tf', ext='.tsv')
@@ -282,10 +326,10 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
             for q_tf in divide_query(get_tf_query, rs_ids):
                 with open(tf_path, 'a') as out:
                     for tup in q_tf:
-                        tf_name = tup[5]
+                        tf_name = tup[6]
                         rs_id = tup[2]
                         alt = tup[4]
-                        conc = tup[17]
+                        conc = tup[18]
                         tf_asb_counts.setdefault(tf_name, {
                             'name': tf_name,
                             'count': 0
@@ -308,7 +352,13 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
             tf_table['BEST_FDR'] = tf_table[['LOG10_FDR_REF', 'LOG10_FDR_ALT']].max(axis=1)
             idx = tf_table.groupby(['RS_ID', 'ALT'])['BEST_FDR'].transform(max) == tf_table['BEST_FDR']
             tf_table.drop(columns=['BEST_FDR'], inplace=True)
-            tf_table[idx].to_csv(ananastra_service.get_path_by_ticket_id(ticket_id, 'tf_sum'), sep='\t', index=False)
+            tf_sum_table = tf_table.loc[idx].copy()
+            tf_sum_table['IS_EQTL'] = tf_sum_table['GTEX_EQTL_TARGET_GENES'].astype(bool)
+            tf_sum_table['ALLELES'] = tf_sum_table.apply(lambda row: get_alleles(tf_table.loc[tf_table['RS_ID'] == row['RS_ID'], ['REF', 'ALT']]), axis=1)
+            tf_sum_table['TF_BINDING_PREFERENCES'] = tf_sum_table.apply(lambda row: get_preferences(tf_table.loc[tf_table['RS_ID'] == row['RS_ID'], ['LOG10_FDR_REF', 'LOG10_FDR_ALT']]), axis=1)
+            tf_sum_table.to_csv(ananastra_service.get_path_by_ticket_id(ticket_id, 'tf_sum'), sep='\t', index=False)
+            tf_table.drop(columns=['GTEX_EQTL_TARGET_GENES'], inplace=True)
+            tf_table.to_csv(tf_path, sep='\t', index=False)
 
             logger.info('Ticket {}: tf_sum done'.format(ticket_id))
 
@@ -323,7 +373,7 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
             for q_cl in divide_query(get_cl_query, rs_ids):
                 with open(cl_path, 'a') as out:
                     for tup in q_cl:
-                        cl_name = tup[5]
+                        cl_name = tup[6]
                         cl_asb_counts.setdefault(cl_name, {
                             'name': cl_name,
                             'count': 0
@@ -339,7 +389,13 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
             cl_table['BEST_FDR'] = cl_table[['LOG10_FDR_REF', 'LOG10_FDR_ALT']].max(axis=1)
             idx = cl_table.groupby(['RS_ID', 'ALT'])['BEST_FDR'].transform(max) == cl_table['BEST_FDR']
             cl_table.drop(columns=['BEST_FDR'], inplace=True)
-            cl_table[idx].to_csv(ananastra_service.get_path_by_ticket_id(ticket_id, 'cl_sum'), sep='\t', index=False)
+            cl_sum_table = cl_table.loc[idx].copy()
+            cl_sum_table['IS_EQTL'] = cl_sum_table['GTEX_EQTL_TARGET_GENES'].astype(bool)
+            cl_sum_table['ALLELES'] = cl_sum_table.apply(lambda row: get_alleles(cl_table.loc[cl_table['RS_ID'] == row['RS_ID'], ['REF', 'ALT']]), axis=1)
+            cl_sum_table['TF_BINDING_PREFERENCES'] = cl_sum_table.apply(lambda row: get_preferences(cl_table.loc[cl_table['RS_ID'] == row['RS_ID'], ['LOG10_FDR_REF', 'LOG10_FDR_ALT']]), axis=1)
+            cl_sum_table.to_csv(ananastra_service.get_path_by_ticket_id(ticket_id, 'cl_sum'), sep='\t', index=False)
+            cl_table.drop(columns=['GTEX_EQTL_TARGET_GENES'], inplace=True)
+            cl_table.to_csv(cl_path, sep='\t', index=False)
 
             logger.info('Ticket {}: cl_sum done'.format(ticket_id))
 
