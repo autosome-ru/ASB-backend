@@ -118,7 +118,7 @@ def get_result(ticket_id, param, limit, format):
                     continue
                 csv_writer.writerow(line.strip('\n').split('\t'))
         file.flush()
-        return send_file(
+        return True, send_file(
             file.name,
             cache_timeout=0,
             mimetype="text/tsv",
