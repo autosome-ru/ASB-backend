@@ -100,7 +100,7 @@ def get_result(ticket_id, param, limit, format):
         with open(out_file) as out:
             header = []
             for number, line in enumerate(out):
-                if number == limit + 1:
+                if limit != 0 and number == limit + 1:
                     break
                 if number == 0:
                     header = [x.lower() for x in line.strip('\n').split('\t')]
@@ -112,7 +112,7 @@ def get_result(ticket_id, param, limit, format):
         csv_writer = csv.writer(file, dialect=TsvDialect)
         with open(out_file) as out:
             for number, line in enumerate(out):
-                if number == limit + 1:
+                if limit != 0 and number == limit + 1:
                     break
                 if number == 0:
                     csv_writer.writerow([x.lower() for x in line.strip('\n').split('\t')])

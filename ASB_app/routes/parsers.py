@@ -37,4 +37,4 @@ for release in Release.__subclasses__():
 result_param_parser = current_release.api.parser()
 result_param_parser.add_argument('result_param', choices=('tf', 'cl', 'tf_sum', 'cl_sum'), default='tf')
 result_param_parser.add_argument('format', choices=('json', 'tsv'), default='json')
-result_param_parser.add_argument('limit', type=inputs.positive, default=1000)
+result_param_parser.add_argument('limit', type=inputs.positive, default=0)
