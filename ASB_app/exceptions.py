@@ -18,3 +18,9 @@ class ReleaseNotFound(ASBException):
     """
     Is raised when specified release version is not found
     """
+
+
+class FileNotProcessed(ASBException):
+    """
+    Is raised when trying to download ANANASTra ticket ptocessing result for an unprocessed ticket
+    """

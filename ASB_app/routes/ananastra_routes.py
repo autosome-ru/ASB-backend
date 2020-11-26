@@ -7,7 +7,7 @@ from flask_restplus import Resource
 
 from ASB_app.executor_jobs import process_snp_file
 from ASB_app.serializers import ticket_model
-from ASB_app.service import ananastra_service
+from ASB_app.service import ananastra_service, FileNotProcessed
 from ASB_app.service import get_ticket_id_from_path, get_tickets_dir
 from ASB_app.utils import PaginationMixin
 from ASB_app.models import Ticket
@@ -94,10 +94,13 @@ class ProcessingResult(Resource):
         result_param = args['result_param']
         format = args['format']
         limit = args['limit']
-        ok, result = ananastra_service.get_result(ticket_id, result_param, limit, format)
-        if not ok:
+        try:
+            if format == 'json':
+                return ananastra_service.get_result(ticket_id, result_param, limit, format), 200
+            else:
+                return ananastra_service.get_result(ticket_id, result_param, limit, format)
+        except FileNotProcessed:
             return {'message': 'file is not processed'}, 403
-        return result, 200
 
 
 @ananastra_nsp.route('/ticket')

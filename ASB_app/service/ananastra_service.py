@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 
 from flask import send_file
 
+from ASB_app.exceptions import FileNotProcessed
 from ASB_app.models import Ticket
 from ASB_app.releases import current_release
 from ASB_app.utils.aggregates import TsvDialect
@@ -92,7 +93,7 @@ def delete_ticket(ticket_id):
 def get_result(ticket_id, param, limit, format):
     ticket = get_ticket(ticket_id)
     if ticket.status != 'Processed':
-        return False, {}
+        raise FileNotProcessed
     out_file = get_path_by_ticket_id(ticket_id, path_type=param)
     if format == 'json':
         result = []
@@ -105,7 +106,7 @@ def get_result(ticket_id, param, limit, format):
                     header = [x.lower() for x in line.strip('\n').split('\t')]
                     continue
                 result.append(dict(zip(header, line.strip('\n').split('\t'))))
-        return True, result
+        return result
     elif format == 'tsv':
         file = tempfile.NamedTemporaryFile('wt', suffix='.tsv')
         csv_writer = csv.writer(file, dialect=TsvDialect)
@@ -118,7 +119,7 @@ def get_result(ticket_id, param, limit, format):
                     continue
                 csv_writer.writerow(line.strip('\n').split('\t'))
         file.flush()
-        return True, send_file(
+        return send_file(
             file.name,
             cache_timeout=0,
             mimetype="text/tsv",
