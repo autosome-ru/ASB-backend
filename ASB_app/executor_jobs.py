@@ -19,9 +19,9 @@ session = current_release.session
 db = current_release.db
 
 TranscriptionFactor, TranscriptionFactorSNP, CellLine, CellLineSNP, \
-SNP, ExpSNP, Phenotype, PhenotypeSNPCorrespondence, Gene = \
+SNP, ExpSNP, Phenotype, PhenotypeSNPCorrespondence, Gene, Experiment = \
     current_release.TranscriptionFactor, current_release.TranscriptionFactorSNP, current_release.CellLine, current_release.CellLineSNP, \
-    current_release.SNP, current_release.ExpSNP, current_release.Phenotype, current_release.PhenotypeSNPCorrespondence, current_release.Gene
+    current_release.SNP, current_release.ExpSNP, current_release.Phenotype, current_release.PhenotypeSNPCorrespondence, current_release.Gene, current_release.Experiment
 
 
 def convert_rs_to_int(rs_str):
@@ -86,13 +86,11 @@ def get_tf_query(rs_ids):
     ).filter(
         (ExpSNP.p_value_ref - ExpSNP.p_value_alt) * (TranscriptionFactorSNP.log_p_value_alt - TranscriptionFactorSNP.log_p_value_ref) > 0
     ).join(
-        CellLineSNP,
-        ExpSNP.cl_aggregated_snp,
-        isouter=True
+        Experiment,
+        ExpSNP.experiment,
     ).join(
         CellLine,
-        CellLineSNP.cell_line,
-        isouter=True
+        Experiment.cell_line,
     ).join(
         Gene,
         SNP.target_genes,
@@ -180,13 +178,11 @@ def get_cl_query(rs_ids):
     ).filter(
         (ExpSNP.p_value_ref - ExpSNP.p_value_alt) * (CellLineSNP.log_p_value_alt - CellLineSNP.log_p_value_ref) > 0
     ).join(
-        TranscriptionFactorSNP,
-        ExpSNP.tf_aggregated_snp,
-        isouter=True
+        Experiment,
+        ExpSNP.experiment,
     ).join(
         TranscriptionFactor,
-        TranscriptionFactorSNP.transcription_factor,
-        isouter=True
+        Experiment.transcription_factor,
     ).join(
         Gene,
         SNP.target_genes,
@@ -320,11 +316,11 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
             ananastra_service.create_processed_path(ticket_id, 'tf')
             tf_path = ananastra_service.get_path_by_ticket_id(ticket_id, path_type='tf', ext='.tsv')
 
-            with open(tf_path, 'w') as out:
+            with open(tf_path, 'w', encoding='utf-8') as out:
                 out.write(pack(tf_header))
 
             for q_tf in divide_query(get_tf_query, rs_ids):
-                with open(tf_path, 'a') as out:
+                with open(tf_path, 'a', encoding='utf-8') as out:
                     for tup in q_tf:
                         tf_name = tup[6]
                         rs_id = tup[2]
@@ -348,7 +344,7 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
 
             ananastra_service.create_processed_path(ticket_id, 'tf_sum')
 
-            tf_table = pd.read_table(tf_path)
+            tf_table = pd.read_table(tf_path, encoding='utf-8')
             tf_table['BEST_FDR'] = tf_table[['LOG10_FDR_REF', 'LOG10_FDR_ALT']].max(axis=1)
             idx = tf_table.groupby(['RS_ID', 'ALT'])['BEST_FDR'].transform(max) == tf_table['BEST_FDR']
             tf_table.drop(columns=['BEST_FDR'], inplace=True)
@@ -367,11 +363,11 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
             ananastra_service.create_processed_path(ticket_id, 'cl')
             cl_path = ananastra_service.get_path_by_ticket_id(ticket_id, path_type='cl', ext='.tsv')
 
-            with open(cl_path, 'w') as out:
+            with open(cl_path, 'w', encoding='utf-8') as out:
                 out.write(pack(cl_header))
 
             for q_cl in divide_query(get_cl_query, rs_ids):
-                with open(cl_path, 'a') as out:
+                with open(cl_path, 'a', encoding='utf-8') as out:
                     for tup in q_cl:
                         cl_name = tup[6]
                         cl_asb_counts.setdefault(cl_name, {
@@ -385,7 +381,7 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
 
             ananastra_service.create_processed_path(ticket_id, 'cl_sum')
 
-            cl_table = pd.read_table(cl_path)
+            cl_table = pd.read_table(cl_path, encoding='utf-8')
             cl_table['BEST_FDR'] = cl_table[['LOG10_FDR_REF', 'LOG10_FDR_ALT']].max(axis=1)
             idx = cl_table.groupby(['RS_ID', 'ALT'])['BEST_FDR'].transform(max) == cl_table['BEST_FDR']
             cl_table.drop(columns=['BEST_FDR'], inplace=True)

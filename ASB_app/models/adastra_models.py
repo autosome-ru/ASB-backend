@@ -122,7 +122,7 @@ for release in Release.__subclasses__():
         bad = db.Column(db.Enum(*bads))
         tf_snp_id = db.Column(db.Integer, db.ForeignKey('tf_snps.tf_snp_id'))
         cl_snp_id = db.Column(db.Integer, db.ForeignKey('cl_snps.cl_snp_id'))
-        exp_id = db.Column(db.Integer, db.ForeignKey('experiments.exp_id'), nullable=False)
+        exp_id = db.Column(db.Integer, db.ForeignKey('experiments.exp_id'), nullable=False)  # FIXME
 
         tf_aggregated_snp = db.relationship('TranscriptionFactorSNP', backref='exp_snps')
         cl_aggregated_snp = db.relationship('CellLineSNP', backref='exp_snps')
