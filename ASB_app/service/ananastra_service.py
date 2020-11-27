@@ -90,6 +90,12 @@ def delete_ticket(ticket_id):
     return True
 
 
+def modify_null(field):
+    if field == 'None':
+        return None
+    return field
+
+
 def get_result(ticket_id, param, limit, format):
     ticket = get_ticket(ticket_id)
     if ticket.status != 'Processed':
@@ -105,7 +111,7 @@ def get_result(ticket_id, param, limit, format):
                 if number == 0:
                     header = [x.lower() for x in line.strip('\n').split('\t')]
                     continue
-                result.append(dict(zip(header, line.strip('\n').split('\t'))))
+                result.append(dict(zip(header, [modify_null(field) for field in line.strip('\n').split('\t')])))
         return result
     elif format == 'tsv':
         file = tempfile.NamedTemporaryFile('wt', suffix='.tsv')
