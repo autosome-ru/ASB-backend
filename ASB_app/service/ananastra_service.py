@@ -93,6 +93,10 @@ def delete_ticket(ticket_id):
 def modify_null(field):
     if field == 'None':
         return None
+    elif field == 'True':
+        return True
+    elif field == 'False':
+        return False
     return field
 
 
