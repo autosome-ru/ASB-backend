@@ -2,6 +2,7 @@ import csv
 import os
 import tempfile
 from datetime import datetime, timedelta
+import pandas as pd
 
 from flask import send_file
 
@@ -93,10 +94,8 @@ def delete_ticket(ticket_id):
 def modify_null(field):
     if field == 'None':
         return None
-    elif field == 'True':
-        return True
-    elif field == 'False':
-        return False
+    if pd.isna(field):
+        return None
     return field
 
 
@@ -107,15 +106,13 @@ def get_result(ticket_id, param, limit, format):
     out_file = get_path_by_ticket_id(ticket_id, path_type=param)
     if format == 'json':
         result = []
-        with open(out_file) as out:
-            header = []
-            for number, line in enumerate(out):
-                if limit != 0 and number == limit + 1:
-                    break
-                if number == 0:
-                    header = [x.lower() for x in line.strip('\n').split('\t')]
-                    continue
-                result.append(dict(zip(header, [modify_null(field) for field in line.strip('\n').split('\t')])))
+        out = pd.read_table(out_file, na_values=['None', 'NaN', 'nan', '', 'NULL'])
+        header = list(out.columns)
+        new_header = [x.lower() for x in header]
+        for number, line in out.iterrows():
+            if limit != 0 and number == limit + 1:
+                break
+            result.append(dict(zip(new_header, [modify_null(line[field]) for field in header])))
         return result
     elif format == 'tsv':
         file = tempfile.NamedTemporaryFile('wt', suffix='.tsv')

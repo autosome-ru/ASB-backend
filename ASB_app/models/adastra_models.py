@@ -69,8 +69,8 @@ for release in Release.__subclasses__():
             db.Index('align_index', 'align'),
         )
         if float(release.version) >= 2:
-            exp_id = db.Column(db.String, primary_key=True)
-            align = db.Column(db.String, nullable=False)
+            exp_id = db.Column(db.String(10), primary_key=True)
+            align = db.Column(db.String(10), nullable=False)
         else:
             exp_id = db.Column(db.Integer, primary_key=True)
             align = db.Column(db.Integer, nullable=False)
@@ -122,7 +122,10 @@ for release in Release.__subclasses__():
         bad = db.Column(db.Enum(*bads))
         tf_snp_id = db.Column(db.Integer, db.ForeignKey('tf_snps.tf_snp_id'))
         cl_snp_id = db.Column(db.Integer, db.ForeignKey('cl_snps.cl_snp_id'))
-        exp_id = db.Column(db.Integer, db.ForeignKey('experiments.exp_id'), nullable=False)  # FIXME
+        if float(release.version) >= 2:
+            exp_id = db.Column(db.String(10), db.ForeignKey('experiments.exp_id'), nullable=False)  # FIXME
+        else:
+            exp_id = db.Column(db.Integer, db.ForeignKey('experiments.exp_id'), nullable=False)
 
         tf_aggregated_snp = db.relationship('TranscriptionFactorSNP', backref='exp_snps')
         cl_aggregated_snp = db.relationship('CellLineSNP', backref='exp_snps')

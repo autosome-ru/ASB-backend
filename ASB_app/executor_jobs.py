@@ -289,6 +289,13 @@ def get_preferences(df):
         return 'Alt'
 
 
+def modify_counts(counts_list):
+    counts_list = sorted(counts_list, key=lambda x: x['count'], reverse=True)
+    if len(counts_list) > 7:
+        counts_list = counts_list[:6] + [{'name': 'Other', 'count': sum(x['count'] for x in counts_list[6:])}]
+    return counts_list
+
+
 @executor.job
 def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
     processing_start_time = datetime.now()
@@ -344,14 +351,16 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
 
             ananastra_service.create_processed_path(ticket_id, 'tf_sum')
 
-            tf_table = pd.read_table(tf_path, encoding='utf-8')
+            tf_table = pd.read_table(tf_path, encoding='utf-8', na_values=['None', 'NaN', 'nan'])
             tf_table['BEST_FDR'] = tf_table[['LOG10_FDR_REF', 'LOG10_FDR_ALT']].max(axis=1)
+            tf_table['MOTIF_POSITION'] = tf_table['MOTIF_POSITION'] + 1
             idx = tf_table.groupby(['RS_ID', 'ALT'])['BEST_FDR'].transform(max) == tf_table['BEST_FDR']
             tf_table.drop(columns=['BEST_FDR'], inplace=True)
             tf_sum_table = tf_table.loc[idx].copy()
-            tf_sum_table['IS_EQTL'] = tf_sum_table['GTEX_EQTL_TARGET_GENES'].astype(bool)
+            tf_sum_table['IS_EQTL'] = tf_sum_table['GTEX_EQTL_TARGET_GENES'].apply(lambda x: False if pd.isna(x) else True)
             tf_sum_table['ALLELES'] = tf_sum_table.apply(lambda row: get_alleles(tf_table.loc[tf_table['RS_ID'] == row['RS_ID'], ['REF', 'ALT']]), axis=1)
             tf_sum_table['TF_BINDING_PREFERENCES'] = tf_sum_table.apply(lambda row: get_preferences(tf_table.loc[tf_table['RS_ID'] == row['RS_ID'], ['LOG10_FDR_REF', 'LOG10_FDR_ALT']]), axis=1)
+            tf_sum_table.drop(columns=['REF', 'ALT'])
             tf_sum_table.to_csv(ananastra_service.get_path_by_ticket_id(ticket_id, 'tf_sum'), sep='\t', index=False)
             tf_table.drop(columns=['GTEX_EQTL_TARGET_GENES'], inplace=True)
             tf_table.to_csv(tf_path, sep='\t', index=False)
@@ -381,14 +390,15 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
 
             ananastra_service.create_processed_path(ticket_id, 'cl_sum')
 
-            cl_table = pd.read_table(cl_path, encoding='utf-8')
+            cl_table = pd.read_table(cl_path, encoding='utf-8', na_values=['None', 'NaN', 'nan'])
             cl_table['BEST_FDR'] = cl_table[['LOG10_FDR_REF', 'LOG10_FDR_ALT']].max(axis=1)
             idx = cl_table.groupby(['RS_ID', 'ALT'])['BEST_FDR'].transform(max) == cl_table['BEST_FDR']
             cl_table.drop(columns=['BEST_FDR'], inplace=True)
             cl_sum_table = cl_table.loc[idx].copy()
-            cl_sum_table['IS_EQTL'] = cl_sum_table['GTEX_EQTL_TARGET_GENES'].astype(bool)
+            cl_sum_table['IS_EQTL'] = cl_sum_table['GTEX_EQTL_TARGET_GENES'].apply(lambda x: False if pd.isna(x) else True)
             cl_sum_table['ALLELES'] = cl_sum_table.apply(lambda row: get_alleles(cl_table.loc[cl_table['RS_ID'] == row['RS_ID'], ['REF', 'ALT']]), axis=1)
             cl_sum_table['TF_BINDING_PREFERENCES'] = cl_sum_table.apply(lambda row: get_preferences(cl_table.loc[cl_table['RS_ID'] == row['RS_ID'], ['LOG10_FDR_REF', 'LOG10_FDR_ALT']]), axis=1)
+            cl_sum_table.drop(columns=['REF', 'ALT'])
             cl_sum_table.to_csv(ananastra_service.get_path_by_ticket_id(ticket_id, 'cl_sum'), sep='\t', index=False)
             cl_table.drop(columns=['GTEX_EQTL_TARGET_GENES'], inplace=True)
             cl_table.to_csv(cl_path, sep='\t', index=False)
@@ -448,8 +458,8 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
         'cl_log10_p_value': -np.log10(cl_p),
         'all_odds': all_odds,
         'all_log10_p_value': -np.log10(all_p),
-        'tf_asb_counts': list(tf_asb_counts.values()),
-        'cl_asb_counts': list(cl_asb_counts.values()),
+        'tf_asb_counts': modify_counts(list(tf_asb_counts.values())),
+        'cl_asb_counts': modify_counts(list(cl_asb_counts.values())),
         'concordant_asbs': conc_asbs,
     }
     logger.info('Ticket {}: ticket info changed'.format(ticket_id))
