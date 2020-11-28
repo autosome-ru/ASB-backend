@@ -472,10 +472,15 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
             tf_id = TranscriptionFactor.query.filter_by(name=tf).one().tf_id
             asbs = tf_asb_counts[tf]['count']
             candidates = len([cand for cand in tf_candidates_list if cand.ag_id == tf_id and cand.ag_level == 'TF'])
-            odds, p = fisher_exact(((asbs, candidates), (possible_tf_asbs, possible_tf_candidates)))
+            if not candidates:
+                odds, p = 0, 1
+            else:
+                odds, p = fisher_exact(((asbs, candidates), (possible_tf_asbs, possible_tf_candidates)))
             tf_p_list.append(p)
             tf_asb_data.append({
                 'name': tf,
+                'asbs': asbs,
+                'candidates': candidates,
                 'odds': odds,
                 'log10_p_value': -np.log10(p),
                 'log10_fdr': 0,
@@ -492,10 +497,15 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
             cl_id = CellLine.query.filter_by(name=cl).one().cl_id
             asbs = cl_asb_counts[cl]['count']
             candidates = len([cand for cand in cl_candidates_list if cand.ag_id == cl_id and cand.ag_level == 'CL'])
-            odds, p = fisher_exact(((asbs, candidates), (possible_cl_asbs, possible_cl_candidates)))
+            if not candidates:
+                odds, p = 0, 1
+            else:
+                odds, p = fisher_exact(((asbs, candidates), (possible_cl_asbs, possible_cl_candidates)))
             cl_p_list.append(p)
             cl_asb_data.append({
                 'name': cl,
+                'asbs': asbs,
+                'candidates': candidates,
                 'odds': odds,
                 'log10_p_value': -np.log10(p),
                 'log10_fdr': 0,

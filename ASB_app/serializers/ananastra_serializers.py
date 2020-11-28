@@ -5,7 +5,8 @@ api = current_release.api
 
 asb_data_model = api.model('ASB data entity', {
     'name': fields.String,
-    'count': fields.Integer,
+    'asbs': fields.Integer,
+    'candidates': fields.Integer,
     'odds': fields.Float,
     'log10_p_value': fields.Float,
     'log10_fdr': fields.Float,
