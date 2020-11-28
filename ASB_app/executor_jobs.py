@@ -341,7 +341,7 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
                     ['MOTIF_LOG_P_REF', 'MOTIF_LOG_P_ALT', 'MOTIF_LOG2_FC', 'MOTIF_POSITION',
                      'MOTIF_ORIENTATION', 'MOTIF_CONCORDANCE', 'SUPPORTING_CELL_TYPES'] + common_header_3
 
-        tf_asb_data = {}
+        tf_asb_counts = {}
         conc_asbs = []
         logger.info('Ticket {}: processing started'.format(ticket_id))
         if annotate_tf:
@@ -358,7 +358,7 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
                         rs_id = tup[2]
                         alt = tup[4]
                         conc = tup[18]
-                        tf_asb_data.setdefault(tf_name, {
+                        tf_asb_counts.setdefault(tf_name, {
                             'name': tf_name,
                             'count': 0
                         })['count'] += 1
@@ -392,7 +392,7 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
 
             logger.info('Ticket {}: tf_sum done'.format(ticket_id))
 
-        cl_asb_data = {}
+        cl_asb_counts = {}
         if annotate_cl:
             ananastra_service.create_processed_path(ticket_id, 'cl')
             cl_path = ananastra_service.get_path_by_ticket_id(ticket_id, path_type='cl', ext='.tsv')
@@ -404,7 +404,7 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
                 with open(cl_path, 'a', encoding='utf-8') as out:
                     for tup in q_cl:
                         cl_name = tup[6]
-                        cl_asb_data.setdefault(cl_name, {
+                        cl_asb_counts.setdefault(cl_name, {
                             'name': cl_name,
                             'count': 0
                         })['count'] += 1
@@ -467,42 +467,47 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
         logger.info('Ticket {}: tests done'.format(ticket_id))
 
         tf_p_list = []
-        for tf in tf_asb_data.keys():
+        tf_asb_data = []
+        for tf in tf_asb_counts.keys():
             tf_id = TranscriptionFactor.query.filter_by(name=tf).one().tf_id
-            asbs = tf_asb_data[tf]['count']
+            asbs = tf_asb_counts[tf]['count']
             candidates = len([cand for cand in tf_candidates_list if cand.ag_id == tf_id and cand.ag_level == 'TF'])
             odds, p = fisher_exact(((asbs, candidates), (possible_tf_asbs, possible_tf_candidates)))
             tf_p_list.append(p)
-            tf_asb_data[tf].update({
+            tf_asb_data.append({
                 'name': tf,
                 'odds': odds,
                 'log10_p_value': -np.log10(p),
                 'log10_fdr': 0,
             })
         _, tf_fdr, _, _ = multipletests(tf_p_list, alpha=0.05, method='fdr_bh')
-        for sig, fdr in zip(tf_asb_data.values(), tf_fdr):
+        for sig, fdr in zip(tf_asb_data, tf_fdr):
             sig['log10_fdr'] = -np.log10(fdr)
 
         logger.info('Ticket {}: tf tests done'.format(ticket_id))
 
         cl_p_list = []
-        for cl in cl_asb_data.keys():
+        cl_asb_data = []
+        for cl in cl_asb_counts.keys():
             cl_id = CellLine.query.filter_by(name=cl).one().cl_id
-            asbs = cl_asb_data[cl]['count']
+            asbs = cl_asb_counts[cl]['count']
             candidates = len([cand for cand in cl_candidates_list if cand.ag_id == cl_id and cand.ag_level == 'CL'])
             odds, p = fisher_exact(((asbs, candidates), (possible_cl_asbs, possible_cl_candidates)))
             cl_p_list.append(p)
-            cl_asb_data[cl].update({
+            cl_asb_data.append({
                 'name': cl,
                 'odds': odds,
                 'log10_p_value': -np.log10(p),
                 'log10_fdr': 0,
             })
         _, cl_fdr, _, _ = multipletests(cl_p_list, alpha=0.05, method='fdr_bh')
-        for sig, fdr in zip(cl_asb_data.values(), cl_fdr):
+        for sig, fdr in zip(cl_asb_data, cl_fdr):
             sig['log10_fdr'] = -np.log10(fdr)
 
         logger.info('Ticket {}: cl tests done'.format(ticket_id))
+
+        tf_asb_data = sorted(tf_asb_data, key=lambda x: x['log10_fdr'], reverse=True)
+        cl_asb_data = sorted(cl_asb_data, key=lambda x: x['log10_fdr'], reverse=True)
 
     except Exception as e:
         logger.error(e, exc_info=True)
@@ -527,8 +532,10 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
         'cl_log10_p_value': -np.log10(cl_p),
         'all_odds': all_odds,
         'all_log10_p_value': -np.log10(all_p),
-        'tf_asb_data': modify_counts(list(tf_asb_data.values())),
-        'cl_asb_data': modify_counts(list(cl_asb_data.values())),
+        'tf_asb_counts': modify_counts(list(tf_asb_counts.values())),
+        'cl_asb_counts': modify_counts(list(cl_asb_counts.values())),
+        'tf_asb_data': tf_asb_data,
+        'cl_asb_data': cl_asb_data,
         'concordant_asbs': conc_asbs,
     }
     logger.info('Ticket {}: ticket info changed'.format(ticket_id))
