@@ -10,6 +10,7 @@ from sqlalchemy.orm import aliased
 import numpy as np
 import pandas as pd
 from scipy.stats import fisher_exact
+from statsmodels.stats.multitest import multipletests
 
 from ASB_app.models import CandidateSNP
 
@@ -220,44 +221,68 @@ def get_cl_query(rs_ids):
     ).group_by(CellLineSNP.cl_snp_id)
 
 
-def get_tf_asbs(rs_ids):
-    return SNP.query.filter(
+def get_tf_asbs(rs_ids, mode='all'):
+    q = SNP.query.filter(
         SNP.rs_id.in_(rs_ids),
         SNP.tf_aggregated_snps.any()
-    ).group_by(SNP.rs_id).count()
+    ).group_by(SNP.rs_id)
+    if mode == 'count':
+        return q.count()
+    elif mode == 'all':
+        return q.all()
 
 
-def get_cl_asbs(rs_ids):
-    return SNP.query.filter(
+def get_cl_asbs(rs_ids, mode='all'):
+    q = SNP.query.filter(
         SNP.rs_id.in_(rs_ids),
         SNP.cl_aggregated_snps.any()
-    ).group_by(SNP.rs_id).count()
+    ).group_by(SNP.rs_id)
+    if mode == 'count':
+        return q.count()
+    elif mode == 'all':
+        return q.all()
 
 
-def get_all_asbs(rs_ids):
-    return SNP.query.filter(
+def get_all_asbs(rs_ids, mode='all'):
+    q = SNP.query.filter(
         SNP.rs_id.in_(rs_ids)
-    ).group_by(SNP.rs_id).count()
+    ).group_by(SNP.rs_id)
+    if mode == 'count':
+        return q.count()
+    elif mode == 'all':
+        return q.all()
 
 
-def get_tf_candidates(rs_ids):
-    return CandidateSNP.query.filter(
+def get_tf_candidates(rs_ids, mode='all'):
+    q = CandidateSNP.query.filter(
         CandidateSNP.rs_id.in_(rs_ids),
         CandidateSNP.ag_level == 'TF',
-    ).group_by(CandidateSNP.rs_id).count()
+    ).group_by(CandidateSNP.rs_id)
+    if mode == 'count':
+        return q.count()
+    elif mode == 'all':
+        return q.all()
 
 
-def get_cl_candidates(rs_ids):
-    return CandidateSNP.query.filter(
+def get_cl_candidates(rs_ids, mode='all'):
+    q = CandidateSNP.query.filter(
         CandidateSNP.rs_id.in_(rs_ids),
         CandidateSNP.ag_level == 'CL',
-    ).group_by(CandidateSNP.rs_id).count()
+    ).group_by(CandidateSNP.rs_id)
+    if mode == 'count':
+        return q.count()
+    elif mode == 'all':
+        return q.all()
 
 
-def get_all_candidates(rs_ids):
-    return CandidateSNP.query.filter(
+def get_all_candidates(rs_ids, mode='all'):
+    q = CandidateSNP.query.filter(
         CandidateSNP.rs_id.in_(rs_ids)
-    ).group_by(CandidateSNP.rs_id).count()
+    ).group_by(CandidateSNP.rs_id)
+    if mode == 'count':
+        return q.count()
+    elif mode == 'all':
+        return q.all()
 
 
 def divide_chunks(l, n):
@@ -316,7 +341,7 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
                     ['MOTIF_LOG_P_REF', 'MOTIF_LOG_P_ALT', 'MOTIF_LOG2_FC', 'MOTIF_POSITION',
                      'MOTIF_ORIENTATION', 'MOTIF_CONCORDANCE', 'SUPPORTING_CELL_TYPES'] + common_header_3
 
-        tf_asb_counts = {}
+        tf_asb_data = {}
         conc_asbs = []
         logger.info('Ticket {}: processing started'.format(ticket_id))
         if annotate_tf:
@@ -333,7 +358,7 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
                         rs_id = tup[2]
                         alt = tup[4]
                         conc = tup[18]
-                        tf_asb_counts.setdefault(tf_name, {
+                        tf_asb_data.setdefault(tf_name, {
                             'name': tf_name,
                             'count': 0
                         })['count'] += 1
@@ -367,7 +392,7 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
 
             logger.info('Ticket {}: tf_sum done'.format(ticket_id))
 
-        cl_asb_counts = {}
+        cl_asb_data = {}
         if annotate_cl:
             ananastra_service.create_processed_path(ticket_id, 'cl')
             cl_path = ananastra_service.get_path_by_ticket_id(ticket_id, path_type='cl', ext='.tsv')
@@ -379,7 +404,7 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
                 with open(cl_path, 'a', encoding='utf-8') as out:
                     for tup in q_cl:
                         cl_name = tup[6]
-                        cl_asb_counts.setdefault(cl_name, {
+                        cl_asb_data.setdefault(cl_name, {
                             'name': cl_name,
                             'count': 0
                         })['count'] += 1
@@ -406,15 +431,21 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
             logger.info('Ticket {}: cl_sum done'.format(ticket_id))
 
         all_rs = len(rs_ids)
-        tf_asbs = sum(divide_query(get_tf_asbs, rs_ids))
-        cl_asbs = sum(divide_query(get_cl_asbs, rs_ids))
-        all_asbs = sum(divide_query(get_all_asbs, rs_ids))
+        tf_asbs_list = [x for query in divide_query(get_tf_asbs, rs_ids) for x in query]
+        tf_asbs = len(tf_asbs_list)
+        cl_asbs_list = [x for query in divide_query(get_cl_asbs, rs_ids) for x in query]
+        cl_asbs = len(cl_asbs_list)
+        all_asbs_list = [x for query in divide_query(get_all_asbs, rs_ids) for x in query]
+        all_asbs = len(all_asbs_list)
 
         logger.info('Ticket {}: query count asb done'.format(ticket_id))
 
-        tf_candidates = sum(divide_query(get_tf_candidates, rs_ids))
-        cl_candidates = sum(divide_query(get_cl_candidates, rs_ids))
-        all_candidates = sum(divide_query(get_all_candidates, rs_ids))
+        tf_candidates_list = [x for query in divide_query(get_tf_candidates, rs_ids) for x in query]
+        tf_candidates = len(tf_candidates_list)
+        cl_candidates_list = [x for query in divide_query(get_cl_candidates, rs_ids) for x in query]
+        cl_candidates = len(cl_candidates_list)
+        all_candidates_list = [x for query in divide_query(get_all_candidates, rs_ids) for x in query]
+        all_candidates = len(all_candidates_list)
 
         logger.info('Ticket {}: query count candidates done'.format(ticket_id))
 
@@ -434,6 +465,44 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
             all_odds, all_p = 0, 1
 
         logger.info('Ticket {}: tests done'.format(ticket_id))
+
+        tf_p_list = []
+        for tf in tf_asb_data.keys():
+            tf_id = TranscriptionFactor.query.filter_by(name=tf).one().tf_id
+            asbs = tf_asb_data[tf]['count']
+            candidates = len([cand for cand in tf_candidates_list if cand.ag_id == tf_id and cand.ag_level == 'TF'])
+            odds, p = fisher_exact(((asbs, candidates), (possible_tf_asbs, possible_tf_candidates)))
+            tf_p_list.append(p)
+            tf_asb_data[tf].update({
+                'name': tf,
+                'odds': odds,
+                'log10_p_value': -np.log10(p),
+                'log10_fdr': 0,
+            })
+        _, tf_fdr, _, _ = multipletests(tf_p_list, alpha=0.05, method='fdr_bh')
+        for sig, fdr in zip(tf_asb_data.values(), tf_fdr):
+            sig['log10_fdr'] = -np.log10(fdr)
+
+        logger.info('Ticket {}: tf tests done'.format(ticket_id))
+
+        cl_p_list = []
+        for cl in cl_asb_data.keys():
+            cl_id = CellLine.query.filter_by(name=cl).one().cl_id
+            asbs = cl_asb_data[cl]['count']
+            candidates = len([cand for cand in cl_candidates_list if cand.ag_id == cl_id and cand.ag_level == 'CL'])
+            odds, p = fisher_exact(((asbs, candidates), (possible_cl_asbs, possible_cl_candidates)))
+            cl_p_list.append(p)
+            cl_asb_data[cl].update({
+                'name': cl,
+                'odds': odds,
+                'log10_p_value': -np.log10(p),
+                'log10_fdr': 0,
+            })
+        _, cl_fdr, _, _ = multipletests(cl_p_list, alpha=0.05, method='fdr_bh')
+        for sig, fdr in zip(cl_asb_data.values(), cl_fdr):
+            sig['log10_fdr'] = -np.log10(fdr)
+
+        logger.info('Ticket {}: cl tests done'.format(ticket_id))
 
     except Exception as e:
         logger.error(e, exc_info=True)
@@ -458,8 +527,8 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
         'cl_log10_p_value': -np.log10(cl_p),
         'all_odds': all_odds,
         'all_log10_p_value': -np.log10(all_p),
-        'tf_asb_counts': modify_counts(list(tf_asb_counts.values())),
-        'cl_asb_counts': modify_counts(list(cl_asb_counts.values())),
+        'tf_asb_data': modify_counts(list(tf_asb_data.values())),
+        'cl_asb_data': modify_counts(list(cl_asb_data.values())),
         'concordant_asbs': conc_asbs,
     }
     logger.info('Ticket {}: ticket info changed'.format(ticket_id))

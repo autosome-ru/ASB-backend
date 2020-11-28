@@ -6,6 +6,9 @@ api = current_release.api
 asb_count_model = api.model('ASB count entity', {
     'name': fields.String,
     'count': fields.Integer,
+    'odds': fields.Float,
+    'log10_p_value': fields.Float,
+    'log10_fdr': fields.Float,
 })
 
 concordant_asb_model = api.model('Motif-concordant ASB', {
