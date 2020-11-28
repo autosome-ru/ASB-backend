@@ -242,15 +242,15 @@ def get_all_asbs(rs_ids):
 
 def get_tf_candidates(rs_ids):
     return CandidateSNP.query.filter(
+        CandidateSNP.rs_id.in_(rs_ids),
         CandidateSNP.ag_level == 'TF',
-        CandidateSNP.rs_id.in_(rs_ids)
     ).group_by(CandidateSNP.rs_id).count()
 
 
 def get_cl_candidates(rs_ids):
     return CandidateSNP.query.filter(
+        CandidateSNP.rs_id.in_(rs_ids),
         CandidateSNP.ag_level == 'CL',
-        CandidateSNP.rs_id.in_(rs_ids)
     ).group_by(CandidateSNP.rs_id).count()
 
 
@@ -416,7 +416,7 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
         cl_candidates = sum(divide_query(get_cl_candidates, rs_ids))
         all_candidates = sum(divide_query(get_all_candidates, rs_ids))
 
-        logger.info('Ticket {}: quary count candidates done'.format(ticket_id))
+        logger.info('Ticket {}: query count candidates done'.format(ticket_id))
 
         if tf_candidates:
             tf_odds, tf_p = fisher_exact(((tf_asbs, tf_candidates), (possible_tf_asbs, possible_tf_candidates)))
