@@ -17,8 +17,6 @@ asb_data_model = api.model('ASB data entity', {
 asb_count_model = api.model('ASB count entity', {
     'name': fields.String,
     'count': fields.Integer,
-    'count_rs': fields.Integer,
-    'odds': fields.Float,
 })
 
 concordant_asb_model = api.model('Motif-concordant ASB', {
@@ -54,6 +52,8 @@ meta_info_model = api.model('Ticket meta info', {
     'all_log10_p_value': fields.Float,
     'tf_asb_counts': fields.List(fields.Nested(asb_count_model)),
     'cl_asb_counts': fields.List(fields.Nested(asb_count_model)),
+    'tf_asb_counts_rs': fields.List(fields.Nested(asb_count_model)),
+    'cl_asb_counts_rs': fields.List(fields.Nested(asb_count_model)),
     'tf_asb_data': fields.List(fields.Nested(asb_data_model)),
     'cl_asb_data': fields.List(fields.Nested(asb_data_model)),
     'concordant_asbs': fields.List(fields.Nested(concordant_asb_model)),

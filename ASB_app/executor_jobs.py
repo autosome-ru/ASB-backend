@@ -222,9 +222,8 @@ def get_cl_query(rs_ids):
 
 
 def get_tf_asbs(rs_ids, mode='all'):
-    q = SNP.query.filter(
+    q = TranscriptionFactorSNP.query.join(SNP, TranscriptionFactorSNP.snp).filter(
         SNP.rs_id.in_(rs_ids),
-        SNP.tf_aggregated_snps.any()
     )
     if mode == 'count':
         return q.count()
@@ -233,9 +232,8 @@ def get_tf_asbs(rs_ids, mode='all'):
 
 
 def get_cl_asbs(rs_ids, mode='all'):
-    q = SNP.query.filter(
+    q = CellLineSNP.query.join(SNP, CellLineSNP.snp).filter(
         SNP.rs_id.in_(rs_ids),
-        SNP.cl_aggregated_snps.any()
     )
     if mode == 'count':
         return q.count()
@@ -315,10 +313,9 @@ def get_preferences(df):
 
 
 def modify_counts(counts_list):
-    counts_list = sorted(counts_list, key=lambda x: x['count_rs'], reverse=True)
+    counts_list = sorted(counts_list, key=lambda x: x['count'], reverse=True)
     if len(counts_list) > 7:
-        counts_list = counts_list[:6] + [{'name': 'Other', 'count': sum(x['count'] for x in counts_list[6:]),
-                                          'count_rs': sum(x['count_rs'] for x in counts_list[6:])}]
+        counts_list = counts_list[:6] + [{'name': 'Other', 'count': sum(x['count'] for x in counts_list[6:])}]
     return counts_list
 
 
@@ -452,12 +449,12 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
         all_rs = len(rs_ids)
         tf_asbs_list = [x for query in divide_query(get_tf_asbs, rs_ids) for x in query]
         tf_asbs = len(tf_asbs_list)
-        tf_asbs_rs = len(set(x.rs_id for x in tf_asbs_list))
+        tf_asbs_rs = len(set(x.snp.rs_id for x in tf_asbs_list))
         cl_asbs_list = [x for query in divide_query(get_cl_asbs, rs_ids) for x in query]
         cl_asbs = len(cl_asbs_list)
-        cl_asbs_rs = len(set(x.rs_id for x in cl_asbs_list))
+        cl_asbs_rs = len(set(x.snp.rs_id for x in cl_asbs_list))
         all_asbs_list = [x for query in divide_query(get_all_asbs, rs_ids) for x in query]
-        all_asbs = len(all_asbs_list)
+        all_asbs = tf_asbs + cl_asbs
         all_asbs_rs = len(set(x.rs_id for x in all_asbs_list))
 
         logger.info('Ticket {}: query count asb done'.format(ticket_id))
@@ -470,7 +467,7 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
         cl_candidates = len(cl_candidates_list)
         cl_candidates_rs = len(set(x.rs_id for x in cl_candidates_list))
         all_candidates_list = [x for query in divide_query(get_all_candidates, rs_ids) for x in query]
-        all_candidates = len(all_candidates_list)
+        all_candidates = tf_candidates + cl_candidates
         all_candidates_rs = len(set(x.rs_id for x in all_candidates_list))
 
         logger.info('Ticket {}: query count candidates done'.format(ticket_id))
@@ -496,10 +493,11 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
 
         tf_p_list = []
         tf_asb_data = []
+        tf_asb_counts_rs = {k: {k1: v1 for k1, v1 in v.items()} for k, v in tf_asb_counts.items()}
         for tf in tf_asb_counts.keys():
             tf_id = TranscriptionFactor.query.filter_by(name=tf).one().tf_id
             asbs = tf_asb_counts[tf]['count']
-            asbs_rs = tf_asb_counts[tf]['count_rs'] = len(set(x.rs_id for x in tf_asbs_list if any(ag_s.tf_id == tf_id for ag_s in x.tf_aggregated_snps)))
+            asbs_rs = tf_asb_counts_rs[tf]['count'] = len(set(x.snp.rs_id for x in tf_asbs_list if x.tf_id == tf_id))
             candidates = len([cand for cand in tf_candidates_list if cand.ag_id == tf_id])
             candidates_rs = len(set(cand.rs_id for cand in tf_candidates_list if cand.ag_id == tf_id))
             if not candidates:
@@ -526,10 +524,11 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
 
         cl_p_list = []
         cl_asb_data = []
+        cl_asb_counts_rs = {k: {k1: v1 for k1, v1 in v.items()} for k, v in cl_asb_counts.items()}
         for cl in cl_asb_counts.keys():
             cl_id = CellLine.query.filter_by(name=cl).one().cl_id
             asbs = cl_asb_counts[cl]['count']
-            asbs_rs = cl_asb_counts[cl]['count_rs'] = len(set(x.rs_id for x in cl_asbs_list if any(ag_s.cl_id == cl_id for ag_s in x.cl_aggregated_snps)))
+            asbs_rs = cl_asb_counts_rs[cl]['count'] = len(set(x.snp.rs_id for x in cl_asbs_list if x.cl_id == cl_id))
             candidates = len([cand for cand in cl_candidates_list if cand.ag_id == cl_id])
             candidates_rs = len(set(cand.rs_id for cand in cl_candidates_list if cand.ag_id == cl_id))
             if not candidates:
@@ -565,7 +564,6 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
         return
 
     ticket.status = 'Processed'
-
     meta_info = dict(ticket.meta_info)
     meta_info.update({
         'processing_time': str(datetime.now() - processing_start_time),
@@ -589,7 +587,9 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
         'all_odds': all_odds,
         'all_log10_p_value': -np.log10(all_p),
         'tf_asb_counts': modify_counts(list(tf_asb_counts.values())),
+        'tf_asb_counts_rs': modify_counts(list(tf_asb_counts_rs.values())),
         'cl_asb_counts': modify_counts(list(cl_asb_counts.values())),
+        'cl_asb_counts_rs': modify_counts(list(cl_asb_counts_rs.values())),
         'tf_asb_data': tf_asb_data,
         'cl_asb_data': cl_asb_data,
         'concordant_asbs': conc_asbs,
