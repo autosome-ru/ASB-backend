@@ -17,6 +17,7 @@ asb_data_model = api.model('ASB data entity', {
 asb_count_model = api.model('ASB count entity', {
     'name': fields.String,
     'count': fields.Integer,
+    'count_rs': fields.Integer,
     'odds': fields.Float,
 })
 
