@@ -354,7 +354,7 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
         try:
             rs_ids = data[0].apply(convert_rs_to_int).unique().tolist()
         except ConvError as e:
-            update_ticket_status(ticket, 'Processing failed: invalid rs id: {}'.format(e.args[0]))
+            update_ticket_status(ticket, 'Processing failed, invalid rs id: "{}"'.format(e.args[0]))
             raise ConvError
         except:
             change_status_on_fail = True
