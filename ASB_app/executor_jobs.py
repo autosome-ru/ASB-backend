@@ -30,6 +30,7 @@ class ConvError(ValueError):
 
 
 def convert_rs_to_int(rs_str):
+    rs_str = rs_str.strip()
     if not re.match(r'^rs\d+$', rs_str):
         raise ConvError(rs_str)
     return int(rs_str[2:])
