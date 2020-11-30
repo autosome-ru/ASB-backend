@@ -25,9 +25,13 @@ SNP, ExpSNP, Phenotype, PhenotypeSNPCorrespondence, Gene, Experiment = \
     current_release.SNP, current_release.ExpSNP, current_release.Phenotype, current_release.PhenotypeSNPCorrespondence, current_release.Gene, current_release.Experiment
 
 
+class ConvError(ValueError):
+    pass
+
+
 def convert_rs_to_int(rs_str):
     if not re.match(r'^rs\d+$', rs_str):
-        raise ValueError(rs_str)
+        raise ConvError(rs_str)
     return int(rs_str[2:])
 
 
@@ -334,13 +338,29 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
     processing_start_time = datetime.now()
     input_file_name = ananastra_service.get_path_by_ticket_id(ticket_id)
     ticket = ananastra_service.get_ticket(ticket_id)
+    change_status_on_fail = False
     try:
         ticket.status = 'Processing'
         ticket.meta_info = {'processing_started_at': str(datetime.now())}
         update_ticket_status(ticket, 'Processing started')
-        data = pd.read_table(input_file_name, sep='\t', header=None)
-        assert len(data.columns) == 1
-        rs_ids = data[0].apply(convert_rs_to_int).unique().tolist()
+        try:
+            data = pd.read_table(input_file_name, sep='\t', header=None, encoding='utf-8', dtype=str)
+        except:
+            update_ticket_status(ticket, 'Processing failed: the file must be a valid utf-8 text file with a single SNP rs-ID on each line')
+            raise ConvError
+        if len(data.columns) != 1:
+            update_ticket_status(ticket, 'Processing failed: the file must contain a single SNP rs-ID on each line')
+            raise ConvError
+        try:
+            rs_ids = data[0].apply(convert_rs_to_int).unique().tolist()
+        except ConvError as e:
+            update_ticket_status(ticket, 'Processing failed: invalid rs id: {}'.format(e.args[0]))
+            raise ConvError
+        except:
+            change_status_on_fail = True
+            raise
+
+        change_status_on_fail = True
 
         common_header_1 = ['CHROMOSOME', 'POSITION', 'RS_ID', 'REF', 'ALT', 'SEQUENCE']
         common_header_2 = ['PEAK_CALLS', 'MEAN_BAD', 'LOG10_FDR_REF', 'LOG10_FDR_ALT',
@@ -395,13 +415,16 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
             idx = tf_table.groupby(['RS_ID', 'ALT'])['BEST_FDR'].transform(max) == tf_table['BEST_FDR']
             tf_table.drop(columns=['BEST_FDR'], inplace=True)
             tf_sum_table = tf_table.loc[idx].copy()
-            tf_sum_table['IS_EQTL'] = tf_sum_table['GTEX_EQTL_TARGET_GENES'].apply(lambda x: False if pd.isna(x) else True)
-            tf_sum_table['ALLELES'] = tf_sum_table.apply(lambda row: get_alleles(tf_table.loc[tf_table['RS_ID'] == row['RS_ID'], ['REF', 'ALT']]), axis=1)
-            tf_sum_table['TF_BINDING_PREFERENCES'] = tf_sum_table.apply(lambda row: get_preferences(tf_table.loc[tf_table['RS_ID'] == row['RS_ID'], ['LOG10_FDR_REF', 'LOG10_FDR_ALT']]), axis=1)
-            tf_sum_table.drop(columns=['REF', 'ALT'])
-            tf_sum_table.to_csv(ananastra_service.get_path_by_ticket_id(ticket_id, 'tf_sum'), sep='\t', index=False)
-            tf_table.drop(columns=['GTEX_EQTL_TARGET_GENES'], inplace=True)
-            tf_table.to_csv(tf_path, sep='\t', index=False)
+            if len(idx) > 0:
+                tf_sum_table['IS_EQTL'] = tf_sum_table['GTEX_EQTL_TARGET_GENES'].apply(lambda x: False if pd.isna(x) else True)
+                tf_sum_table['ALLELES'] = tf_sum_table.apply(lambda row: get_alleles(tf_table.loc[tf_table['RS_ID'] == row['RS_ID'], ['REF', 'ALT']]), axis=1)
+                tf_sum_table['TF_BINDING_PREFERENCES'] = tf_sum_table.apply(lambda row: get_preferences(tf_table.loc[tf_table['RS_ID'] == row['RS_ID'], ['LOG10_FDR_REF', 'LOG10_FDR_ALT']]), axis=1)
+                tf_sum_table.drop(columns=['REF', 'ALT'])
+                tf_sum_table.to_csv(ananastra_service.get_path_by_ticket_id(ticket_id, 'tf_sum'), sep='\t', index=False)
+                tf_table.drop(columns=['GTEX_EQTL_TARGET_GENES'], inplace=True)
+                tf_table.to_csv(tf_path, sep='\t', index=False)
+            else:
+                tf_sum_table.to_csv(ananastra_service.get_path_by_ticket_id(ticket_id, 'tf_sum'), sep='\t', index=False)
 
             logger.info('Ticket {}: tf_sum done'.format(ticket_id))
             update_ticket_status(ticket, 'Searching for cell type ASB')
@@ -435,13 +458,16 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
             idx = cl_table.groupby(['RS_ID', 'ALT'])['BEST_FDR'].transform(max) == cl_table['BEST_FDR']
             cl_table.drop(columns=['BEST_FDR'], inplace=True)
             cl_sum_table = cl_table.loc[idx].copy()
-            cl_sum_table['IS_EQTL'] = cl_sum_table['GTEX_EQTL_TARGET_GENES'].apply(lambda x: False if pd.isna(x) else True)
-            cl_sum_table['ALLELES'] = cl_sum_table.apply(lambda row: get_alleles(cl_table.loc[cl_table['RS_ID'] == row['RS_ID'], ['REF', 'ALT']]), axis=1)
-            cl_sum_table['TF_BINDING_PREFERENCES'] = cl_sum_table.apply(lambda row: get_preferences(cl_table.loc[cl_table['RS_ID'] == row['RS_ID'], ['LOG10_FDR_REF', 'LOG10_FDR_ALT']]), axis=1)
-            cl_sum_table.drop(columns=['REF', 'ALT'])
-            cl_sum_table.to_csv(ananastra_service.get_path_by_ticket_id(ticket_id, 'cl_sum'), sep='\t', index=False)
-            cl_table.drop(columns=['GTEX_EQTL_TARGET_GENES'], inplace=True)
-            cl_table.to_csv(cl_path, sep='\t', index=False)
+            if len(idx) > 0:
+                cl_sum_table['IS_EQTL'] = cl_sum_table['GTEX_EQTL_TARGET_GENES'].apply(lambda x: False if pd.isna(x) else True)
+                cl_sum_table['ALLELES'] = cl_sum_table.apply(lambda row: get_alleles(cl_table.loc[cl_table['RS_ID'] == row['RS_ID'], ['REF', 'ALT']]), axis=1)
+                cl_sum_table['TF_BINDING_PREFERENCES'] = cl_sum_table.apply(lambda row: get_preferences(cl_table.loc[cl_table['RS_ID'] == row['RS_ID'], ['LOG10_FDR_REF', 'LOG10_FDR_ALT']]), axis=1)
+                cl_sum_table.drop(columns=['REF', 'ALT'])
+                cl_sum_table.to_csv(ananastra_service.get_path_by_ticket_id(ticket_id, 'cl_sum'), sep='\t', index=False)
+                cl_table.drop(columns=['GTEX_EQTL_TARGET_GENES'], inplace=True)
+                cl_table.to_csv(cl_path, sep='\t', index=False)
+            else:
+                cl_sum_table.to_csv(ananastra_service.get_path_by_ticket_id(ticket_id, 'cl_sum'), sep='\t', index=False)
 
             logger.info('Ticket {}: cl_sum done'.format(ticket_id))
             update_ticket_status(ticket, 'Searching for candidate ASB SNPs')
@@ -515,9 +541,12 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
                 'log10_p_value': -np.log10(p),
                 'log10_fdr': 0,
             })
-        _, tf_fdr, _, _ = multipletests(tf_p_list, alpha=0.05, method='fdr_bh')
-        for sig, fdr in zip(tf_asb_data, tf_fdr):
-            sig['log10_fdr'] = -np.log10(fdr)
+        if len(tf_p_list) == 0:
+            tf_fdr = []
+        else:
+            _, tf_fdr, _, _ = multipletests(tf_p_list, alpha=0.05, method='fdr_bh')
+            for sig, fdr in zip(tf_asb_data, tf_fdr):
+                sig['log10_fdr'] = -np.log10(fdr)
 
         logger.info('Ticket {}: tf tests done'.format(ticket_id))
         update_ticket_status(ticket, 'Testing for individual cell types significance')
@@ -546,7 +575,10 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
                 'log10_p_value': -np.log10(p),
                 'log10_fdr': 0,
             })
-        _, cl_fdr, _, _ = multipletests(cl_p_list, alpha=0.05, method='fdr_bh')
+        if len(cl_p_list) == 0:
+            cl_fdr = []
+        else:
+            _, cl_fdr, _, _ = multipletests(cl_p_list, alpha=0.05, method='fdr_bh')
         for sig, fdr in zip(cl_asb_data, cl_fdr):
             sig['log10_fdr'] = -np.log10(fdr)
 
@@ -557,9 +589,11 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
         cl_asb_data = sorted(cl_asb_data, key=lambda x: x['log10_fdr'], reverse=True)
 
     except Exception as e:
-        logger.error(e, exc_info=True)
+        if not isinstance(e, ConvError):
+            logger.error(e, exc_info=True)
         ticket.status = 'Failed'
-        update_ticket_status(ticket, 'Processing failed while {}'.format(ticket.meta_info['status_details']))
+        if change_status_on_fail:
+            update_ticket_status(ticket, 'Processing failed while {}'.format(ticket.meta_info['status_details']))
         session.commit()
         return
 
