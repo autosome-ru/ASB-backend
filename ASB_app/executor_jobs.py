@@ -373,6 +373,7 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
                      'MOTIF_ORIENTATION', 'MOTIF_CONCORDANCE', 'SUPPORTING_CELL_TYPES'] + common_header_3
 
         tf_asb_counts = {}
+        tf_sum_counts = {}
         conc_asbs = []
         logger.info('Ticket {}: processing started'.format(ticket_id))
         update_ticket_status(ticket, 'Searching for transcription factor ASB')
@@ -427,6 +428,7 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
                 tf_sum_table.to_csv(ananastra_service.get_path_by_ticket_id(ticket_id, 'tf_sum'), sep='\t', index=False)
                 tf_table.drop(columns=['GTEX_EQTL_TARGET_GENES'], inplace=True)
                 tf_table.to_csv(tf_path, sep='\t', index=False)
+                tf_sum_counts = tf_sum_table['TRANSCRIPTION_FACTOR'].value_counts().to_dict()
             else:
                 tf_sum_table.to_csv(ananastra_service.get_path_by_ticket_id(ticket_id, 'tf_sum'), sep='\t', index=False)
 
@@ -434,6 +436,7 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
             update_ticket_status(ticket, 'Searching for cell type ASB')
 
         cl_asb_counts = {}
+        cl_sum_counts = {}
         if annotate_cl:
             ananastra_service.create_processed_path(ticket_id, 'cl')
             cl_path = ananastra_service.get_path_by_ticket_id(ticket_id, path_type='cl', ext='.tsv')
@@ -474,11 +477,16 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
                 cl_sum_table.to_csv(ananastra_service.get_path_by_ticket_id(ticket_id, 'cl_sum'), sep='\t', index=False)
                 cl_table.drop(columns=['GTEX_EQTL_TARGET_GENES'], inplace=True)
                 cl_table.to_csv(cl_path, sep='\t', index=False)
+                cl_sum_counts = cl_sum_table['CELL_TYPE'].value_counts().to_dict()
             else:
                 cl_sum_table.to_csv(ananastra_service.get_path_by_ticket_id(ticket_id, 'cl_sum'), sep='\t', index=False)
 
+
             logger.info('Ticket {}: cl_sum done'.format(ticket_id))
             update_ticket_status(ticket, 'Searching for candidate ASB SNPs')
+
+        tf_sum_counts = [{'name': key, 'count': value} for key, value in tf_sum_counts.items()]
+        cl_sum_counts = [{'name': key, 'count': value} for key, value in cl_sum_counts.items()]
 
         all_rs = len(rs_ids)
         tf_asbs_list = [x for query in divide_query(get_tf_asbs, rs_ids) for x in query]
@@ -629,9 +637,9 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
         'all_odds': all_odds,
         'all_log10_p_value': -np.log10(all_p),
         'tf_asb_counts': modify_counts(list(tf_asb_counts.values())),
-        'tf_asb_counts_rs': modify_counts(list(tf_asb_counts_rs.values())),
+        'tf_asb_counts_top': modify_counts(list(tf_sum_counts)),
         'cl_asb_counts': modify_counts(list(cl_asb_counts.values())),
-        'cl_asb_counts_rs': modify_counts(list(cl_asb_counts_rs.values())),
+        'cl_asb_counts_top': modify_counts(list(cl_sum_counts)),
         'tf_asb_data': tf_asb_data,
         'cl_asb_data': cl_asb_data,
         'concordant_asbs': conc_asbs,
