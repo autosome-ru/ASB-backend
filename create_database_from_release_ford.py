@@ -52,7 +52,7 @@ BAD_GROUP = 0
 PEAKS_TF = 0
 PEAKS_CL = 0
 GENES = 0
-TARGET_GENES = 1
+TARGET_GENES = 0
 
 
 release_path = os.path.expanduser('~/Data/')
@@ -64,12 +64,12 @@ conv_bad = dict(zip(
 ))
 
 if __name__ == '__main__':
-    # with open(os.path.join(release_path, 'release_stats', 'convert_cl_names.json')) as file:
-    #     cl_dict = json.loads(file.readline())
-    #
-    # cl_dict_reverse = {}
-    # for key, value in cl_dict.items():
-    #     cl_dict_reverse[value] = key
+    with open(os.path.join(release_path, 'release_stats', 'convert_cl_names.json')) as file:
+        cl_dict = json.loads(file.readline())
+
+    cl_dict_reverse = {}
+    for key, value in cl_dict.items():
+        cl_dict_reverse[value] = key
 
     if EXP:
         table = pd.read_table(parameters_path + 'master-list-annotated.txt')
