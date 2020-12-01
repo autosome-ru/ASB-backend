@@ -103,12 +103,12 @@ conv_bad = dict(zip(
 ))
 
 if __name__ == '__main__':
-    with open(parameters_path + 'CONVERT_CL_NAMES.json') as file:
-        cl_dict = json.loads(file.readline())
-
-    cl_dict_reverse = {}
-    for key, value in cl_dict.items():
-        cl_dict_reverse[value] = key
+    # with open(parameters_path + 'CONVERT_CL_NAMES.json') as file:
+    #     cl_dict = json.loads(file.readline())
+    #
+    # cl_dict_reverse = {}
+    # for key, value in cl_dict.items():
+    #     cl_dict_reverse[value] = key
 
     if EXP:
         table = pd.read_table(parameters_path + 'Master-lines.tsv')
@@ -620,25 +620,33 @@ if __name__ == '__main__':
         qtl_genes = {}
         # table = pd.read_table(os.path.join(release_path, '00_eQTL_TFCL_fdrp_bh_0.05snpphtfASB_220620_Waddles.tsv'))
         table = pd.read_table(r'C:\Users\Shashok\Downloads\Telegram Desktop\00_eQTL_TFCL_fdrp_bh_0.05snpphtfASB_220620_Waddles.tsv')
+        print(len(table.index))
+        genes = []
         for index, row in table.iterrows():
             if (index + 1) % 1000 == 0:
                 print(index + 1)
             if str(row['QTLg']) in ('nan', '', 'None'):
                 continue
 
-            target_genes = Gene.query.filter(Gene.gene_id.in_(row['QTLg'].strip('\n').split(';'))).all()
-            if not target_genes:
-                print('No genes for ', row['QTLg'])
-
-            if len(target_genes) < len(row['QTLg'].strip('\n').split(';')):
-                print('Not enough genes for ', row['QTLg'])
-
-            assert len(target_genes) <= len(row['QTLg'].strip('\n').split(';'))
+            all_target_genes = []
+            for id in row['QTLg'].strip('\n').split(';'):
+                target_genes = Gene.query.filter(Gene.gene_id.like(id.split('.')[0] + '%')).all()
+                if target_genes:
+                    if len(set(g.gene_name for g in target_genes)) != 1:
+                        print('Bad genes: {}'.format(target_genes))
+                    gene = target_genes[0]
+                    all_target_genes.append(gene)
+                else:
+                    gene = Gene(gene_id=id, gene_name=id, chromosome='chr1', start_pos=1, end_pos=1,
+                                orientation=True)
+                    genes.append(gene)
+                    all_target_genes.append(gene)
 
             mutations = SNP.query.filter(SNP.rs_id == int(row['RSID'][2:])).all()
             if not mutations:
                 print('No snps for ', int(row['RSID'][2:]))
 
             for mutation in mutations:
-                mutation.target_genes = target_genes
+                mutation.target_genes = all_target_genes
+        session.add_all(genes)
         session.commit()
