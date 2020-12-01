@@ -493,26 +493,33 @@ if __name__ == '__main__':
     if TARGET_GENES:
         qtl_genes = {}
         # table = pd.read_table(os.path.join(release_path, 'release_stats', 'phenotypes_stats.tsv'))
-        table = pd.read_table(os.path.expanduser('~/Desktop/stats/phenotypes_stats.tsv'))
+        table = pd.read_table(os.path.expanduser('~/Desktop/phenotypes_stats.tsv'))
+        print(len(table.index))
+        genes = []
         for index, row in table.iterrows():
             if (index + 1) % 1000 == 0:
                 print(index + 1)
             if str(row['QTLg']) in ('nan', '', 'None'):
                 continue
 
-            target_genes = Gene.query.filter(Gene.gene_id.in_(row['QTLg'].strip('\n').split(';'))).all()
-            if not target_genes:
-                print('No genes for ', row['QTLg'])
-
-            elif len(target_genes) < len(row['QTLg'].strip('\n').split(';')):
-                print('Not enough genes for ', row['QTLg'])
-
-            assert len(target_genes) <= len(row['QTLg'].strip('\n').split(';'))
+            all_target_genes = []
+            for id in row['QTLg'].strip('\n').split(';'):
+                target_genes = Gene.query.filter(Gene.gene_id.like(id.split('.')[0] + '%')).all()
+                if target_genes:
+                    if len(set(g.gene_name for g in target_genes)) != 1:
+                        print('Bad genes: {}'.format(target_genes))
+                    gene = target_genes[0]
+                    all_target_genes.append(gene)
+                else:
+                    gene = Gene(gene_id=id, gene_name=id, chromosome='chr1', start_pos=1, end_pos=1, orientation=True)
+                    genes.append(gene)
+                    all_target_genes.append(gene)
 
             mutations = SNP.query.filter(SNP.rs_id == int(row['RSID'][2:])).all()
             if not mutations:
                 print('No snps for ', int(row['RSID'][2:]))
 
             for mutation in mutations:
-                mutation.target_genes = target_genes
+                mutation.target_genes = all_target_genes
+        session.add_all(genes)
         session.commit()

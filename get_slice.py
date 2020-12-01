@@ -1,7 +1,35 @@
 from ASB_app import *
-from ASB_app.models import *
+from ASB_app.releases import ReleaseFord
 from sqlalchemy.orm import aliased
 import os
+
+current_release = ReleaseFord
+
+TranscriptionFactor, \
+CellLine, \
+Experiment, \
+ExpSNP, \
+SNP, \
+TranscriptionFactorSNP, \
+CellLineSNP, \
+Phenotype, \
+PhenotypeSNPCorrespondence, \
+BADGroup, \
+Gene = \
+current_release.TranscriptionFactor, \
+current_release.CellLine, \
+current_release.Experiment, \
+current_release.ExpSNP, \
+current_release.SNP, \
+current_release.TranscriptionFactorSNP, \
+current_release.CellLineSNP, \
+current_release.Phenotype, \
+current_release.PhenotypeSNPCorrespondence, \
+current_release.BADGroup, \
+current_release.Gene
+
+session = current_release.session
+db =current_release.db
 
 grasp = aliased(Phenotype, name='grasp')
 ebi = aliased(Phenotype, name='ebi')
@@ -15,7 +43,7 @@ def pack(line):
     return '\t'.join(map(str, line)) + '\n'
 
 
-out_path = os.path.expanduser('~/Desktop/ADASTRA_soos_slice')
+out_path = os.path.expanduser('~/Desktop/ADASTRA_ford_slice')
 if not os.path.isdir(out_path):
     os.mkdir(out_path)
 
@@ -213,7 +241,12 @@ for cl in CellLine.query:
     if q_cl.count() == 0:
         continue
 
-    with open(os.path.join(cl_path, cl.name.replace('/', '-') + '.tsv'), 'w') as out:
+    if cl.name == 'SLK (Clear cell renal cell carcinoma. Derived from metastatic site: Skin.Clear cell renal cell carcinoma (NCIt: C4033) Derived from metastatic site: Skin)':
+        clname = 'SLK (Clear cell renal cell carcinoma. Derived from metastatic site: Skin)'
+    else:
+        clname = cl.name
+
+    with open(os.path.join(cl_path, clname.replace('/', '-') + '.tsv'), 'w') as out:
         out.write(pack(cl_header))
         for tup in q_cl:
             out.write(pack(process_row(tup, 'CL')))
