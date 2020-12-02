@@ -66,8 +66,12 @@ class TicketPingItem(Resource):
         Get ticket info
         """
         ticket = ananastra_service.get_ticket(ticket_id)
-        ticket.elapsed_time = round((datetime.now() - datetime.strptime(ticket.meta_info['processing_started_at'], '%Y-%m-%d %H:%M:%S.%f')).total_seconds())
-        ticket.status_details = ticket.meta_info['status_details']
+        processing_start = ticket.meta_info.get('processing_started_at')
+        if processing_start:
+            ticket.elapsed_time = round((datetime.now() - datetime.strptime(processing_start, '%Y-%m-%d %H:%M:%S.%f')).total_seconds())
+        else:
+            ticket.elapsed_time = None
+        ticket.status_details = ticket.meta_info.get('status_details')
         return ticket
 
 
