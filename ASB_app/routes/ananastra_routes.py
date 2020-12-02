@@ -7,7 +7,7 @@ from flask import request
 from flask_restplus import Resource
 
 from ASB_app.executor_jobs import process_snp_file
-from ASB_app.serializers import ticket_model
+from ASB_app.serializers import ticket_model, ticket_model_short
 from ASB_app.service import ananastra_service, FileNotProcessed
 from ASB_app.service import get_ticket_id_from_path, get_tickets_dir
 from ASB_app.utils import PaginationMixin
@@ -58,16 +58,17 @@ class ProcessTicket(Resource):
         return {'message': 'success'}, 202
 
 
-# @ananastra_nsp.route('/ticket/ping/<string:ticket_id>')
-# class TicketPingItem(Resource):
-#     @api.marshal_with(ticket_model_short)
-#     def get(self, ticket_id):
-#         """
-#         Get ticket info
-#         """
-#         ticket = ananastra_service.get_ticket(ticket_id)
-#         ticket.elapsed_time = round((datetime.now() - datetime.strptime(ticket.meta_info['processing_started_at'], '%Y-%m-%d %H:%M:%S.%f')).total_seconds())
-#         return ticket
+@ananastra_nsp.route('/ticket/ping/<string:ticket_id>')
+class TicketPingItem(Resource):
+    @api.marshal_with(ticket_model_short)
+    def get(self, ticket_id):
+        """
+        Get ticket info
+        """
+        ticket = ananastra_service.get_ticket(ticket_id)
+        ticket.elapsed_time = round((datetime.now() - datetime.strptime(ticket.meta_info['processing_started_at'], '%Y-%m-%d %H:%M:%S.%f')).total_seconds())
+        ticket.status_details = ticket.meta_info['status_details']
+        return ticket
 
 
 user_id_parser = api.parser()
@@ -81,9 +82,7 @@ class TicketItem(Resource):
         """
         Get ticket info
         """
-        ticket = ananastra_service.get_ticket(ticket_id)
-        ticket.elapsed_time = round((datetime.now() - datetime.strptime(ticket.meta_info['processing_started_at'], '%Y-%m-%d %H:%M:%S.%f')).total_seconds())
-        return ticket
+        return ananastra_service.get_ticket(ticket_id)
 
     @api.expect(user_id_parser)
     @api.response(403, 'File is processing')
