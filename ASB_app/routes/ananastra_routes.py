@@ -40,7 +40,7 @@ class CommitFile(Resource):
             request.files['file'].save(filename)
             os.close(fd)
             ticket_id = get_ticket_id_from_path(filename)
-            return ananastra_service.create_ticket(ticket_id)
+            return ananastra_service.create_ticket(ticket_id, commit_parser.parse_args()['user_id'])
 
 
 @ananastra_nsp.route('/process/<string:ticket_id>')
