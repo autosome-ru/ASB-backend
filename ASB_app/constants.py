@@ -13,9 +13,16 @@ db_name_property_dict = {
     for x in ['clinvar', 'ebi', 'finemapping', 'grasp', 'phewas', 'QTL']
 }
 
-possible_tf_asbs = 147909
-possible_cl_asbs = 252469
-possible_all_asbs = 269934
-possible_tf_candidates = 2024836
-possible_cl_candidates = 2024836
-possible_all_candidates = 2024836
+possible_tf_asbs = 390916
+possible_cl_asbs = 569814
+possible_all_asbs = 960730
+possible_tf_candidates = 14630545
+possible_cl_candidates = 9791542
+possible_all_candidates = 24422087
+
+possible_tf_asbs_rs = 249216
+possible_cl_asbs_rs = 349850
+possible_all_asbs_rs = 377221
+possible_tf_candidates_rs = 3690724
+possible_cl_candidates_rs = 3690724
+possible_all_candidates_rs = 3690724

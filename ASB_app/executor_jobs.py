@@ -2,8 +2,9 @@ import os
 import re
 from datetime import datetime
 from ASB_app import logger, executor
-from ASB_app.constants import possible_tf_asbs, possible_cl_asbs, possible_cl_candidates, possible_all_asbs, \
-    possible_all_candidates, possible_tf_candidates
+from ASB_app.constants import possible_tf_asbs_rs, possible_cl_asbs_rs, possible_cl_candidates_rs, possible_all_asbs_rs, \
+    possible_all_candidates_rs, possible_tf_candidates_rs, possible_tf_asbs, possible_tf_candidates, possible_cl_asbs, \
+    possible_cl_candidates, possible_all_asbs, possible_all_candidates
 from ASB_app.service import ananastra_service
 from ASB_app.utils import pack, process_row, group_concat_distinct_sep
 from sqlalchemy.orm import aliased
@@ -516,18 +517,24 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
         update_ticket_status(ticket, 'Performing statistical analysis')
 
         if tf_candidates:
-            tf_odds, tf_p = fisher_exact(((tf_asbs_rs, tf_candidates_rs), (possible_tf_asbs, possible_tf_candidates)))
+            tf_odds_rs, tf_p_rs = fisher_exact(((tf_asbs_rs, tf_candidates_rs), (possible_tf_asbs_rs, possible_tf_candidates_rs)), alternative='greater')
+            tf_odds, tf_p = fisher_exact(((tf_asbs, tf_candidates), (possible_tf_asbs, possible_tf_candidates)), alternative='greater')
         else:
+            tf_odds_rs, tf_p_rs = 0, 1
             tf_odds, tf_p = 0, 1
 
         if cl_candidates:
-            cl_odds, cl_p = fisher_exact(((cl_asbs_rs, cl_candidates_rs), (possible_cl_asbs, possible_cl_candidates)))
+            cl_odds_rs, cl_p_rs = fisher_exact(((cl_asbs_rs, cl_candidates_rs), (possible_cl_asbs_rs, possible_cl_candidates_rs)), alternative='greater')
+            cl_odds, cl_p = fisher_exact(((cl_asbs, cl_candidates), (possible_cl_asbs, possible_cl_candidates)), alternative='greater')
         else:
+            cl_odds_rs, cl_p_rs = 0, 1
             cl_odds, cl_p = 0, 1
 
         if all_candidates:
-            all_odds, all_p = fisher_exact(((all_asbs_rs, all_candidates_rs), (possible_all_asbs, possible_all_candidates)))
+            all_odds_rs, all_p_rs = fisher_exact(((all_asbs_rs, all_candidates_rs), (possible_all_asbs_rs, possible_all_candidates_rs)), alternative='greater')
+            all_odds, all_p = fisher_exact(((all_asbs, all_candidates), (possible_all_asbs, possible_all_candidates)), alternative='greater')
         else:
+            all_odds_rs, all_p_rs = 0, 1
             all_odds, all_p = 0, 1
 
         logger.info('Ticket {}: tests done'.format(ticket_id))
@@ -545,7 +552,7 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
             if not candidates:
                 odds, p = 0, 1
             else:
-                odds, p = fisher_exact(((asbs_rs, candidates_rs), (possible_tf_asbs, possible_tf_candidates)))
+                odds, p = fisher_exact(((asbs_rs, candidates_rs), (possible_tf_asbs_rs, possible_tf_candidates_rs)))
             tf_p_list.append(p)
             tf_asb_data.append({
                 'name': tf,
@@ -579,7 +586,7 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
             if not candidates:
                 odds, p = 0, 1
             else:
-                odds, p = fisher_exact(((asbs_rs, candidates_rs), (possible_cl_asbs, possible_cl_candidates)))
+                odds, p = fisher_exact(((asbs_rs, candidates_rs), (possible_cl_asbs_rs, possible_cl_candidates_rs)))
             cl_p_list.append(p)
             cl_asb_data.append({
                 'name': cl,
@@ -636,6 +643,12 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
         'cl_log10_p_value': -np.log10(cl_p),
         'all_odds': all_odds,
         'all_log10_p_value': -np.log10(all_p),
+        'tf_odds_rs': tf_odds_rs,
+        'tf_log10_p_value_rs': -np.log10(tf_p_rs),
+        'cl_odds_rs': cl_odds_rs,
+        'cl_log10_p_value_rs': -np.log10(cl_p_rs),
+        'all_odds_rs': all_odds_rs,
+        'all_log10_p_value_rs': -np.log10(all_p_rs),
         'tf_asb_counts': modify_counts(list(tf_asb_counts.values())),
         'tf_asb_counts_top': modify_counts(list(tf_sum_counts)),
         'cl_asb_counts': modify_counts(list(cl_asb_counts.values())),
