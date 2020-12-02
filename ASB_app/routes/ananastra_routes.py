@@ -58,6 +58,18 @@ class ProcessTicket(Resource):
         return {'message': 'success'}, 202
 
 
+# @ananastra_nsp.route('/ticket/ping/<string:ticket_id>')
+# class TicketPingItem(Resource):
+#     @api.marshal_with(ticket_model_short)
+#     def get(self, ticket_id):
+#         """
+#         Get ticket info
+#         """
+#         ticket = ananastra_service.get_ticket(ticket_id)
+#         ticket.elapsed_time = round((datetime.now() - datetime.strptime(ticket.meta_info['processing_started_at'], '%Y-%m-%d %H:%M:%S.%f')).total_seconds())
+#         return ticket
+
+
 user_id_parser = api.parser()
 user_id_parser.add_argument('user_id')
 
