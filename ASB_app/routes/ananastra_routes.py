@@ -82,7 +82,8 @@ class TicketItem(Resource):
         Get ticket info
         """
         ticket = ananastra_service.get_ticket(ticket_id)
-        ticket.elapsed_time = str(datetime.now() - ticket.meta_info['processing_started_at'])
+        ticket.elapsed_time = round((datetime.now() - datetime.strptime(ticket.meta_info['processing_started_at'], '%Y-%m-%d %H:%M:%S.%f')).total_seconds())
+        return ticket
 
     @api.expect(user_id_parser)
     @api.response(403, 'File is processing')
