@@ -1,5 +1,6 @@
 import os
 import tempfile
+from datetime import datetime
 
 from flask import request
 
@@ -68,7 +69,8 @@ class TicketItem(Resource):
         """
         Get ticket info
         """
-        return ananastra_service.get_ticket(ticket_id)
+        ticket = ananastra_service.get_ticket(ticket_id)
+        ticket.elapsed_time = str(datetime.now() - ticket.meta_info['processing_started_at'])
 
     @api.expect(user_id_parser)
     @api.response(403, 'File is processing')
