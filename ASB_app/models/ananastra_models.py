@@ -8,7 +8,7 @@ db = current_release.db
 
 class Ticket(db.Model):
     __tablename__ = 'tickets'
-    __bind_key__ = current_release.name
+    __bind_key__ = 'tickets'
 
     ticket_id = db.Column(db.String(50), primary_key=True)
     status = db.Column(db.Enum('Created', 'Processing', 'Processed', 'Failed'), server_default='Created', nullable=False)

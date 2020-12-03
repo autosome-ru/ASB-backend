@@ -6,6 +6,7 @@ import pandas as pd
 
 from flask import send_file
 
+from ASB_app import executor
 from ASB_app.exceptions import FileNotProcessed
 from ASB_app.models import Ticket
 from ASB_app.releases import current_release
@@ -154,3 +155,12 @@ def delete_all_tickets():
             os.rmdir(ticket_dir)
         session.delete(ticket)
         session.commit()
+
+
+def get_ticket_position_in_queue(ticket_id):
+    count = 0
+    for id, future in executor.futures._futures.items():
+        if id == ticket_id:
+            return count
+        if getattr(future, '__proxied_object')._state in ('RUNNING', 'PENDING'):
+            count += 1

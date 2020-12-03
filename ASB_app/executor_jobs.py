@@ -318,10 +318,22 @@ def get_preferences(df):
         return 'Alt'
 
 
-def modify_counts(counts_list):
-    counts_list = sorted(counts_list, key=lambda x: x['count'], reverse=True)
-    if len(counts_list) > 7:
-        counts_list = counts_list[:6] + [{'name': 'Other', 'count': sum(x['count'] for x in counts_list[6:])}]
+def modify_counts(asb_data, counts=None, top=False):
+    if top:
+        if not counts:
+            return []
+        tuples = []
+        data_by_name = {data['name']: data for data in asb_data}
+        for count in counts:
+            data = data_by_name[count['name']]
+            tuples.append((count, data))
+        counts_list, _ = (list(a) for a in zip(*sorted(tuples, key=lambda x: (x[0]['count'], x[1]['odds']), reverse=True)))
+        if len(counts_list) > 7:
+            counts_list = counts_list[:6] + [{'name': 'Other', 'count': sum(x['count'] for x in counts_list[6:])}]
+    else:
+        counts_list = sorted(asb_data, key=lambda x: (x['asbs'], x['odds']), reverse=True)
+        if len(counts_list) > 7:
+            counts_list = [{'name': x['name'], 'count': x['asbs']} for x in counts_list[:6]] + [{'name': 'Other', 'count': sum(x['asbs'] for x in counts_list[6:])}]
     return counts_list
 
 
@@ -427,7 +439,6 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
                 tf_sum_table['TF_BINDING_PREFERENCES'] = tf_sum_table.apply(lambda row: get_preferences(tf_table.loc[tf_table['RS_ID'] == row['RS_ID'], ['LOG10_FDR_REF', 'LOG10_FDR_ALT']]), axis=1)
                 tf_sum_table.drop(columns=['REF', 'ALT'])
                 tf_sum_table.to_csv(ananastra_service.get_path_by_ticket_id(ticket_id, 'tf_sum'), sep='\t', index=False)
-                tf_table.drop(columns=['GTEX_EQTL_TARGET_GENES'], inplace=True)
                 tf_table.to_csv(tf_path, sep='\t', index=False)
                 tf_sum_counts = tf_sum_table['TRANSCRIPTION_FACTOR'].value_counts().to_dict()
             else:
@@ -476,7 +487,6 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
                 cl_sum_table['TF_BINDING_PREFERENCES'] = cl_sum_table.apply(lambda row: get_preferences(cl_table.loc[cl_table['RS_ID'] == row['RS_ID'], ['LOG10_FDR_REF', 'LOG10_FDR_ALT']]), axis=1)
                 cl_sum_table.drop(columns=['REF', 'ALT'])
                 cl_sum_table.to_csv(ananastra_service.get_path_by_ticket_id(ticket_id, 'cl_sum'), sep='\t', index=False)
-                cl_table.drop(columns=['GTEX_EQTL_TARGET_GENES'], inplace=True)
                 cl_table.to_csv(cl_path, sep='\t', index=False)
                 cl_sum_counts = cl_sum_table['CELL_TYPE'].value_counts().to_dict()
             else:
@@ -542,11 +552,10 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
 
         tf_p_list = []
         tf_asb_data = []
-        tf_asb_counts_rs = {k: {k1: v1 for k1, v1 in v.items()} for k, v in tf_asb_counts.items()}
         for tf in tf_asb_counts.keys():
             tf_id = TranscriptionFactor.query.filter_by(name=tf).one().tf_id
             asbs = tf_asb_counts[tf]['count']
-            asbs_rs = tf_asb_counts_rs[tf]['count'] = len(set(x.snp.rs_id for x in tf_asbs_list if x.tf_id == tf_id))
+            asbs_rs = len(set(x.snp.rs_id for x in tf_asbs_list if x.tf_id == tf_id))
             candidates = len([cand for cand in tf_candidates_list if cand.ag_id == tf_id])
             candidates_rs = len(set(cand.rs_id for cand in tf_candidates_list if cand.ag_id == tf_id))
             if not candidates:
@@ -576,11 +585,10 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
 
         cl_p_list = []
         cl_asb_data = []
-        cl_asb_counts_rs = {k: {k1: v1 for k1, v1 in v.items()} for k, v in cl_asb_counts.items()}
         for cl in cl_asb_counts.keys():
             cl_id = CellLine.query.filter_by(name=cl).one().cl_id
             asbs = cl_asb_counts[cl]['count']
-            asbs_rs = cl_asb_counts_rs[cl]['count'] = len(set(x.snp.rs_id for x in cl_asbs_list if x.cl_id == cl_id))
+            asbs_rs = len(set(x.snp.rs_id for x in cl_asbs_list if x.cl_id == cl_id))
             candidates = len([cand for cand in cl_candidates_list if cand.ag_id == cl_id])
             candidates_rs = len(set(cand.rs_id for cand in cl_candidates_list if cand.ag_id == cl_id))
             if not candidates:
@@ -608,8 +616,46 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
         logger.info('Ticket {}: cl tests done'.format(ticket_id))
         update_ticket_status(ticket, 'Finalizing')
 
-        tf_asb_data = sorted(tf_asb_data, key=lambda x: x['log10_fdr'], reverse=True)
-        cl_asb_data = sorted(cl_asb_data, key=lambda x: x['log10_fdr'], reverse=True)
+        tf_asb_data = sorted(tf_asb_data, key=lambda x: (x['log10_fdr'], x['log10_p_value'], x['odds']), reverse=True)
+        cl_asb_data = sorted(cl_asb_data, key=lambda x: (x['log10_fdr'], x['log10_p_value'], x['odds']), reverse=True)
+
+        ticket.status = 'Processed'
+        meta_info = dict(ticket.meta_info)
+        meta_info.update({
+            'processing_time': str(datetime.now() - processing_start_time),
+            'all_rs': all_rs,
+            'tf_asbs': tf_asbs,
+            'tf_asbs_rs': tf_asbs_rs,
+            'cl_asbs': cl_asbs,
+            'cl_asbs_rs': cl_asbs_rs,
+            'all_asbs': all_asbs,
+            'all_asbs_rs': all_asbs_rs,
+            'tf_candidates': tf_candidates,
+            'tf_candidates_rs': tf_candidates_rs,
+            'cl_candidates': cl_candidates,
+            'cl_candidates_rs': cl_candidates_rs,
+            'all_candidates': all_candidates,
+            'all_candidates_rs': all_candidates_rs,
+            'tf_odds': tf_odds,
+            'tf_log10_p_value': -np.log10(tf_p),
+            'cl_odds': cl_odds,
+            'cl_log10_p_value': -np.log10(cl_p),
+            'all_odds': all_odds,
+            'all_log10_p_value': -np.log10(all_p),
+            'tf_odds_rs': tf_odds_rs,
+            'tf_log10_p_value_rs': -np.log10(tf_p_rs),
+            'cl_odds_rs': cl_odds_rs,
+            'cl_log10_p_value_rs': -np.log10(cl_p_rs),
+            'all_odds_rs': all_odds_rs,
+            'all_log10_p_value_rs': -np.log10(all_p_rs),
+            'tf_asb_counts': modify_counts(tf_asb_data, top=False),
+            'tf_asb_counts_top': modify_counts(tf_asb_data, tf_sum_counts, top=True),
+            'cl_asb_counts': modify_counts(cl_asb_data, top=False),
+            'cl_asb_counts_top': modify_counts(cl_asb_data, cl_sum_counts, top=True),
+            'tf_asb_data': tf_asb_data,
+            'cl_asb_data': cl_asb_data,
+            'concordant_asbs': conc_asbs,
+        })
 
     except Exception as e:
         if not isinstance(e, ConvError):
@@ -620,43 +666,6 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
         session.commit()
         return
 
-    ticket.status = 'Processed'
-    meta_info = dict(ticket.meta_info)
-    meta_info.update({
-        'processing_time': str(datetime.now() - processing_start_time),
-        'all_rs': all_rs,
-        'tf_asbs': tf_asbs,
-        'tf_asbs_rs': tf_asbs_rs,
-        'cl_asbs': cl_asbs,
-        'cl_asbs_rs': cl_asbs_rs,
-        'all_asbs': all_asbs,
-        'all_asbs_rs': all_asbs_rs,
-        'tf_candidates': tf_candidates,
-        'tf_candidates_rs': tf_candidates_rs,
-        'cl_candidates': cl_candidates,
-        'cl_candidates_rs': cl_candidates_rs,
-        'all_candidates': all_candidates,
-        'all_candidates_rs': all_candidates_rs,
-        'tf_odds': tf_odds,
-        'tf_log10_p_value': -np.log10(tf_p),
-        'cl_odds': cl_odds,
-        'cl_log10_p_value': -np.log10(cl_p),
-        'all_odds': all_odds,
-        'all_log10_p_value': -np.log10(all_p),
-        'tf_odds_rs': tf_odds_rs,
-        'tf_log10_p_value_rs': -np.log10(tf_p_rs),
-        'cl_odds_rs': cl_odds_rs,
-        'cl_log10_p_value_rs': -np.log10(cl_p_rs),
-        'all_odds_rs': all_odds_rs,
-        'all_log10_p_value_rs': -np.log10(all_p_rs),
-        'tf_asb_counts': modify_counts(list(tf_asb_counts.values())),
-        'tf_asb_counts_top': modify_counts(list(tf_sum_counts)),
-        'cl_asb_counts': modify_counts(list(cl_asb_counts.values())),
-        'cl_asb_counts_top': modify_counts(list(cl_sum_counts)),
-        'tf_asb_data': tf_asb_data,
-        'cl_asb_data': cl_asb_data,
-        'concordant_asbs': conc_asbs,
-    })
     ticket.meta_info = meta_info
     logger.info('Ticket {}: ticket info changed'.format(ticket_id))
     session.commit()

@@ -81,4 +81,5 @@ ticket_model_short = api.model('ANANASTRA ticket (short)', {
     'elapsed_time': fields.Integer,
     'status_details': fields.String,
     'processing_started_at': fields.String,
+    'position_in_queue': fields.Integer,
 })

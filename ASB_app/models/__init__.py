@@ -9,3 +9,4 @@ for release in Release.__subclasses__():
     release.session.commit()
 
 current_release.db.create_all('candidates')
+current_release.db.create_all('tickets')

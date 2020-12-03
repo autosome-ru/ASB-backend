@@ -6,6 +6,7 @@ from flask import request
 
 from flask_restplus import Resource
 
+from ASB_app import executor
 from ASB_app.executor_jobs import process_snp_file
 from ASB_app.serializers import ticket_model, ticket_model_short
 from ASB_app.service import ananastra_service, FileNotProcessed
@@ -52,9 +53,7 @@ class ProcessTicket(Resource):
         """
         Submits a ticket for processing
         """
-        ananastra_service.update_ticket_status(ticket_id, 'Processing')
-        process_snp_file.submit(ticket_id)
-
+        process_snp_file.submit_stored(ticket_id, ticket_id)
         return {'message': 'success'}, 202
 
 
@@ -73,6 +72,12 @@ class TicketPingItem(Resource):
             ticket.elapsed_time = None
         ticket.status_details = ticket.meta_info.get('status_details')
         ticket.processing_started_at = ticket.meta_info.get('processing_started_at')
+        if not executor.futures.done(ticket_id):
+            ticket.position_in_queue = ananastra_service.get_ticket_position_in_queue(ticket_id)
+            if ticket.position_in_queue == 0:
+                ticket.position_in_queue = None
+        else:
+            ticket.position_in_queue = None
         return ticket
 
 
