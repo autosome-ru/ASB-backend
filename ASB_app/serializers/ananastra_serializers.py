@@ -80,4 +80,5 @@ ticket_model_short = api.model('ANANASTRA ticket (short)', {
     'status': fields.String(enum=('Created', 'Processing', 'Processed', 'Failed')),
     'elapsed_time': fields.Integer,
     'status_details': fields.String,
+    'processing_started_at': fields.String,
 })

@@ -72,6 +72,7 @@ class TicketPingItem(Resource):
         else:
             ticket.elapsed_time = None
         ticket.status_details = ticket.meta_info.get('status_details')
+        ticket.processing_started_at = ticket.meta_info.get('processing_started_at')
         return ticket
 
 
