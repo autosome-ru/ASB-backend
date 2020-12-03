@@ -552,7 +552,7 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
             if not candidates:
                 odds, p = 0, 1
             else:
-                odds, p = fisher_exact(((asbs_rs, candidates_rs), (possible_tf_asbs_rs, possible_tf_candidates_rs)))
+                odds, p = fisher_exact(((asbs_rs, candidates_rs), (possible_tf_asbs_rs, possible_tf_candidates_rs)), alternative='greater')
             tf_p_list.append(p)
             tf_asb_data.append({
                 'name': tf,
@@ -586,7 +586,7 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
             if not candidates:
                 odds, p = 0, 1
             else:
-                odds, p = fisher_exact(((asbs_rs, candidates_rs), (possible_cl_asbs_rs, possible_cl_candidates_rs)))
+                odds, p = fisher_exact(((asbs_rs, candidates_rs), (possible_cl_asbs_rs, possible_cl_candidates_rs)), alternative='greater')
             cl_p_list.append(p)
             cl_asb_data.append({
                 'name': cl,
