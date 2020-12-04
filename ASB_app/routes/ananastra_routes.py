@@ -53,6 +53,7 @@ class ProcessTicket(Resource):
         """
         Submits a ticket for processing
         """
+        ananastra_service.update_ticket_status(ticket_id, 'Processing')
         process_snp_file.submit_stored(ticket_id, ticket_id)
         return {'message': 'success'}, 202
 
