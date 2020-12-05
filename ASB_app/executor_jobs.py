@@ -1,10 +1,11 @@
 import os
+from sqlalchemy import tuple_
 import re
 from datetime import datetime
 from ASB_app import logger, executor
 from ASB_app.constants import possible_tf_asbs_rs, possible_cl_asbs_rs, possible_cl_candidates_rs, possible_all_asbs_rs, \
     possible_all_candidates_rs, possible_tf_candidates_rs, possible_tf_asbs, possible_tf_candidates, possible_cl_asbs, \
-    possible_cl_candidates, possible_all_asbs, possible_all_candidates
+    possible_cl_candidates, possible_all_asbs, possible_all_candidates, chromosomes
 from ASB_app.service import ananastra_service
 from ASB_app.utils import pack, process_row, group_concat_distinct_sep
 from sqlalchemy.orm import aliased
@@ -294,8 +295,8 @@ def divide_chunks(l, n):
         yield l[i:i + n]
 
 
-def divide_query(get_query, rs_ids):
-    for chunk in divide_chunks(rs_ids, 900):
+def divide_query(get_query, values):
+    for chunk in divide_chunks(values, 900):
         yield get_query(chunk)
 
 
@@ -334,6 +335,8 @@ def modify_counts(asb_data, counts=None, top=False):
         counts_list = sorted(asb_data, key=lambda x: (x['asbs'], x['odds']), reverse=True)
         if len(counts_list) > 7:
             counts_list = [{'name': x['name'], 'count': x['asbs']} for x in counts_list[:6]] + [{'name': 'Other', 'count': sum(x['asbs'] for x in counts_list[6:])}]
+        else:
+            counts_list = [{'name': x['name'], 'count': x['asbs']} for x in counts_list]
     return counts_list
 
 
@@ -347,6 +350,58 @@ def update_ticket_status(ticket, status):
     session.commit()
 
 
+def get_rs_ids_by_chr_pos_query(chromosome, tuples, candidates=False):
+    if candidates:
+        return CandidateSNP.query.filter(CandidateSNP.chromosome == chromosome, tuple_(CandidateSNP.position, CandidateSNP.rs_id, CandidateSNP.ref, CandidateSNP.alt).in_(tuples)).all()
+    else:
+        return SNP.query.filter(SNP.chromosome == chromosome, tuple_(SNP.position, SNP.rs_id, SNP.ref, SNP.alt).in_(tuples)).all()
+
+
+def get_rs_ids_from_vcf(data):
+    snps = []
+    for chr in data[0].unique():
+        if chr not in chromosomes:
+            if 'chr' + str(chr) in chromosomes:
+                chr = 'chr' + chr
+            else:
+                raise ConvError('chromosome: {}'.format(chr))
+        try:
+            tuples = [(int(position), convert_rs_to_int(rs_id), ref.upper(), alt.upper()) for index, (position, rs_id, ref, alt) in data.loc[data[0] == chr, [1, 2, 3, 4]].iterrows()]
+        except ValueError as e:
+            raise ConvError('position: {}'.format(e.args[0]))
+        for snps_chunk in divide_query(lambda poss: get_rs_ids_by_chr_pos_query(chr, poss), tuples):
+            snps += snps_chunk
+        for snps_chunk in divide_query(lambda poss: get_rs_ids_by_chr_pos_query(chr, poss, candidates=True), tuples):
+            snps += snps_chunk
+    return list(set(x.rs_id for x in snps))
+
+
+def get_snps_from_interval(interval_str):
+    interval_str = interval_str.strip()
+    match = re.match(r'^(chr)?(\d|1\d|2[0-2]|X|Y):([1-9]\d*)-([1-9]\d*)$', interval_str)
+    if match:
+        chr, start, end = match.groups()[1:]
+        chr = 'chr' + chr
+        start = int(start)
+        end = int(end)
+        print(list(set(x for (x, ) in session.query(SNP.rs_id).filter(
+            SNP.chromosome == chr,
+            SNP.position.between(start, end)
+        )) | set(x.rs_id for x in CandidateSNP.query.filter(
+            CandidateSNP.chromosome == chr,
+            CandidateSNP.position.between(start, end)
+        ))))
+        return list(set(x for (x, ) in session.query(SNP.rs_id).filter(
+            SNP.chromosome == chr,
+            SNP.position.between(start, end)
+        )) | set(x.rs_id for x in CandidateSNP.query.filter(
+            CandidateSNP.chromosome == chr,
+            CandidateSNP.position.between(start, end)
+        )))
+    else:
+        raise ConvError(interval_str)
+
+
 @executor.job
 def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
     processing_start_time = datetime.now()
@@ -354,25 +409,54 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
     ticket = ananastra_service.get_ticket(ticket_id)
     change_status_on_fail = False
     try:
+        len_items = None
         ticket.status = 'Processing'
         ticket.meta_info = {'processing_started_at': str(datetime.now())}
         update_ticket_status(ticket, 'Processing started')
         try:
-            data = pd.read_table(input_file_name, sep='\t', header=None, encoding='utf-8', dtype=str)
+            data = pd.read_table(input_file_name, sep='\t', header=None, encoding='utf-8', dtype=str, comment='#')
         except:
-            update_ticket_status(ticket, 'Processing failed: the file must be a valid utf-8 text file with a single SNP rs-ID on each line')
+            update_ticket_status(ticket, 'Processing failed: the file must be a valid utf-8 text file with a single SNP rs-ID on each line or a single line with genomic interval or a valid .vcf(.gz) file')
             raise ConvError
         if len(data.columns) != 1:
-            update_ticket_status(ticket, 'Processing failed: the file must contain a single SNP rs-ID on each line')
+            len_items = len(data.index)
+            try:
+                rs_ids = get_rs_ids_from_vcf(data)
+            except ConvError as e:
+                update_ticket_status(ticket, 'Processing failed: the file must contain a single SNP rs-ID on each line or a single line with genomic interval or be a valid vcf file, invalid {}'.format(e.args[0]))
+                raise ConvError
+            except:
+                change_status_on_fail = True
+                raise
+        else:
+            rs_ids = None
+            if len(data.index) == 1:
+                try:
+                    rs_ids = get_snps_from_interval(data[0][0])
+                except ConvError:
+                    pass
+                except:
+                    change_status_on_fail = True
+                    raise
+            if rs_ids is None:
+                try:
+                    rs_ids = data[0].apply(convert_rs_to_int).unique().tolist()
+                except ConvError as e:
+                    if len(data.index) > 1:
+                        update_ticket_status(ticket, 'Processing failed, invalid rs id: "{}"'.format(e.args[0]))
+                    else:
+                        update_ticket_status(ticket, 'Processing failed, invalid rs id or genomic interval: "{}"'.format(e.args[0]))
+                    raise ConvError
+                except:
+                    change_status_on_fail = True
+                    raise
+
+        if len_items is None:
+            len_items = len(rs_ids)
+
+        if len_items > 10000:
+            update_ticket_status(ticket, 'Processing failed, maximum number of itmes exceeds 10000')
             raise ConvError
-        try:
-            rs_ids = data[0].apply(convert_rs_to_int).unique().tolist()
-        except ConvError as e:
-            update_ticket_status(ticket, 'Processing failed, invalid rs id: "{}"'.format(e.args[0]))
-            raise ConvError
-        except:
-            change_status_on_fail = True
-            raise
 
         change_status_on_fail = True
 
@@ -389,7 +473,7 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
         tf_sum_counts = {}
         conc_asbs = []
         logger.info('Ticket {}: processing started'.format(ticket_id))
-        update_ticket_status(ticket, 'Searching for transcription factor ASB')
+        update_ticket_status(ticket, 'Searching for ASBs of transcription factors (TF-ASBs)')
 
         if annotate_tf:
             ananastra_service.create_processed_path(ticket_id, 'tf')
@@ -420,7 +504,7 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
                         out.write(pack(process_row(tup, 'TF', tf_header)))
 
             logger.info('Ticket {}: tf done'.format(ticket_id))
-            update_ticket_status(ticket, 'Aggregating transcription factor ASB info')
+            update_ticket_status(ticket, 'Aggregating TF-ASBs information')
 
             ananastra_service.create_processed_path(ticket_id, 'tf_sum')
 
@@ -446,7 +530,7 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
                 tf_sum_table.to_csv(ananastra_service.get_path_by_ticket_id(ticket_id, 'tf_sum'), sep='\t', index=False)
 
             logger.info('Ticket {}: tf_sum done'.format(ticket_id))
-            update_ticket_status(ticket, 'Searching for cell type ASB')
+            update_ticket_status(ticket, 'Searching for cell type-ASBs (CL-ASBs)')
 
         cl_asb_counts = {}
         cl_sum_counts = {}
@@ -469,7 +553,7 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
                         out.write(pack(process_row(tup, 'CL', cl_header)))
 
             logger.info('Ticket {}: cl done'.format(ticket_id))
-            update_ticket_status(ticket, 'Aggregating cell type ASB info')
+            update_ticket_status(ticket, 'Aggregating CL-ASBs information')
 
             ananastra_service.create_processed_path(ticket_id, 'cl_sum')
 
@@ -495,12 +579,12 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
 
 
             logger.info('Ticket {}: cl_sum done'.format(ticket_id))
-            update_ticket_status(ticket, 'Searching for candidate ASB SNPs')
+            update_ticket_status(ticket, 'Checking the control data of candidate but non-significant ASBs (non-ASBs)')
 
         tf_sum_counts = [{'name': key, 'count': value} for key, value in tf_sum_counts.items()]
         cl_sum_counts = [{'name': key, 'count': value} for key, value in cl_sum_counts.items()]
 
-        all_rs = len(rs_ids)
+        all_rs = len_items
         tf_asbs_list = [x for query in divide_query(get_tf_asbs, rs_ids) for x in query]
         tf_asbs = len(tf_asbs_list)
         tf_asbs_rs = len(set(x.snp.rs_id for x in tf_asbs_list))
@@ -512,7 +596,7 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
         all_asbs_rs = len(set(x.rs_id for x in all_asbs_list))
 
         logger.info('Ticket {}: query count asb done'.format(ticket_id))
-        update_ticket_status(ticket, 'Searching for candidate ASB SNPs')
+        update_ticket_status(ticket, 'Checking the control data of candidate but non-significant ASBs (non-ASBs)')
 
         tf_candidates_list = [x for query in divide_query(get_tf_candidates, rs_ids) for x in query]
         tf_candidates = len(tf_candidates_list)
@@ -549,7 +633,7 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
             all_odds, all_p = 0, 1
 
         logger.info('Ticket {}: tests done'.format(ticket_id))
-        update_ticket_status(ticket, 'Testing for individual transcription factors significance')
+        update_ticket_status(ticket, 'Testing the enrichment of ASBs of individual TFs')
 
         tf_p_list = []
         tf_asb_data = []
@@ -582,7 +666,7 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
                 sig['log10_fdr'] = -np.log10(fdr)
 
         logger.info('Ticket {}: tf tests done'.format(ticket_id))
-        update_ticket_status(ticket, 'Testing for individual cell types significance')
+        update_ticket_status(ticket, 'Testing the enrichment of ASBs of individual cell types')
 
         cl_p_list = []
         cl_asb_data = []
@@ -615,7 +699,7 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
             sig['log10_fdr'] = -np.log10(fdr)
 
         logger.info('Ticket {}: cl tests done'.format(ticket_id))
-        update_ticket_status(ticket, 'Finalizing')
+        update_ticket_status(ticket, 'Finalizing the report')
 
         tf_asb_data = sorted(tf_asb_data, key=lambda x: (x['log10_fdr'], x['log10_p_value'], x['odds']), reverse=True)
         cl_asb_data = sorted(cl_asb_data, key=lambda x: (x['log10_fdr'], x['log10_p_value'], x['odds']), reverse=True)
