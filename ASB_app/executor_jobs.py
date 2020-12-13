@@ -1,3 +1,4 @@
+import gzip
 import os
 from sqlalchemy import tuple_
 import re
@@ -384,13 +385,6 @@ def get_snps_from_interval(interval_str):
         chr = 'chr' + chr
         start = int(start)
         end = int(end)
-        print(list(set(x for (x, ) in session.query(SNP.rs_id).filter(
-            SNP.chromosome == chr,
-            SNP.position.between(start, end)
-        )) | set(x.rs_id for x in CandidateSNP.query.filter(
-            CandidateSNP.chromosome == chr,
-            CandidateSNP.position.between(start, end)
-        ))))
         return list(set(x for (x, ) in session.query(SNP.rs_id).filter(
             SNP.chromosome == chr,
             SNP.position.between(start, end)
@@ -414,10 +408,14 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
         ticket.meta_info = {'processing_started_at': str(datetime.now())}
         update_ticket_status(ticket, 'Processing started')
         try:
-            data = pd.read_table(input_file_name, sep='\t', header=None, encoding='utf-8', dtype=str, comment='#')
+            with gzip.open(input_file_name, 'rt') as f:
+                data = pd.read_table(f, sep='\t', header=None, encoding='utf-8', dtype=str, comment='#')
         except:
-            update_ticket_status(ticket, 'Processing failed: the file must be a valid utf-8 text file with a single SNP rs-ID on each line or a single line with genomic interval or a valid .vcf(.gz) file')
-            raise ConvError
+            try:
+                data = pd.read_table(input_file_name, sep='\t', header=None, encoding='utf-8', dtype=str, comment='#')
+            except:
+                update_ticket_status(ticket, 'Processing failed: the file must contain a single SNP rs-ID on each line or a single line with genomic interval or be a valid vcf file, invalid {}'.format(e.args[0]))
+                raise ConvError
         if len(data.columns) != 1:
             len_items = len(data.index)
             try:
