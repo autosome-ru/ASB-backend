@@ -414,7 +414,7 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
             try:
                 data = pd.read_table(input_file_name, sep='\t', header=None, encoding='utf-8', dtype=str, comment='#')
             except:
-                update_ticket_status(ticket, 'Processing failed: the file must contain a single SNP rs-ID on each line or a single line with genomic interval or be a valid vcf file, invalid {}'.format(e.args[0]))
+                update_ticket_status(ticket, 'Processing failed: the file must contain a single SNP rs-ID on each line or a single line with genomic interval or be a valid vcf file')
                 raise ConvError
         if len(data.columns) != 1:
             len_items = len(data.index)
