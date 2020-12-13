@@ -27,6 +27,22 @@ commit_parser = file_parser.copy()
 commit_parser.add_argument('user_id')
 
 
+@ananastra_nsp.route('/gene_search')
+class GeneSearch(Resource):
+    def post(self):
+        Gene = current_release.Gene
+        for gene in Gene.query.order_by(Gene.snps_count.desc()).offset(150).limit(50):
+            fd, filename = tempfile.mkstemp(prefix='gene' + '_' + gene.gene_name + '_' + current_release.name + '_', suffix='.tsv', dir=get_tickets_dir('accepted'))
+            with open(filename, 'w') as f:
+                f.write('{0.chromosome}:{0.start_pos}-{0.end_pos}'.format(gene))
+            os.close(fd)
+            ticket_id = get_ticket_id_from_path(filename)
+            ananastra_service.create_ticket(ticket_id, commit_parser.parse_args()['user_id'])
+            ananastra_service.update_ticket_status(ticket_id, 'Processing')
+            process_snp_file.submit_stored(ticket_id, ticket_id)
+        return {'message': 'success'}, 202
+
+
 @ananastra_nsp.route('/commit')
 class CommitFile(Resource):
     @api.expect(commit_parser)

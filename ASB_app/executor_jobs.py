@@ -384,13 +384,6 @@ def get_snps_from_interval(interval_str):
         chr = 'chr' + chr
         start = int(start)
         end = int(end)
-        print(list(set(x for (x, ) in session.query(SNP.rs_id).filter(
-            SNP.chromosome == chr,
-            SNP.position.between(start, end)
-        )) | set(x.rs_id for x in CandidateSNP.query.filter(
-            CandidateSNP.chromosome == chr,
-            CandidateSNP.position.between(start, end)
-        ))))
         return list(set(x for (x, ) in session.query(SNP.rs_id).filter(
             SNP.chromosome == chr,
             SNP.position.between(start, end)
