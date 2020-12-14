@@ -10,8 +10,8 @@ asb_data_model = api.model('ASB data entity', {
     'asbs_rs': fields.Integer,
     'candidates_rs': fields.Integer,
     'odds': fields.String,
-    'log10_p_value': fields.Float,
-    'log10_fdr': fields.Float,
+    'log10_p_value': fields.String,
+    'log10_fdr': fields.String,
 })
 
 asb_count_model = api.model('ASB count entity', {
@@ -55,7 +55,7 @@ meta_info_model = api.model('Ticket meta info', {
     'cl_odds_rs': fields.String,
     'cl_log10_p_value_rs': fields.String,
     'all_odds_rs': fields.String,
-    'all_log10_p_value_rs': fields.Float,
+    'all_log10_p_value_rs': fields.String,
     'expected_fraction_all': fields.Float,
     'expected_fraction_tf': fields.Float,
     'expected_fraction_cl': fields.Float,
