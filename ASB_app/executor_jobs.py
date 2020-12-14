@@ -551,7 +551,7 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
                 tf_sum_table.to_csv(ananastra_service.get_path_by_ticket_id(ticket_id, 'tf_sum'), sep='\t', index=False)
 
             logger.info('Ticket {}: tf_sum done'.format(ticket_id))
-            update_ticket_status(ticket, 'Searching for cell type-ASBs (CL-ASBs)')
+            update_ticket_status(ticket, 'Searching for cell type-ASBs')
 
         cl_asb_counts = {}
         cl_sum_counts = {}
