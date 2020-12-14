@@ -609,21 +609,21 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
         logger.info('Ticket {}: query count candidates done'.format(ticket_id))
         update_ticket_status(ticket, 'Performing statistical analysis')
 
-        if tf_candidates:
+        if tf_candidates-tf_asbs:
             tf_odds_rs, tf_p_rs = fisher_exact(((tf_asbs_rs, tf_candidates_rs-tf_asbs_rs), (possible_tf_asbs_rs, possible_tf_candidates_rs-possible_tf_asbs_rs)), alternative='greater')
-            tf_odds, tf_p = fisher_exact(((tf_asbs, tf_candidates-tf_candidates), (possible_tf_asbs, possible_tf_candidates-possible_tf_asbs)), alternative='greater')
+            tf_odds, tf_p = fisher_exact(((tf_asbs, tf_candidates-tf_asbs), (possible_tf_asbs, possible_tf_candidates-possible_tf_asbs)), alternative='greater')
         else:
             tf_odds_rs, tf_p_rs = 0, 1
             tf_odds, tf_p = 0, 1
 
-        if cl_candidates:
+        if cl_candidates-cl_asbs:
             cl_odds_rs, cl_p_rs = fisher_exact(((cl_asbs_rs, cl_candidates_rs-cl_asbs_rs), (possible_cl_asbs_rs, possible_cl_candidates_rs-possible_cl_asbs_rs)), alternative='greater')
             cl_odds, cl_p = fisher_exact(((cl_asbs, cl_candidates-cl_asbs), (possible_cl_asbs, possible_cl_candidates-possible_cl_asbs)), alternative='greater')
         else:
             cl_odds_rs, cl_p_rs = 0, 1
             cl_odds, cl_p = 0, 1
 
-        if all_candidates:
+        if all_candidates-all_asbs:
             all_odds_rs, all_p_rs = fisher_exact(((all_asbs_rs, all_candidates_rs-all_asbs_rs), (possible_all_asbs_rs, possible_all_candidates_rs-possible_all_asbs_rs)), alternative='greater')
             all_odds, all_p = fisher_exact(((all_asbs, all_candidates-all_asbs), (possible_all_asbs, possible_all_candidates-possible_all_asbs)), alternative='greater')
         else:
@@ -641,7 +641,7 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
             asbs_rs = len(set(x.snp.rs_id for x in tf_asbs_list if x.tf_id == tf_id))
             candidates = len([cand for cand in tf_candidates_list if cand.ag_id == tf_id])
             candidates_rs = len(set(cand.rs_id for cand in tf_candidates_list if cand.ag_id == tf_id))
-            if not candidates:
+            if not candidates_rs-asbs_rs:
                 odds, p = 0, 1
             else:
                 odds, p = fisher_exact(((asbs_rs, candidates_rs-asbs_rs), (possible_tf_asbs_rs, possible_tf_candidates_rs-possible_tf_asbs_rs)), alternative='greater')
@@ -674,7 +674,7 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
             asbs_rs = len(set(x.snp.rs_id for x in cl_asbs_list if x.cl_id == cl_id))
             candidates = len([cand for cand in cl_candidates_list if cand.ag_id == cl_id])
             candidates_rs = len(set(cand.rs_id for cand in cl_candidates_list if cand.ag_id == cl_id))
-            if not candidates:
+            if not candidates_rs-asbs_rs:
                 odds, p = 0, 1
             else:
                 odds, p = fisher_exact(((asbs_rs, candidates_rs-asbs_rs), (possible_cl_asbs_rs, possible_cl_candidates_rs-possible_cl_asbs_rs)), alternative='greater')
