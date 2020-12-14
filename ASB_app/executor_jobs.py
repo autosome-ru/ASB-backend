@@ -396,6 +396,29 @@ def get_snps_from_interval(interval_str):
         raise ConvError(interval_str)
 
 
+def marshal_inf(odds):
+    if np.isinf(odds):
+        return 'infinity'
+    elif np.isnan(odds):
+        return None
+    else:
+        return str(odds)
+
+
+def marshal_logp(p):
+    if p == 0:
+        return 'infinity'
+    if np.isnan(p):
+        return None
+    if p is None:
+        return p
+    return str(-np.log10(p))
+
+
+def marshall_data(asb_data):
+    return [{k: marshal_inf(v) if k in ('log10_p_value', 'log10_fdr', 'odds') else v for (k, v) in elem.items()} for elem in asb_data]
+
+
 @executor.job
 def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
     processing_start_time = datetime.now()
@@ -609,26 +632,14 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
         logger.info('Ticket {}: query count candidates done'.format(ticket_id))
         update_ticket_status(ticket, 'Performing statistical analysis')
 
-        if tf_candidates-tf_asbs:
-            tf_odds_rs, tf_p_rs = fisher_exact(((tf_asbs_rs, tf_candidates_rs-tf_asbs_rs), (possible_tf_asbs_rs, possible_tf_candidates_rs-possible_tf_asbs_rs)), alternative='greater')
-            tf_odds, tf_p = fisher_exact(((tf_asbs, tf_candidates-tf_asbs), (possible_tf_asbs, possible_tf_candidates-possible_tf_asbs)), alternative='greater')
-        else:
-            tf_odds_rs, tf_p_rs = 0, 1
-            tf_odds, tf_p = 0, 1
+        tf_odds_rs, tf_p_rs = fisher_exact(((tf_asbs_rs, tf_candidates_rs-tf_asbs_rs), (possible_tf_asbs_rs, possible_tf_candidates_rs-possible_tf_asbs_rs)), alternative='greater')
+        tf_odds, tf_p = fisher_exact(((tf_asbs, tf_candidates-tf_asbs), (possible_tf_asbs, possible_tf_candidates-possible_tf_asbs)), alternative='greater')
 
-        if cl_candidates-cl_asbs:
-            cl_odds_rs, cl_p_rs = fisher_exact(((cl_asbs_rs, cl_candidates_rs-cl_asbs_rs), (possible_cl_asbs_rs, possible_cl_candidates_rs-possible_cl_asbs_rs)), alternative='greater')
-            cl_odds, cl_p = fisher_exact(((cl_asbs, cl_candidates-cl_asbs), (possible_cl_asbs, possible_cl_candidates-possible_cl_asbs)), alternative='greater')
-        else:
-            cl_odds_rs, cl_p_rs = 0, 1
-            cl_odds, cl_p = 0, 1
+        cl_odds_rs, cl_p_rs = fisher_exact(((cl_asbs_rs, cl_candidates_rs-cl_asbs_rs), (possible_cl_asbs_rs, possible_cl_candidates_rs-possible_cl_asbs_rs)), alternative='greater')
+        cl_odds, cl_p = fisher_exact(((cl_asbs, cl_candidates-cl_asbs), (possible_cl_asbs, possible_cl_candidates-possible_cl_asbs)), alternative='greater')
 
-        if all_candidates-all_asbs:
-            all_odds_rs, all_p_rs = fisher_exact(((all_asbs_rs, all_candidates_rs-all_asbs_rs), (possible_all_asbs_rs, possible_all_candidates_rs-possible_all_asbs_rs)), alternative='greater')
-            all_odds, all_p = fisher_exact(((all_asbs, all_candidates-all_asbs), (possible_all_asbs, possible_all_candidates-possible_all_asbs)), alternative='greater')
-        else:
-            all_odds_rs, all_p_rs = 0, 1
-            all_odds, all_p = 0, 1
+        all_odds_rs, all_p_rs = fisher_exact(((all_asbs_rs, all_candidates_rs-all_asbs_rs), (possible_all_asbs_rs, possible_all_candidates_rs-possible_all_asbs_rs)), alternative='greater')
+        all_odds, all_p = fisher_exact(((all_asbs, all_candidates-all_asbs), (possible_all_asbs, possible_all_candidates-possible_all_asbs)), alternative='greater')
 
         logger.info('Ticket {}: tests done'.format(ticket_id))
         update_ticket_status(ticket, 'Testing the enrichment of ASBs of individual TFs')
@@ -641,10 +652,7 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
             asbs_rs = len(set(x.snp.rs_id for x in tf_asbs_list if x.tf_id == tf_id))
             candidates = len([cand for cand in tf_candidates_list if cand.ag_id == tf_id])
             candidates_rs = len(set(cand.rs_id for cand in tf_candidates_list if cand.ag_id == tf_id))
-            if not candidates_rs-asbs_rs:
-                odds, p = 0, 1
-            else:
-                odds, p = fisher_exact(((asbs_rs, candidates_rs-asbs_rs), (possible_tf_asbs_rs, possible_tf_candidates_rs-possible_tf_asbs_rs)), alternative='greater')
+            odds, p = fisher_exact(((asbs_rs, candidates_rs-asbs_rs), (possible_tf_asbs_rs, possible_tf_candidates_rs-possible_tf_asbs_rs)), alternative='greater')
             tf_p_list.append(p)
             tf_asb_data.append({
                 'name': tf,
@@ -661,7 +669,7 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
         else:
             _, tf_fdr, _, _ = multipletests(tf_p_list, alpha=0.05, method='fdr_bh')
             for sig, fdr in zip(tf_asb_data, tf_fdr):
-                sig['log10_fdr'] = -np.log10(fdr)
+                sig['log10_fdr'] = np.nan if np.isnan(fdr) else -np.log10(fdr)
 
         logger.info('Ticket {}: tf tests done'.format(ticket_id))
         update_ticket_status(ticket, 'Testing the enrichment of ASBs of individual cell types')
@@ -674,10 +682,7 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
             asbs_rs = len(set(x.snp.rs_id for x in cl_asbs_list if x.cl_id == cl_id))
             candidates = len([cand for cand in cl_candidates_list if cand.ag_id == cl_id])
             candidates_rs = len(set(cand.rs_id for cand in cl_candidates_list if cand.ag_id == cl_id))
-            if not candidates_rs-asbs_rs:
-                odds, p = 0, 1
-            else:
-                odds, p = fisher_exact(((asbs_rs, candidates_rs-asbs_rs), (possible_cl_asbs_rs, possible_cl_candidates_rs-possible_cl_asbs_rs)), alternative='greater')
+            odds, p = fisher_exact(((asbs_rs, candidates_rs-asbs_rs), (possible_cl_asbs_rs, possible_cl_candidates_rs-possible_cl_asbs_rs)), alternative='greater')
             cl_p_list.append(p)
             cl_asb_data.append({
                 'name': cl,
@@ -694,7 +699,7 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
         else:
             _, cl_fdr, _, _ = multipletests(cl_p_list, alpha=0.05, method='fdr_bh')
         for sig, fdr in zip(cl_asb_data, cl_fdr):
-            sig['log10_fdr'] = -np.log10(fdr)
+            sig['log10_fdr'] = np.nan if np.isnan(fdr) else -np.log10(fdr)
 
         logger.info('Ticket {}: cl tests done'.format(ticket_id))
         update_ticket_status(ticket, 'Finalizing the report')
@@ -719,17 +724,17 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
             'cl_candidates_rs': cl_candidates_rs,
             'all_candidates': all_candidates,
             'all_candidates_rs': all_candidates_rs,
-            'tf_odds': tf_odds,
-            'tf_log10_p_value': -np.log10(tf_p),
-            'cl_odds': cl_odds,
-            'cl_log10_p_value': -np.log10(cl_p),
-            'all_odds': all_odds,
-            'all_log10_p_value': -np.log10(all_p),
-            'tf_odds_rs': tf_odds_rs,
-            'tf_log10_p_value_rs': -np.log10(tf_p_rs),
-            'cl_odds_rs': cl_odds_rs,
-            'cl_log10_p_value_rs': -np.log10(cl_p_rs),
-            'all_odds_rs': all_odds_rs,
+            'tf_odds': marshal_inf(tf_odds),
+            'tf_log10_p_value': marshal_logp(tf_p),
+            'cl_odds': marshal_inf(cl_odds),
+            'cl_log10_p_value': marshal_logp(cl_p),
+            'all_odds': marshal_inf(all_odds),
+            'all_log10_p_value': marshal_logp(all_p),
+            'tf_odds_rs': marshal_inf(tf_odds_rs),
+            'tf_log10_p_value_rs': marshal_logp(tf_p_rs),
+            'cl_odds_rs': marshal_inf(cl_odds_rs),
+            'cl_log10_p_value_rs': marshal_logp(cl_p_rs),
+            'all_odds_rs': marshal_inf(all_odds_rs),
             'all_log10_p_value_rs': -np.log10(all_p_rs),
             'expected_fraction_all': possible_all_asbs_rs / possible_all_candidates_rs,
             'expected_fraction_tf': possible_tf_asbs_rs / possible_tf_candidates_rs,
@@ -738,8 +743,8 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
             'tf_asb_counts_top': modify_counts(tf_asb_data, tf_sum_counts, top=True),
             'cl_asb_counts': modify_counts(cl_asb_data, top=False),
             'cl_asb_counts_top': modify_counts(cl_asb_data, cl_sum_counts, top=True),
-            'tf_asb_data': tf_asb_data,
-            'cl_asb_data': cl_asb_data,
+            'tf_asb_data': marshall_data(tf_asb_data),
+            'cl_asb_data': marshall_data(cl_asb_data),
             'concordant_asbs': conc_asbs,
         })
 
