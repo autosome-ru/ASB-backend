@@ -296,8 +296,8 @@ def divide_chunks(l, n):
         yield l[i:i + n]
 
 
-def divide_query(get_query, values):
-    for chunk in divide_chunks(values, 900):
+def divide_query(get_query, values, chunk_size=900):
+    for chunk in divide_chunks(values, chunk_size):
         yield get_query(chunk)
 
 
@@ -353,26 +353,28 @@ def update_ticket_status(ticket, status):
 
 def get_rs_ids_by_chr_pos_query(chromosome, tuples, candidates=False):
     if candidates:
-        return CandidateSNP.query.filter(CandidateSNP.chromosome == chromosome, tuple_(CandidateSNP.position, CandidateSNP.rs_id, CandidateSNP.ref, CandidateSNP.alt).in_(tuples)).all()
+        return CandidateSNP.query.filter(CandidateSNP.chromosome == chromosome, tuple_(CandidateSNP.position, CandidateSNP.ref, CandidateSNP.alt).in_(tuples)).all()
     else:
-        return SNP.query.filter(SNP.chromosome == chromosome, tuple_(SNP.position, SNP.rs_id, SNP.ref, SNP.alt).in_(tuples)).all()
+        return SNP.query.filter(SNP.chromosome == chromosome, tuple_(SNP.position, SNP.ref, SNP.alt).in_(tuples)).all()
 
 
 def get_rs_ids_from_vcf(data):
     snps = []
     for chr in data[0].unique():
+        print(chr)
         if chr not in chromosomes:
             if 'chr' + str(chr) in chromosomes:
                 chr = 'chr' + chr
             else:
+                continue
                 raise ConvError('chromosome: {}'.format(chr))
         try:
-            tuples = [(int(position), convert_rs_to_int(rs_id), ref.upper(), alt.upper()) for index, (position, rs_id, ref, alt) in data.loc[data[0] == chr, [1, 2, 3, 4]].iterrows()]
+            tuples = [(int(position), ref.upper(), alt.upper()) for index, (position, ref, alt) in data.loc[data[0] == chr, [1, 3, 4]].iterrows()]
         except ValueError as e:
             raise ConvError('position: {}'.format(e.args[0]))
-        for snps_chunk in divide_query(lambda poss: get_rs_ids_by_chr_pos_query(chr, poss), tuples):
+        for snps_chunk in divide_query(lambda poss: get_rs_ids_by_chr_pos_query(chr, poss), tuples, chunk_size=300):
             snps += snps_chunk
-        for snps_chunk in divide_query(lambda poss: get_rs_ids_by_chr_pos_query(chr, poss, candidates=True), tuples):
+        for snps_chunk in divide_query(lambda poss: get_rs_ids_by_chr_pos_query(chr, poss, candidates=True), tuples, chunk_size=300):
             snps += snps_chunk
     return list(set(x.rs_id for x in snps))
 
