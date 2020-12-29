@@ -18,7 +18,7 @@ for release in Release.__subclasses__():
     pagination_parser.add_argument('order_by', help='ORDER BY criterion: "field1", "-field2"')
 
     search_parser = pagination_parser.copy()
-    search_parser.add_argument('cell_types', action='split', help='Comma-separated list of cell types, search SNPs ASB for every cell type scpecified')
+    search_parser.add_argument('cell_types', help='Comma-separated list of cell types, search SNPs ASB for every cell type scpecified')
     search_parser.add_argument('transcription_factors', action='split', help='Comma-separated list of cell types, search SNPs ASB for every cell type scpecified')
     search_parser.add_argument('chromosome', choices=chromosomes, help='Search only SNPs on the specified chromosome')
     search_parser.add_argument('start', type=inputs.positive, help='Search SNPs in interval from specified position, Requires "chromosome" and "end"')

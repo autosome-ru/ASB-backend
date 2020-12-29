@@ -104,11 +104,12 @@ class ReleaseService:
                 for tf_name in filters_object['transcription_factors']]
 
         if filters_object['cell_types']:
+            print(filters_object['cell_types'].split('@'))
             filters += [self.SNP.cl_aggregated_snps.any(
                 self.CellLineSNP.cl_id == getattr(self.CellLine.query.filter(
-                    self.CellLine.name == cl_name
+                    self.CellLine.name == cl_name.strip()
                 ).one_or_none(), 'cl_id', None))
-                for cl_name in filters_object['cell_types']]
+                for cl_name in filters_object['cell_types'].split('@')]
 
         if filters_object['chromosome']:
             if not filters_object['start'] or not filters_object['end']:
