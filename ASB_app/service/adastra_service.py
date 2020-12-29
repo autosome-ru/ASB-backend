@@ -104,7 +104,6 @@ class ReleaseService:
                 for tf_name in filters_object['transcription_factors']]
 
         if filters_object['cell_types']:
-            print(filters_object['cell_types'].split('@'))
             filters += [self.SNP.cl_aggregated_snps.any(
                 self.CellLineSNP.cl_id == getattr(self.CellLine.query.filter(
                     self.CellLine.name == cl_name.strip()
