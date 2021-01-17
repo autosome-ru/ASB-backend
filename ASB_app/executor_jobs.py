@@ -67,14 +67,14 @@ def get_tf_query(rs_ids):
         db.func.group_concat(db.func.distinct(TranscriptionFactorSNP.motif_position)),
         db.func.group_concat(db.func.distinct(TranscriptionFactorSNP.motif_orientation)),
         db.func.group_concat(db.func.distinct(TranscriptionFactorSNP.motif_concordance)),
-        group_concat_distinct_sep(CellLine.name, ', '),
-        group_concat_distinct_sep(qtl.phenotype_name, ', '),
-        group_concat_distinct_sep(ebi.phenotype_name, ', '),
-        group_concat_distinct_sep(phewas.phenotype_name, ', '),
-        group_concat_distinct_sep(finemapping.phenotype_name, ', '),
-        group_concat_distinct_sep(grasp.phenotype_name, ', '),
-        group_concat_distinct_sep(clinvar.phenotype_name, ', '),
-        group_concat_distinct_sep(Gene.gene_name, ', '),
+        db.func.group_concat(db.func.distinct(CellLine.name), separator=', '),
+        db.func.group_concat(db.func.distinct(qtl.phenotype_name), separator=', '),
+        db.func.group_concat(db.func.distinct(ebi.phenotype_name), separator=', '),
+        db.func.group_concat(db.func.distinct(phewas.phenotype_name), separator=', '),
+        db.func.group_concat(db.func.distinct(finemapping.phenotype_name), separator=', '),
+        db.func.group_concat(db.func.distinct(grasp.phenotype_name), separator=', '),
+        db.func.group_concat(db.func.distinct(clinvar.phenotype_name), separator=', '),
+        db.func.group_concat(db.func.distinct(Gene.gene_name), separator=', '),
     ).join(
         SNP,
         TranscriptionFactorSNP.snp
@@ -159,14 +159,14 @@ def get_cl_query(rs_ids):
         db.func.group_concat(db.func.distinct(CellLineSNP.log_p_value_alt)),
         db.func.group_concat(db.func.distinct(CellLineSNP.es_ref)),
         db.func.group_concat(db.func.distinct(CellLineSNP.es_alt)),
-        group_concat_distinct_sep(TranscriptionFactor.name, ', '),
-        group_concat_distinct_sep(qtl.phenotype_name, ', '),
-        group_concat_distinct_sep(ebi.phenotype_name, ', '),
-        group_concat_distinct_sep(phewas.phenotype_name, ', '),
-        group_concat_distinct_sep(finemapping.phenotype_name, ', '),
-        group_concat_distinct_sep(grasp.phenotype_name, ', '),
-        group_concat_distinct_sep(clinvar.phenotype_name, ', '),
-        group_concat_distinct_sep(Gene.gene_name, ', '),
+        db.func.group_concat(db.func.distinct(TranscriptionFactor.name), separator=', '),
+        db.func.group_concat(db.func.distinct(qtl.phenotype_name), separator=', '),
+        db.func.group_concat(db.func.distinct(ebi.phenotype_name), separator=', '),
+        db.func.group_concat(db.func.distinct(phewas.phenotype_name), separator=', '),
+        db.func.group_concat(db.func.distinct(finemapping.phenotype_name), separator=', '),
+        db.func.group_concat(db.func.distinct(grasp.phenotype_name), separator=', '),
+        db.func.group_concat(db.func.distinct(clinvar.phenotype_name), separator=', '),
+        db.func.group_concat(db.func.distinct(Gene.gene_name), separator=', '),
     ).join(
         SNP,
         CellLineSNP.snp
@@ -296,7 +296,7 @@ def divide_chunks(l, n):
         yield l[i:i + n]
 
 
-def divide_query(get_query, values, chunk_size=900):
+def divide_query(get_query, values, chunk_size=2000):
     for chunk in divide_chunks(values, chunk_size):
         yield get_query(chunk)
 
@@ -367,14 +367,14 @@ def get_rs_ids_from_vcf(data):
                 chr = 'chr' + chr
             else:
                 continue
-                raise ConvError('chromosome: {}'.format(chr))
+                # raise ConvError('chromosome: {}'.format(chr))
         try:
             tuples = [(int(position), ref.upper(), alt.upper()) for index, (position, ref, alt) in data.loc[data[0] == chr, [1, 3, 4]].iterrows()]
         except ValueError as e:
             raise ConvError('position: {}'.format(e.args[0]))
-        for snps_chunk in divide_query(lambda poss: get_rs_ids_by_chr_pos_query(chr, poss), tuples, chunk_size=300):
+        for snps_chunk in divide_query(lambda poss: get_rs_ids_by_chr_pos_query(chr, poss), tuples, chunk_size=3000):
             snps += snps_chunk
-        for snps_chunk in divide_query(lambda poss: get_rs_ids_by_chr_pos_query(chr, poss, candidates=True), tuples, chunk_size=300):
+        for snps_chunk in divide_query(lambda poss: get_rs_ids_by_chr_pos_query(chr, poss, candidates=True), tuples, chunk_size=3000):
             snps += snps_chunk
     return list(set(x.rs_id for x in snps))
 
@@ -761,6 +761,8 @@ def process_snp_file(ticket_id, annotate_tf=True, annotate_cl=True):
 
     ticket.meta_info = meta_info
     logger.info('Ticket {}: ticket info changed'.format(ticket_id))
+    with open('baalchip.json', 'w') as f:
+        f.write(str(meta_info))
     session.commit()
 
     logger.info('Ticket {}: session commited'.format(ticket_id))

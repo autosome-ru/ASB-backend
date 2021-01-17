@@ -43,7 +43,7 @@ for release in Release.__subclasses__():
         )
 
         cl_id = db.Column(db.Integer, primary_key=True)
-        name = db.Column(db.String(50), nullable=False)
+        name = db.Column(db.String(200), nullable=False)
 
         non_input_experiments = db.relationship(
             'Experiment',
@@ -70,7 +70,7 @@ for release in Release.__subclasses__():
         )
         if float(release.version) >= 2:
             exp_id = db.Column(db.String(10), primary_key=True)
-            align = db.Column(db.String(10), nullable=False)
+            align = db.Column(db.String(13), nullable=False)
         else:
             exp_id = db.Column(db.Integer, primary_key=True)
             align = db.Column(db.Integer, nullable=False)
@@ -78,7 +78,7 @@ for release in Release.__subclasses__():
         tf_id = db.Column(db.Integer, db.ForeignKey('transcription_factors.tf_id'), nullable=True)
         cl_id = db.Column(db.Integer, db.ForeignKey('cell_lines.cl_id'), nullable=False)
         geo_gse = db.Column(db.String(10))
-        encode = db.Column(db.String(11))
+        encode = db.Column(db.String(30))
         is_control = db.Column(db.Boolean, nullable=False, server_default='0')
         bad_group_id = db.Column(db.Integer, db.ForeignKey('bad_groups.bad_group_id'))
 
@@ -95,7 +95,7 @@ for release in Release.__subclasses__():
         __bind_key__ = release.name
 
         bad_group_id = db.Column(db.Integer, primary_key=True)
-        bad_group_name = db.Column(db.String(100), nullable=False, unique=True)
+        bad_group_name = db.Column(db.String(200), nullable=False, unique=True)
 
         def __repr__(self):
             return '<BAD Group #{0.bad_group_id}: {0.bad_group_name}>'.format(self)
@@ -165,7 +165,6 @@ for release in Release.__subclasses__():
 
         ref = db.Column(db.Enum(*nucleotides), nullable=False)
         rs_id = db.Column(db.Integer, nullable=False)
-        context = db.Column(db.String(51))
 
         tf_aggregated_snps = db.relationship('TranscriptionFactorSNP',
                                              order_by='TranscriptionFactorSNP.best_p_value.desc()',
@@ -180,6 +179,8 @@ for release in Release.__subclasses__():
         has_qtl_associations = db.Column(db.Boolean)
         has_grasp_associations = db.Column(db.Boolean)
         has_finemapping_associations = db.Column(db.Boolean)
+
+        context = db.Column(db.String(51))
 
         has_concordance = db.Column(db.Boolean, index=True, server_default='0', nullable=False)
 
@@ -264,7 +265,7 @@ for release in Release.__subclasses__():
 
         phenotype_id = db.Column(db.Integer, primary_key=True)
         db_name = db.Column(db.String(100), index=True)
-        phenotype_name = db.Column(db.String(100))
+        phenotype_name = db.Column(db.String(200))
 
         snps = db.relationship(
             'SNP',
@@ -320,7 +321,7 @@ for release in Release.__subclasses__():
                           )
 
         pair_id = db.Column(db.Integer, primary_key=True)
-        gene_id = db.Column(db.Integer, db.ForeignKey('genes.gene_id'),
+        gene_id = db.Column(db.String(30), db.ForeignKey('genes.gene_id'),
                                  nullable=False)
 
     models = [

@@ -14,7 +14,7 @@ class Ticket(db.Model):
     status = db.Column(db.Enum('Created', 'Processing', 'Processed', 'Failed'), server_default='Created', nullable=False)
     date_created = db.Column(db.DATETIME, nullable=False)
     expiration_date = db.Column(db.DATETIME)
-    meta_info = db.Column(db.JSON, server_default='{}')
+    meta_info = db.Column(db.JSON, default={})
     user_id = db.Column(db.String(36))
 
     def __repr__(self):
