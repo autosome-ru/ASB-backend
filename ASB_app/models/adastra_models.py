@@ -372,5 +372,5 @@ for release in Release.__subclasses__():
             GeneSNPCorrespondence,
         ]
         for abstract_model, model in zip(abstract_models_dnase, models):
-            print(model.__name__)
+            print(model.__name__, abstract_model.__name__)
             setattr(release, abstract_model.__name__, model)
