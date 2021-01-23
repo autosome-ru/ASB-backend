@@ -22,10 +22,16 @@ from ASB_app.releases import current_release
 session = current_release.session
 db = current_release.db
 
-TranscriptionFactor, TranscriptionFactorSNP, CellLine, CellLineSNP, \
-SNP, ExpSNP, Phenotype, PhenotypeSNPCorrespondence, Gene, Experiment = \
-    current_release.TranscriptionFactor, current_release.TranscriptionFactorSNP, current_release.CellLine, current_release.CellLineSNP, \
-    current_release.SNP, current_release.ExpSNP, current_release.Phenotype, current_release.PhenotypeSNPCorrespondence, current_release.Gene, current_release.Experiment
+if current_release.name != 'dnase':
+    TranscriptionFactor, TranscriptionFactorSNP, CellLine, CellLineSNP, \
+    SNP, ExpSNP, Phenotype, PhenotypeSNPCorrespondence, Gene, Experiment = \
+        current_release.TranscriptionFactor, current_release.TranscriptionFactorSNP, current_release.CellLine, current_release.CellLineSNP, \
+        current_release.SNP, current_release.ExpSNP, current_release.Phenotype, current_release.PhenotypeSNPCorrespondence, current_release.Gene, current_release.Experiment
+else:
+    CellLine, CellLineSNP, \
+    SNP, ExpSNP, Phenotype, PhenotypeSNPCorrespondence, Gene, Experiment = \
+        current_release.CellLine, current_release.CellLineSNP, \
+        current_release.SNP, current_release.ExpSNP, current_release.Phenotype, current_release.PhenotypeSNPCorrespondence, current_release.Gene, current_release.Experiment
 
 
 class ConvError(ValueError):
