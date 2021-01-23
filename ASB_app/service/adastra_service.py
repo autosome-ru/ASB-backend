@@ -20,7 +20,6 @@ class ReleaseService:
             for model in abstract_models_dnase:
                 setattr(self, model.__name__, getattr(release, model.__name__))
 
-
     def generate_tf_link(self, tf_name):
         return 'https://adastra.autosome.ru/{}/search/advanced?tf={}'.format(self.release.name, tf_name)
 

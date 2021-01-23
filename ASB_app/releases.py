@@ -28,9 +28,6 @@ class ReleaseSoos(Release):
     full_version = '1.6'
 
 
-
-
-
 def get_release_by_version(version):
     for release in Release.__subclasses__():
         if release.version == version:
@@ -38,4 +35,4 @@ def get_release_by_version(version):
     raise ReleaseNotFound('No release: v{}'.format(version))
 
 
-current_release = ReleaseSoos
+current_release = ReleaseDnase
