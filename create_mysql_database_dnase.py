@@ -38,7 +38,7 @@ current_release.Gene
 TF = 0
 CL = 0
 tr = 0.05
-EXP = 0
+EXP = 1
 TF_DICT = 0
 CL_DICT = 0
 PHEN = 0
@@ -80,6 +80,9 @@ if __name__ == '__main__':
             if row['CELL_ID'] not in used_cl_ids:
                 cls.append(CellLine(cl_id=int(row['CELL_ID']), name=row['CELLS']))
                 used_cl_ids.add(row['CELL_ID'])
+
+            if len(row['GEO']) > 10:
+                print(row)
 
             exp = Experiment(exp_id=row['#EXP'],
                              align=row['ALIGNS'],
