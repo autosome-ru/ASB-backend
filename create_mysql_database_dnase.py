@@ -81,6 +81,9 @@ if __name__ == '__main__':
                 cls.append(CellLine(cl_id=int(row['CELL_ID']), name=row['CELLS']))
                 used_cl_ids.add(row['CELL_ID'])
 
+            if not isinstance(row['GEO'], float):
+                print(row)
+
             if len(row['GEO']) > 10:
                 print(row)
 
