@@ -62,12 +62,10 @@ abstract_models = [
 ]
 
 abstract_models_dnase = [
-    TranscriptionFactor,
     CellLine,
     Experiment,
     ExpSNP,
     SNP,
-    TranscriptionFactorSNP,
     CellLineSNP,
     Phenotype,
     PhenotypeSNPCorrespondence,
