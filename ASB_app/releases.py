@@ -11,6 +11,12 @@ class Release:
 
 
 class ReleaseFord(Release):
+    name = 'dnase'
+    version = '3'
+    full_version = '3.0'
+
+
+class ReleaseFord(Release):
     name = 'ford'
     version = '1'
     full_version = '2.1'

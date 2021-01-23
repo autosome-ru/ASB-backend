@@ -13,6 +13,7 @@ class Config(object):
         # 'tickets': 'sqlite:///' + os.path.join(dir, 'AD_ASTRA_tickets.db'),
         'soos': 'mysql://adastra:pass=ADASTRA880@localhost:3306/adastra_soos?charset=utf8',
         'ford': 'mysql://adastra:pass=ADASTRA880@localhost:3306/adastra_ford?charset=utf8',
+        'dnase': 'mysql://adastra:pass=ADASTRA880@localhost:3306/adastra_dnase?charset=utf8',
         'candidates': 'mysql://adastra:pass=ADASTRA880@localhost:3306/adastra_candidates?charset=utf8',
         'tickets': 'mysql://adastra:pass=ADASTRA880@localhost:3306/adastra_tickets?charset=utf8',
     }

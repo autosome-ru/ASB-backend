@@ -13,24 +13,20 @@ from sqlalchemy.sql import case
 current_release = releases.ReleaseFord
 session = current_release.session
 
-TranscriptionFactor, \
 CellLine, \
 Experiment, \
 ExpSNP, \
 SNP, \
-TranscriptionFactorSNP, \
 CellLineSNP, \
 Phenotype, \
 PhenotypeSNPCorrespondence, \
 BADGroup, \
 GeneSNPCorrespondence, \
 Gene = \
-current_release.TranscriptionFactor, \
 current_release.CellLine, \
 current_release.Experiment, \
 current_release.ExpSNP, \
 current_release.SNP, \
-current_release.TranscriptionFactorSNP, \
 current_release.CellLineSNP, \
 current_release.Phenotype, \
 current_release.PhenotypeSNPCorrespondence, \
@@ -75,22 +71,12 @@ if __name__ == '__main__':
         table = pd.read_table(parameters_path + 'master-dnase.txt')
         counter = 1
         exps = []
-        tfs = []
         cls = []
-        used_tf_names = {}
         used_cl_ids = set()
         for index, row in table.iterrows():
             if (index + 1) % 1000 == 0:
                 print(index + 1)
 
-            if row['TF_UNIPROT_NAME'] is None or pd.isna(row['TF_UNIPROT_NAME']):
-                assert row['EXP_TYPE'] in ('chip_control', 'chipexo_control')
-                continue
-
-            if row['TF_UNIPROT_NAME'] not in used_tf_names:
-                tfs.append(TranscriptionFactor(tf_id=counter, uniprot_ac=row['TF_UNIPROT_ID'], name=row['TF_UNIPROT_NAME']))
-                used_tf_names[row['TF_UNIPROT_NAME']] = counter
-                counter += 1
             if row['CELL_ID'] not in used_cl_ids:
                 cls.append(CellLine(cl_id=int(row['CELL_ID']), name=row['CELLS']))
                 used_cl_ids.add(row['CELL_ID'])
@@ -99,12 +85,11 @@ if __name__ == '__main__':
                              align=row['ALIGNS'],
                              geo_gse=row['GEO'] if row['GEO'] != '' and not pd.isna(row['GEO']) else None,
                              encode=row['ENCODE'] if row['ENCODE'] != '' and not pd.isna(row['ENCODE']) else None,
-                             tf_id=used_tf_names[row['TF_UNIPROT_NAME']],
                              cl_id=int(row['CELL_ID']))
 
             exps.append(exp)
 
-        session.add_all(tfs + cls + exps)
+        session.add_all(cls + exps)
         session.commit()
         session.close()
 
