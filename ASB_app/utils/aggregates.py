@@ -35,7 +35,7 @@ class TsvDialect:
     quoting = 0
 
 
-def update_aggregated_fields(mappers=(TranscriptionFactorSNP, CellLineSNP)):
+def update_aggregated_fields(mappers=(CellLineSNP) if current_release.name == 'dnase' else (TranscriptionFactorSNP, CellLineSNP)):
     """
     Updates all columns with @aggregated decorator, depending on mappers
     :param mappers: list of db.Model subclasses
