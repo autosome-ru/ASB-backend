@@ -120,8 +120,6 @@ for release in Release.__subclasses__():
             )
         else:
             __table_args__ = (
-                db.UniqueConstraint('exp_id', 'tf_snp_id',
-                                    name='unique_tf_aggregated_snp'),
                 db.UniqueConstraint('exp_id', 'cl_snp_id',
                                     name='unique_cl_aggregated_snp'),
                 db.Index('cl_snp_index', 'cl_snp_id'),
