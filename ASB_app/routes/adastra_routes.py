@@ -176,20 +176,21 @@ for release in Release.__subclasses__():
                 api.abort(400)
 
 
-    @browse_nsp.route('/tf')
-    @set_release_service(release_service)
-    class TransctiptionFactorBrowse(Resource, PaginationMixin):
-        BaseEntity = release_service.TranscriptionFactor
-        used_release = release
+    if release.name != 'dnase':
+        @browse_nsp.route('/tf')
+        @set_release_service(release_service)
+        class TransctiptionFactorBrowse(Resource, PaginationMixin):
+            BaseEntity = release_service.TranscriptionFactor
+            used_release = release
 
-        @api.marshal_list_with(release_serializers.transcription_factor_model)
-        @api.expect(pagination_parser)
-        def get(self):
-            """
-            Get the list of transcription factors available in the database
-            """
-            return self.paginate(pagination_parser.parse_args(),
-                                 extra_filters=(self.BaseEntity.aggregated_snps_count > 0, ))
+            @api.marshal_list_with(release_serializers.transcription_factor_model)
+            @api.expect(pagination_parser)
+            def get(self):
+                """
+                Get the list of transcription factors available in the database
+                """
+                return self.paginate(pagination_parser.parse_args(),
+                                     extra_filters=(self.BaseEntity.aggregated_snps_count > 0, ))
 
 
     @browse_nsp.route('/cl')
@@ -217,15 +218,16 @@ for release in Release.__subclasses__():
             return self.release_service.get_overall_statistics()
 
 
-    @search_nsp.route('/tf/hint')
-    @api.hide
-    @set_release_service(release_service)
-    class TranscriptionFactorHint(Resource):
-        @api.expect(used_hints_parser)
-        @api.marshal_list_with(release_serializers.transcription_factor_model)
-        def get(self):
-            args = used_hints_parser.parse_args()
-            return self.release_service.get_hints('TF', args.get('search', ''), args.get('options', []))
+    if release.name != 'dnase':
+        @search_nsp.route('/tf/hint')
+        @api.hide
+        @set_release_service(release_service)
+        class TranscriptionFactorHint(Resource):
+            @api.expect(used_hints_parser)
+            @api.marshal_list_with(release_serializers.transcription_factor_model)
+            def get(self):
+                args = used_hints_parser.parse_args()
+                return self.release_service.get_hints('TF', args.get('search', ''), args.get('options', []))
 
 
     @search_nsp.route('/cl/hint')
