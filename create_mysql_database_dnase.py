@@ -82,7 +82,7 @@ if __name__ == '__main__':
                 used_cl_ids.add(row['CELL_ID'])
 
             if len(str(row['GEO'])) > 10:
-                print(row)
+                print(len(str(row['GEO'])), str(row['GEO']))
 
             exp = Experiment(exp_id=row['#EXP'],
                              align=row['ALIGNS'],
