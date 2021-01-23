@@ -55,7 +55,7 @@ GENES = 0
 TARGET_GENES = 0
 
 
-release_path = os.path.expanduser('~/RESULTS/Data/')
+release_path = os.path.expanduser('~/RESULTS/DataDnase/')
 parameters_path = os.path.expanduser('~/RESULTS/Configs/')
 
 conv_bad = dict(zip(
