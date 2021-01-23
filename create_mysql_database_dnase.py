@@ -81,9 +81,6 @@ if __name__ == '__main__':
                 cls.append(CellLine(cl_id=int(row['CELL_ID']), name=row['CELLS']))
                 used_cl_ids.add(row['CELL_ID'])
 
-            if len(str(row['GEO'])) > 10:
-                print(len(str(row['GEO'])), str(row['GEO']))
-
             exp = Experiment(exp_id=row['#EXP'],
                              align=row['ALIGNS'],
                              geo_gse=row['GEO'] if row['GEO'] != '' and not pd.isna(row['GEO']) else None,
