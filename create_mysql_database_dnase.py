@@ -36,7 +36,7 @@ current_release.Gene
 
 
 TF = 0
-CL = 0
+CL = 1
 tr = 0.05
 EXP = 1
 TF_DICT = 0
