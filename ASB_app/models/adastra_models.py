@@ -85,7 +85,10 @@ for release in Release.__subclasses__():
         if release.name != 'dnase':
             tf_id = db.Column(db.Integer, db.ForeignKey('transcription_factors.tf_id'), nullable=True)
         cl_id = db.Column(db.Integer, db.ForeignKey('cell_lines.cl_id'), nullable=False)
-        geo_gse = db.Column(db.String(10))
+        if release.name != 'dnase':
+            geo_gse = db.Column(db.String(10))
+        else:
+            geo_gse = db.Column(db.String(26))
         encode = db.Column(db.String(30))
         if release.name != 'dnase':
             is_control = db.Column(db.Boolean, nullable=False, server_default='0')
