@@ -11,10 +11,10 @@ class Config(object):
         # 'ford': 'sqlite:///' + os.path.join(dir, 'AD_ASTRA_ford.db'),
         # 'candidates': 'sqlite:///' + os.path.join(dir, 'AD_ASTRA_candidates.db'),
         # 'tickets': 'sqlite:///' + os.path.join(dir, 'AD_ASTRA_tickets.db'),
-        'soos': 'mysql://adastra:adastrapass@localhost:3306/adastra_soos?charset=utf8',
-        'ford': 'mysql://adastra:adastrapass@localhost:3306/adastra_ford?charset=utf8',
-        'candidates': 'mysql://adastra:adastrapass@localhost:3306/adastra_candidates_soos?charset=utf8',
-        'tickets': 'mysql://adastra:adastrapass@localhost:3306/adastra_tickets?charset=utf8',
+        'soos': 'mysql://adastra:pass=ADASTRA880@localhost:3306/adastra_soos?charset=utf8',
+        'ford': 'mysql://adastra:pass=ADASTRA880@localhost:3306/adastra_ford?charset=utf8',
+        'candidates': 'mysql://adastra:pass=ADASTRA880@localhost:3306/adastra_candidates?charset=utf8',
+        'tickets': 'mysql://adastra:pass=ADASTRA880@localhost:3306/adastra_tickets?charset=utf8',
     }
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     RESTPLUS_VALIDATE = True
