@@ -158,7 +158,7 @@ if __name__ == '__main__':
                         else:
                             row[field] = int(row[field])
 
-                    row['ID'] = int(row['ID'][2:])
+                    row['ID'] = int(row['ID'][row['ID'].rfind('rs') + 2:])
                     mutation = SNP.query.filter((SNP.rs_id == row['ID']) &
                                                 (SNP.alt == row['alt'])).first()
                     if not mutation:
