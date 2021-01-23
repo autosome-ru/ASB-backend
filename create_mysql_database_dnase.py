@@ -84,7 +84,7 @@ if __name__ == '__main__':
             if not isinstance(row['GEO'], float):
                 print(row, row['GEO'], type(row['GEO']), str(row['GEO']))
 
-            if len(row['GEO']) > 10:
+            if len(str(row['GEO'])) > 10:
                 print(row)
 
             exp = Experiment(exp_id=row['#EXP'],
