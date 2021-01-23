@@ -69,7 +69,7 @@ for release in Release.__subclasses__():
         __table_args__ = (
             db.Index('align_index', 'align'),
         )
-        if float(release.version) >= 2:
+        if float(release.version) >= 2 or release.name == 'dnase':
             exp_id = db.Column(db.String(10), primary_key=True)
             align = db.Column(db.String(13), nullable=False)
         else:
