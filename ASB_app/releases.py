@@ -10,12 +10,6 @@ class Release:
     full_version = '0.0'
 
 
-class ReleaseDnase(Release):
-    name = 'dnase'
-    version = '3'
-    full_version = '3.0'
-
-
 class ReleaseFord(Release):
     name = 'ford'
     version = '1'
@@ -26,6 +20,12 @@ class ReleaseSoos(Release):
     name = 'soos'
     version = '2'
     full_version = '1.6'
+
+
+class ReleaseDnase(Release):
+    name = 'dnase'
+    version = '3'
+    full_version = '3.0'
 
 
 def get_release_by_version(version):
