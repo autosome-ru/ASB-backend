@@ -82,7 +82,7 @@ if __name__ == '__main__':
                 used_cl_ids.add(row['CELL_ID'])
 
             if not isinstance(row['GEO'], float):
-                print(row)
+                print(row, row['GEO'], type(row['GEO']))
 
             if len(row['GEO']) > 10:
                 print(row)
