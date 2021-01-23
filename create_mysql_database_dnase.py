@@ -10,7 +10,7 @@ import pandas as pd
 
 from sqlalchemy.sql import case
 
-current_release = releases.ReleaseFord
+current_release = releases.ReleaseDnase
 session = current_release.session
 
 CellLine, \

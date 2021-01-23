@@ -10,7 +10,7 @@ class Release:
     full_version = '0.0'
 
 
-class ReleaseFord(Release):
+class ReleaseDnase(Release):
     name = 'dnase'
     version = '3'
     full_version = '3.0'
