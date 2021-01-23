@@ -10,11 +10,19 @@ from ASB_app.releases import current_release
 session = current_release.session
 db = current_release.db
 
-TranscriptionFactorSNP, CellLineSNP, TranscriptionFactor, CellLine, Phenotype, SNP, \
-PhenotypeSNPCorrespondence, Experiment = \
-    current_release.TranscriptionFactorSNP, current_release.CellLineSNP, current_release.TranscriptionFactor, \
-    current_release.CellLine, current_release.Phenotype, current_release.SNP, current_release.PhenotypeSNPCorrespondence, \
-    current_release.Experiment
+
+if current_release.name != 'dnase':
+    TranscriptionFactorSNP, CellLineSNP, TranscriptionFactor, CellLine, Phenotype, SNP, \
+    PhenotypeSNPCorrespondence, Experiment = \
+        current_release.TranscriptionFactorSNP, current_release.CellLineSNP, current_release.TranscriptionFactor, \
+        current_release.CellLine, current_release.Phenotype, current_release.SNP, current_release.PhenotypeSNPCorrespondence, \
+        current_release.Experiment
+else:
+    CellLineSNP, CellLine, Phenotype, SNP, \
+    PhenotypeSNPCorrespondence, Experiment = \
+        current_release.CellLineSNP, \
+        current_release.CellLine, current_release.Phenotype, current_release.SNP, current_release.PhenotypeSNPCorrespondence, \
+        current_release.Experiment
 
 
 class TsvDialect:
