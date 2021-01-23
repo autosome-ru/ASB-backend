@@ -46,10 +46,16 @@ for release in Release.__subclasses__():
         cl_id = db.Column(db.Integer, primary_key=True)
         name = db.Column(db.String(200), nullable=False)
 
-        non_input_experiments = db.relationship(
-            'Experiment',
-            primaryjoin='(Experiment.cl_id == CellLine.cl_id) & (~Experiment.is_control)'
-        )
+        if release.name != 'dnase':
+            non_input_experiments = db.relationship(
+                'Experiment',
+                primaryjoin='(Experiment.cl_id == CellLine.cl_id) & (~Experiment.is_control)'
+            )
+        else:
+            non_input_experiments = db.relationship(
+                'Experiment',
+                primaryjoin='Experiment.cl_id == CellLine.cl_id'
+            )
 
         @aggregated('cl_aggregated_snps', db.Column(db.Integer))
         def aggregated_snps_count(self):
