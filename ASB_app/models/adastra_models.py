@@ -4,7 +4,7 @@ from sqlalchemy_utils.aggregates import aggregated
 from ASB_app.constants import chromosomes, nucleotides, bads
 
 from ASB_app.releases import Release
-from .placeholders import abstract_models
+from .placeholders import abstract_models, abstract_models_dnase
 
 __all__ = []
 
@@ -356,6 +356,8 @@ for release in Release.__subclasses__():
             Gene,
             GeneSNPCorrespondence,
         ]
+        for abstract_model, model in zip(abstract_models, models):
+            setattr(release, abstract_model.__name__, model)
     else:
         models = [
             CellLine,
@@ -369,6 +371,5 @@ for release in Release.__subclasses__():
             Gene,
             GeneSNPCorrespondence,
         ]
-
-    for abstract_model, model in zip(abstract_models, models):
-        setattr(release, abstract_model.__name__, model)
+        for abstract_model, model in zip(abstract_models_dnase, models):
+            setattr(release, abstract_model.__name__, model)

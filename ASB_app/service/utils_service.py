@@ -4,14 +4,18 @@ import tempfile
 from flask import send_file
 import pandas as pd
 
-from ASB_app.models import abstract_models
+from ASB_app.models import abstract_models, abstract_models_dnase
 
 
 class UtilsService:
     def __init__(self, release):
-        for model in abstract_models:
-            self.release = release
-            setattr(self, model.__name__, getattr(release, model.__name__))
+        self.release = release
+        if release.name != 'dnase':
+            for model in abstract_models:
+                setattr(self, model.__name__, getattr(release, model.__name__))
+        else:
+            for model in abstract_models_dnase:
+                setattr(self, model.__name__, getattr(release, model.__name__))
 
     def annotate_with_context(self, filename, field):
         SNP = self.release.SNP

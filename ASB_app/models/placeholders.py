@@ -60,3 +60,18 @@ abstract_models = [
     Gene,
     GeneSNPCorrespondence,
 ]
+
+abstract_models_dnase = [
+    TranscriptionFactor,
+    CellLine,
+    Experiment,
+    ExpSNP,
+    SNP,
+    TranscriptionFactorSNP,
+    CellLineSNP,
+    Phenotype,
+    PhenotypeSNPCorrespondence,
+    BADGroup,
+    Gene,
+    GeneSNPCorrespondence,
+]

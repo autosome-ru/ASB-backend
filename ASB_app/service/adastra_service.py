@@ -1,6 +1,6 @@
 from sqlalchemy.orm import aliased
 
-from ASB_app.models import abstract_models
+from ASB_app.models import abstract_models, abstract_models_dnase
 from ASB_app.utils.aggregates import db_name_property_dict, TsvDialect
 from sqlalchemy import not_, or_
 import csv
@@ -12,9 +12,14 @@ from math import ceil
 
 class ReleaseService:
     def __init__(self, release):
-        for model in abstract_models:
-            self.release = release
-            setattr(self, model.__name__, getattr(release, model.__name__))
+        self.release = release
+        if release.name != 'dnase':
+            for model in abstract_models:
+                setattr(self, model.__name__, getattr(release, model.__name__))
+        else:
+            for model in abstract_models_dnase:
+                setattr(self, model.__name__, getattr(release, model.__name__))
+
 
     def generate_tf_link(self, tf_name):
         return 'https://adastra.autosome.ru/{}/search/advanced?tf={}'.format(self.release.name, tf_name)
