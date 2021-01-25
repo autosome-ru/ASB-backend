@@ -36,11 +36,11 @@ current_release.Gene
 
 
 TF = 0
-CL = 1
+CL = 0
 tr = 0.05
-EXP = 1
+EXP = 0
 TF_DICT = 0
-CL_DICT = 0
+CL_DICT = 1
 PHEN = 0
 CONTEXT = 0
 CONTROLS = 0
@@ -274,22 +274,6 @@ if __name__ == '__main__':
 
                     ag_snp_id = getattr(ag_snp, {'TF': 'tf_snp_id', 'CL': 'cl_snp_id'}[param])
 
-                    AnotherAgrClass = {'CL': TranscriptionFactor, 'TF': CellLine}[param]
-                    AnotherSNPClass = {'CL': TranscriptionFactorSNP, 'TF': CellLineSNP}[param]
-
-                    another_ag_snps = AnotherSNPClass.query.filter(
-                        AnotherSNPClass.chromosome == chromosome,
-                        AnotherSNPClass.position == position,
-                        AnotherSNPClass.alt == alt,
-                    ).all()
-
-                    another_dict = {}
-                    another_id = {'CL': 'tf_snp_id', 'TF': 'cl_snp_id'}[param]
-                    another_class = {'CL': 'tf_id', 'TF': 'cl_id'}[param]
-                    for snp in another_ag_snps:
-                        another_dict[AnotherAgrClass.query.get(getattr(snp, another_class)).name] = getattr(snp,
-                                                                                                            another_id)
-
                     del value['ref_ef']
                     del value['alt_ef']
                     if 'logitp_ref' in value:
@@ -306,30 +290,15 @@ if __name__ == '__main__':
                         # FIXME TEMPORARY
                         exp_id = Experiment.query.filter(Experiment.align == parameter['aligns'][0]).one().exp_id
 
-                        exp_snp = ExpSNP.query.filter(
-                            ExpSNP.exp_id == exp_id,
-                            getattr(ExpSNP, {'TF': 'tf_snp_id', 'CL': 'cl_snp_id'}[param]) == ag_snp_id,
-                        ).first()
-
-                        if not exp_snp:
-                            exp_snp = ExpSNP(**{
-                                'ref_readcount': parameter['ref_counts'],
-                                'alt_readcount': parameter['alt_counts'],
-                                'p_value_ref': parameter['ref_pvalues'],
-                                'p_value_alt': parameter['alt_pvalues'],
-                                'bad': conv_bad[parameter['BAD']],
-                                'tf_snp_id': {'TF': ag_snp_id, 'CL': another_dict.get(parameter.get('TF'))}[param],
-                                'cl_snp_id': {'TF': another_dict.get(cl_dict_reverse.get(parameter.get('CL'))),
-                                              'CL': ag_snp_id}[param],
-                                'exp_id': exp_id,
-                            })
-                        else:
-                            other_id = getattr(exp_snp, {'TF': 'cl_snp_id', 'CL': 'tf_snp_id'}[param])
-                            assert other_id == {'TF': another_dict.get(cl_dict_reverse.get(parameter.get('CL'))),
-                                                'CL': another_dict.get(parameter.get('TF'))}[param]
-                            assert exp_snp.ref_readcount == parameter['ref_counts']
-                            assert exp_snp.p_value_alt == parameter['alt_pvalues']
-                            assert exp_snp.bad == conv_bad[parameter['BAD']]
+                        exp_snp = ExpSNP(**{
+                            'ref_readcount': parameter['ref_counts'],
+                            'alt_readcount': parameter['alt_counts'],
+                            'p_value_ref': parameter['ref_pvalues'],
+                            'p_value_alt': parameter['alt_pvalues'],
+                            'bad': conv_bad[parameter['BAD']],
+                            'cl_snp_id': ag_snp_id,
+                            'exp_id': exp_id,
+                        })
 
                         exp_snps.append(exp_snp)
 
