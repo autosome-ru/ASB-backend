@@ -291,7 +291,7 @@ if __name__ == '__main__':
                         try:
                             exp_id = Experiment.query.filter(Experiment.align == parameter['aligns'][0]).one().exp_id
                         except:
-                            print(parameter['aligns'][0])
+                            print(parameter, parameters_list)
                             raise
 
                         exp_snp = ExpSNP(**{
