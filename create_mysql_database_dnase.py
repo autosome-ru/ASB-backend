@@ -288,11 +288,7 @@ if __name__ == '__main__':
 
                     for parameter in parameters_list:
                         # FIXME TEMPORARY
-                        try:
-                            exp_id = Experiment.query.filter(Experiment.align == parameter['aligns'][0]).one().exp_id
-                        except:
-                            print(parameter, parameters_list)
-                            raise
+                        exp_id = Experiment.query.filter(Experiment.align == parameter['aligns']).one().exp_id
 
                         exp_snp = ExpSNP(**{
                             'ref_readcount': parameter['ref_counts'],
