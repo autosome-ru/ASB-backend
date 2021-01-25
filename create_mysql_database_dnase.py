@@ -261,7 +261,7 @@ if __name__ == '__main__':
                         print(index)
                     chromosome, position, rs_id, ref, alt = key.strip().split('\t')[:5]
                     position = int(position)
-                    rs_id = int(rs_id[2:])
+                    rs_id = int(rs_id[rs_id.rfind('rs') + 2:])
                     ag_snp = SNPClass.query.filter(
                         SNPClass.chromosome == chromosome,
                         SNPClass.position == position,
