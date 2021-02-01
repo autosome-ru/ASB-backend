@@ -130,8 +130,8 @@ if __name__ == '__main__':
                 cls.append(CellLine(cl_id=int(row['cell_id']), name=row['cell_title']))
                 used_cl_ids.add(row['cell_id'])
 
-            exp = Experiment(exp_id=int(row['#id'][3:]),
-                             align=int(row['ALIGNS'][6:]),
+            exp = Experiment(exp_id=row['#id'],
+                             align=row['ALIGNS'],
                              geo_gse=row['GEO_GSE'] if row['GEO_GSE'] != 'None' else None,
                              encode=row['ENCODE'] if row['ENCODE'] != 'None' else None,
                              tf_id=used_tf_names[row['tf_uniprot_ac']],
@@ -233,7 +233,7 @@ if __name__ == '__main__':
                         else:
                             row[field] = int(row[field])
 
-                    row['ID'] = int(row['ID'][2:])
+                    row['ID'] = int(row['ID'][row['ID'].rfind('rs') + 2:])
                     mutation = SNP.query.filter((SNP.rs_id == row['ID']) &
                                                 (SNP.alt == row['alt'])).first()
                     if not mutation:
@@ -282,7 +282,7 @@ if __name__ == '__main__':
         for index, row in table.iterrows():
             if (index + 1) % 1000 == 0:
                 print(index + 1)
-            mutations = SNP.query.filter(SNP.rs_id == int(row['RSID'][2:])).all()
+            mutations = SNP.query.filter(SNP.rs_id == int(row['RSID'][row['RSID'].rfind('rs') + 2:])).all()
             if not mutations:
                 print('No snps for ', int(row['RSID'][2:]))
             for database in ['grasp', 'ebi', 'clinvar', 'phewas', 'finemapping', 'QTL']:
@@ -334,7 +334,7 @@ if __name__ == '__main__':
                         print(index)
                     chromosome, position, rs_id, ref, alt = key.strip().split('\t')[:5]
                     position = int(position)
-                    rs_id = int(rs_id[2:])
+                    rs_id = int(rs_id[rs_id.rfind('rs') + 2:])
                     ag_snp = SNPClass.query.filter(
                         SNPClass.chromosome == chromosome,
                         SNPClass.position == position,
@@ -642,7 +642,7 @@ if __name__ == '__main__':
                     genes.append(gene)
                     all_target_genes.append(gene)
 
-            mutations = SNP.query.filter(SNP.rs_id == int(row['RSID'][2:])).all()
+            mutations = SNP.query.filter(SNP.rs_id == int(row['RSID'][row['RSID'].rfind('rs') + 2:])).all()
             if not mutations:
                 print('No snps for ', int(row['RSID'][2:]))
 

@@ -75,12 +75,8 @@ for release in Release.__subclasses__():
         __table_args__ = (
             db.Index('align_index', 'align'),
         )
-        if float(release.version) >= 2 or release.name == 'dnase':
-            exp_id = db.Column(db.String(10), primary_key=True)
-            align = db.Column(db.String(13), nullable=False)
-        else:
-            exp_id = db.Column(db.Integer, primary_key=True)
-            align = db.Column(db.Integer, nullable=False)
+        exp_id = db.Column(db.String(10), primary_key=True)
+        align = db.Column(db.String(13), nullable=False)
 
         if release.name != 'dnase':
             tf_id = db.Column(db.Integer, db.ForeignKey('transcription_factors.tf_id'), nullable=True)
