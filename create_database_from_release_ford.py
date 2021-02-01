@@ -54,7 +54,7 @@ TARGET_GENES = 1
 
 
 release_path = os.path.expanduser('~/RESULTS/DataChIP/')
-parameters_path = os.path.expanduser('~/RESULTS/Configs')
+parameters_path = os.path.expanduser('~/RESULTS/Configs/')
 
 conv_bad = dict(zip(
     (1, 4 / 3, 3 / 2, 2, 5 / 2, 3, 4, 5, 6),
