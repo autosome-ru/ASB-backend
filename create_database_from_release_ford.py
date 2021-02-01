@@ -39,24 +39,22 @@ current_release.GeneSNPCorrespondence, \
 current_release.Gene
 
 
-TF = 0
-CL = 0
-tr = 0.05
-EXP = 0
-TF_DICT = 0
-CL_DICT = 0
-PHEN = 0
-CONTEXT = 0
-CONTROLS = 0
-BAD_GROUP = 0
-PEAKS_TF = 0
-PEAKS_CL = 0
-GENES = 0
-TARGET_GENES = 0
+TF = 1
+CL = 1
+tr = 0.25
+EXP = 1
+TF_DICT = 1
+CL_DICT = 1
+PHEN = 1
+CONTEXT = 1
+CONTROLS = 1
+BAD_GROUP = 1
+GENES = 1
+TARGET_GENES = 1
 
 
-release_path = os.path.expanduser('~/Data/')
-parameters_path = os.path.expanduser('~/ConfigsTest/')
+release_path = os.path.expanduser('~/DataChIP/')
+parameters_path = os.path.expanduser('~/RESULTS/Configs')
 
 conv_bad = dict(zip(
     (1, 4 / 3, 3 / 2, 2, 5 / 2, 3, 4, 5, 6),
@@ -72,7 +70,7 @@ if __name__ == '__main__':
         cl_dict_reverse[value] = key
 
     if EXP:
-        table = pd.read_table(parameters_path + 'master-list-annotated.txt')
+        table = pd.read_table(parameters_path + 'master-chip.txt')
         counter = 1
         exps = []
         tfs = []
@@ -371,7 +369,7 @@ if __name__ == '__main__':
         session.commit()
 
     if CONTROLS:
-        table = pd.read_table(parameters_path + 'master-list-annotated.txt')
+        table = pd.read_table(parameters_path + 'master-chip.txt')
         exps = []
         cls = []
         used_exp_ids = set()
@@ -445,7 +443,7 @@ if __name__ == '__main__':
     if GENES:
         genes = []
         genes_ids = set()
-        with open(os.path.expanduser('~/Desktop/gencode.v35.annotation.gtf')) as inp:
+        with open(os.path.expanduser('~/REFERENCE/gencode.v35.annotation.gtf')) as inp:
             for index, line in enumerate(inp):
                 if line.startswith('#'):
                     continue
@@ -493,7 +491,7 @@ if __name__ == '__main__':
     if TARGET_GENES:
         qtl_genes = {}
         # table = pd.read_table(os.path.join(release_path, 'release_stats', 'phenotypes_stats.tsv'))
-        table = pd.read_table(os.path.expanduser('~/Desktop/phenotypes_stats.tsv'))
+        table = pd.read_table(os.path.join(release_path, 'release_stats', 'phenotypes_stats.tsv'))
         print(len(table.index))
         genes = []
         for index, row in table.iterrows():
