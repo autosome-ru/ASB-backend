@@ -53,7 +53,7 @@ GENES = 1
 TARGET_GENES = 1
 
 
-release_path = os.path.expanduser('~/DataChIP/')
+release_path = os.path.expanduser('~/RESULTS/DataChIP/')
 parameters_path = os.path.expanduser('~/RESULTS/Configs')
 
 conv_bad = dict(zip(
