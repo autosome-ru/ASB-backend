@@ -39,13 +39,13 @@ current_release.GeneSNPCorrespondence, \
 current_release.Gene
 
 
-TF = 1
-CL = 1
+TF = 0
+CL = 0
 tr = 0.25
-EXP = 1
+EXP = 0
 TF_DICT = 1
 CL_DICT = 1
-PHEN = 1
+PHEN = 0
 CONTEXT = 1
 CONTROLS = 1
 BAD_GROUP = 1
