@@ -261,6 +261,12 @@ if __name__ == '__main__':
             else:
                 ag_id = ag.tf_id
 
+            exp_snp = ExpSNP.query.filter(
+                getattr(ExpSNP, {'TF': 'tf_snp_id', 'CL': 'cl_snp_id'}[param]) == ag_snp_id,
+            ).first()
+            if exp_snp:
+                continue
+
             items_length = len(content)
 
             items = list(content.items())
