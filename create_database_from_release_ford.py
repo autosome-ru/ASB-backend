@@ -263,7 +263,7 @@ if __name__ == '__main__':
 
             exp_snp = ExpSNP.query.filter(
                 getattr(ExpSNP, {'TF': 'tf_aggregated_snp', 'CL': 'cl_aggregated_snp'}[param]).has(
-                    getattr(ExpSNP, {'TF': 'tf_id', 'CL': 'cl_id'}[param]) == ag_id,
+                    getattr(SNPClass, {'TF': 'tf_id', 'CL': 'cl_id'}[param]) == ag_id,
                 ),
             ).first()
             if exp_snp:
