@@ -262,7 +262,9 @@ if __name__ == '__main__':
                 ag_id = ag.tf_id
 
             exp_snp = ExpSNP.query.filter(
-                getattr(ExpSNP, {'TF': 'tf_snp_id', 'CL': 'cl_snp_id'}[param]) == ag_snp_id,
+                getattr(ExpSNP, {'TF': 'transcription_factor_snp', 'CL': 'cell_line_snp'}[param]).has(
+                    getattr(ExpSNP, {'TF': 'tf_id', 'CL': 'cl_id'}[param]) == ag_id,
+                ),
             ).first()
             if exp_snp:
                 continue
