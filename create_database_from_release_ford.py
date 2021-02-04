@@ -43,10 +43,10 @@ TF = 0
 CL = 0
 tr = 0.25
 EXP = 0
-TF_DICT = 1
-CL_DICT = 1
+TF_DICT = 0
+CL_DICT = 0
 PHEN = 0
-CONTEXT = 1
+CONTEXT = 0
 CONTROLS = 1
 BAD_GROUP = 1
 GENES = 1
@@ -387,9 +387,10 @@ if __name__ == '__main__':
                 print(index + 1)
 
             if len(exps) >= 990:
-                session.add_all(exps)
+                session.add_all(cls + exps)
                 session.commit()
                 exps = []
+                cls = []
                 session.close()
 
             if not (row['TF_UNIPROT_NAME'] is None or pd.isna(row['TF_UNIPROT_NAME'])):
