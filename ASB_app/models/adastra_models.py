@@ -224,7 +224,7 @@ for release in Release.__subclasses__():
 
         @best_p_value.expression
         def best_p_value(cls):
-            return db.func.max(cls.log_p_value_alt, cls.log_p_value_ref)
+            return db.func.greatest(cls.log_p_value_alt, cls.log_p_value_ref)
 
 
     if release.name != 'dnase':
