@@ -139,7 +139,7 @@ if __name__ == '__main__':
                     'Preferred_allele',
                     'Log10_p_value',
                     'Effect_size(log2)',
-                    '{}'.format('TFs' if AG == CL else 'Cell_types'), ###
+                    'Supporting_{}'.format('TFs' if AG == CL else 'Cell_types'), ###
                     'eQTL',
                     'promoter_SNP',
                 ])
