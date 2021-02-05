@@ -26,4 +26,4 @@ q = session.query(Gene, SNP, TFSNP)\
     .limit(10)
 
 for (gene, snp, tfsnp) in q:
-    print(gene.gene_name, snp.rs_id, tfsnp.p_value_ref)
+    print(gene.gene_name, snp.rs_id, tfsnp.log_p_value_ref)
