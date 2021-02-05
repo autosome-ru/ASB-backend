@@ -61,9 +61,9 @@ if __name__ == '__main__':
         ).join(
             ExpSNP,
             AGSNP.exp_snps
-        # ).filter(
-        #     (ExpSNP.p_value_ref - ExpSNP.p_value_alt) * (
-        #                 AGSNP.log_p_value_alt - AGSNP.log_p_value_ref) > 0
+        ).filter(
+            (ExpSNP.p_value_ref - ExpSNP.p_value_alt) * (
+                        AGSNP.log_p_value_alt - AGSNP.log_p_value_ref) > 0
         ).join(
             Experiment,
             ExpSNP.experiment,
@@ -143,7 +143,7 @@ if __name__ == '__main__':
                     'eQTL',
                     'promoter_SNP',
                 ])
-            )
+            ) + '\n'
         )
         for gene_id in all_genes:
             if gene_id in target_dict:
@@ -153,5 +153,5 @@ if __name__ == '__main__':
             out.write(
                 '\t'.join(
                     map(str, data[:-1] + ['|'.join(data[-1])] + [gene_id in target_dict, gene_id in promoter_dict])
-                )
+                ) + '\n'
             )
