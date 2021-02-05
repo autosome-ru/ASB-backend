@@ -72,40 +72,42 @@ if __name__ == '__main__':
             getattr(Experiment, 'transcription_factor' if AG == CL else 'cell_line')
         )
 
-    q_promoter = session.query(
-            Gene,
-            SNP,
-            AGSNP,
-            AG,
-            OTHER.name
-        ).join(
-            SNP,
-            (SNP.chromosome == Gene.chromosome) &
-            (
-                (Gene.orientation & SNP.position.between(Gene.start_pos - 5000,Gene.end_pos)) |
-                (~Gene.orientation & SNP.position.between(Gene.start_pos, Gene.end_pos + 5000))
-            )
-        ).join(
-            AGSNP,
-            getattr(SNP, 'tf_aggregated_snps' if AG == TF else 'cl_aggregated_snps')
-        ).filter(
-            AGSNP.best_p_value > np.log10(20)
-        ).join(
-            AG,
-            getattr(AGSNP, 'transcription_factor' if AG == TF else 'cell_line')
-        ).join(
-            ExpSNP,
-            AGSNP.exp_snps
-        # ).filter(
-        #     (ExpSNP.p_value_ref - ExpSNP.p_value_alt) * (
-        #                 AGSNP.log_p_value_alt - AGSNP.log_p_value_ref) > 0
-        ).join(
-            Experiment,
-            ExpSNP.experiment,
-        ).join(
-            OTHER,
-            getattr(Experiment, 'transcription_factor' if AG == CL else 'cell_line')
-        )
+    # q_promoter = session.query(
+    #         Gene,
+    #         SNP,
+    #         AGSNP,
+    #         AG,
+    #         OTHER.name
+    #     ).join(
+    #         SNP,
+    #         (SNP.chromosome == Gene.chromosome) &
+    #         (
+    #             (Gene.orientation & SNP.position.between(Gene.start_pos - 5000, Gene.end_pos)) |
+    #             (~Gene.orientation & SNP.position.between(Gene.start_pos, Gene.end_pos + 5000))
+    #         )
+    #     ).join(
+    #         AGSNP,
+    #         getattr(SNP, 'tf_aggregated_snps' if AG == TF else 'cl_aggregated_snps')
+    #     ).filter(
+    #         AGSNP.best_p_value > np.log10(20)
+    #     ).join(
+    #         AG,
+    #         getattr(AGSNP, 'transcription_factor' if AG == TF else 'cell_line')
+    #     ).join(
+    #         ExpSNP,
+    #         AGSNP.exp_snps
+    #     # ).filter(
+    #     #     (ExpSNP.p_value_ref - ExpSNP.p_value_alt) * (
+    #     #                 AGSNP.log_p_value_alt - AGSNP.log_p_value_ref) > 0
+    #     ).join(
+    #         Experiment,
+    #         ExpSNP.experiment,
+    #     ).join(
+    #         OTHER,
+    #         getattr(Experiment, 'transcription_factor' if AG == CL else 'cell_line')
+    #     )
+
+    q_promoter = []
 
     promoter_dict = {}
     target_dict = {}
