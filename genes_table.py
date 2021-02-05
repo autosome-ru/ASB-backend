@@ -70,12 +70,6 @@ if __name__ == '__main__':
         ).join(
             OTHER,
             getattr(Experiment, 'transcription_factor' if AG == CL else 'cell_line')
-        ).group_by(
-            Gene.gene_id,
-            SNP.chromosome,
-            SNP.position,
-            SNP.alt,
-            getattr(AGSNP, 'tf_snp_id' if AG == TF else 'cl_snp_id'),
         )
 
     q_promoter = session.query(
@@ -111,24 +105,21 @@ if __name__ == '__main__':
         ).join(
             OTHER,
             getattr(Experiment, 'transcription_factor' if AG == CL else 'cell_line')
-        ).group_by(
-            Gene.gene_id,
-            SNP.chromosome,
-            SNP.position,
-            SNP.alt,
-            getattr(AGSNP, 'tf_snp_id' if AG == TF else 'cl_snp_id'),
         )
 
     promoter_dict = {}
     target_dict = {}
     for q, q_dict in (q_promoter, promoter_dict), (q_target, target_dict):
-        for (gene, snp, agsnp, ag, other_names) in q:
-            q_dict[gene.gene_id] = [gene.gene_name, snp.chromosome, snp.position,
-                                    'rs' + str(snp.rs_id), snp.ref, snp.alt, ag.name,
-                                    '{} ({})'.format(*(('ref', snp.ref) if agsnp.log_p_value_ref > agsnp.log_p_value_alt else ('alt', snp.alt))),
-                                    max(agsnp.log_p_value_ref, agsnp.log_p_value_alt),
-                                    agsnp.es_ref if agsnp.log_p_value_ref > agsnp.log_p_value_alt else agsnp.es_alt,
-                                    other_names]
+        for (gene, snp, agsnp, ag, other_name) in q:
+            if gene.gene_id in q_dict:
+                q_dict[gene.gene_id][-1].append(other_name)
+            else:
+                q_dict[gene.gene_id] = [gene.gene_name, snp.chromosome, snp.position,
+                                        'rs' + str(snp.rs_id), snp.ref, snp.alt, ag.name,
+                                        '{} ({})'.format(*(('ref', snp.ref) if agsnp.log_p_value_ref > agsnp.log_p_value_alt else ('alt', snp.alt))),
+                                        max(agsnp.log_p_value_ref, agsnp.log_p_value_alt),
+                                        agsnp.es_ref if agsnp.log_p_value_ref > agsnp.log_p_value_alt else agsnp.es_alt,
+                                        [other_name]]
 
     all_genes = list(set(promoter_dict.keys()) | set(target_dict.keys()))
 
@@ -159,6 +150,6 @@ if __name__ == '__main__':
                 data = promoter_dict[gene_id]
             out.write(
                 '\t'.join(
-                    map(str, data + [gene_id in target_dict, gene_id in promoter_dict])
+                    map(str, data[:-1] + ['|'.join(data[-1])] + [gene_id in target_dict, gene_id in promoter_dict])
                 )
             )
