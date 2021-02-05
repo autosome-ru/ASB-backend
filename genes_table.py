@@ -46,7 +46,7 @@ if __name__ == '__main__':
             SNP,
             AGSNP,
             AG,
-            db.func.group_concat(db.func.distinct(OTHER.name), separator='|')
+            OTHER.name
         ).join(
             SNP,
             Gene.snps_by_target
@@ -77,7 +77,7 @@ if __name__ == '__main__':
             SNP,
             AGSNP,
             AG,
-            db.func.group_concat(db.func.distinct(OTHER.name), separator='|')
+            OTHER.name
         ).join(
             SNP,
             (SNP.chromosome == Gene.chromosome) &
