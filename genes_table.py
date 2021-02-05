@@ -22,6 +22,8 @@ def get_filters_by_gene(self, gene):
 q = session.query(Gene, SNP, TFSNP)\
     .join(SNP, Gene.snps_by_target)\
     .join(TFSNP, SNP.tf_aggregated_snps)\
-    .filter(TFSNP.best_p_value > np.log10(20))
+    .filter(TFSNP.best_p_value > np.log10(20))\
+    .limit(10)
 
-print(q)
+for (gene, snp, tfsnp) in q:
+    print(gene.name, snp.rs_id, tfsnp.p_value_ref)
