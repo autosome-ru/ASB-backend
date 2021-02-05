@@ -1,3 +1,6 @@
+import os
+import sys
+
 from ASB_app import *
 
 from ASB_app.releases import ReleaseFord
@@ -7,6 +10,7 @@ release = ReleaseFord
 Gene = release.Gene
 SNP = release.SNP
 TFSNP = release.TranscriptionFactorSNP
+CLSNP = release.TranscriptionFactorSNP
 TF = release.TranscriptionFactor
 CL = release.CellLine
 ExpSNP = release.ExpSNP
@@ -26,46 +30,135 @@ def get_filters_by_gene(self, gene):
 
 
 if __name__ == '__main__':
-    q = session.query(
+    if sys.argv[1] == 'TF':
+        AGSNP = TFSNP
+        AG = TF
+        OTHER = CL
+    elif sys.argv[1] == 'CL':
+        AGSNP = CLSNP
+        AG = CL
+        OTHER = TF
+    else:
+        raise ValueError
+
+    q_target = session.query(
             Gene,
             SNP,
-            TFSNP,
-            TF,
-            db.func.group_concat(db.func.distinct(CL.name), separator=', ')
+            AGSNP,
+            AG,
+            db.func.group_concat(db.func.distinct(OTHER.name), separator='|')
         ).join(
             SNP,
             Gene.snps_by_target
         ).join(
-            TFSNP,
-            SNP.tf_aggregated_snps
+            AGSNP,
+            getattr(SNP, 'tf_aggregated_snps' if AG == TF else 'cl_aggregated_snps')
         ).filter(
-            TFSNP.best_p_value > np.log10(20)
+            AGSNP.best_p_value > np.log10(20)
         ).join(
-            TF,
-            TFSNP.transcription_factor
+            AG,
+            getattr(AGSNP, 'transcription_factor' if AG == TF else 'cell_line')
         ).join(
             ExpSNP,
-            TFSNP.exp_snps
+            AGSNP.exp_snps
         ).filter(
             (ExpSNP.p_value_ref - ExpSNP.p_value_alt) * (
-                        TFSNP.log_p_value_alt - TFSNP.log_p_value_ref) > 0
+                        AGSNP.log_p_value_alt - AGSNP.log_p_value_ref) > 0
         ).join(
             Experiment,
             ExpSNP.experiment,
         ).join(
-            CL,
-            Experiment.cell_line,
-        ).limit(
-            10
-        ).from_self(
+            OTHER,
+            getattr(Experiment, 'transcription_factor' if AG == CL else 'cell_line')
         ).group_by(
             Gene.gene_id,
             SNP.chromosome,
             SNP.position,
             SNP.alt,
-            TFSNP.tf_snp_id,
+            getattr(AGSNP, 'tf_snp_id' if AG == TF else 'cl_snp_id'),
         )
 
+    q_promoter = session.query(
+            Gene,
+            SNP,
+            AGSNP,
+            AG,
+            db.func.group_concat(db.func.distinct(OTHER.name), separator='|')
+        ).join(
+            SNP,
+            (SNP.chromosome == Gene.chromosome) &
+            (
+                (Gene.orientation & SNP.position.between(Gene.start_pos - 5000,Gene.end_pos)) |
+                (~Gene.orientation & SNP.position.between(Gene.start_pos, Gene.end_pos + 5000))
+            )
+        ).join(
+            AGSNP,
+            getattr(SNP, 'tf_aggregated_snps' if AG == TF else 'cl_aggregated_snps')
+        ).filter(
+            AGSNP.best_p_value > np.log10(20)
+        ).join(
+            AG,
+            getattr(AGSNP, 'transcription_factor' if AG == TF else 'cell_line')
+        ).join(
+            ExpSNP,
+            AGSNP.exp_snps
+        ).filter(
+            (ExpSNP.p_value_ref - ExpSNP.p_value_alt) * (
+                        AGSNP.log_p_value_alt - AGSNP.log_p_value_ref) > 0
+        ).join(
+            Experiment,
+            ExpSNP.experiment,
+        ).join(
+            OTHER,
+            getattr(Experiment, 'transcription_factor' if AG == CL else 'cell_line')
+        ).group_by(
+            Gene.gene_id,
+            SNP.chromosome,
+            SNP.position,
+            SNP.alt,
+            getattr(AGSNP, 'tf_snp_id' if AG == TF else 'cl_snp_id'),
+        )
 
-for (gene, snp, tfsnp, tf, cl_names) in q:
-    print(gene.gene_name, 'rs' + str(snp.rs_id), tfsnp.log_p_value_ref, tfsnp.log_p_value_ref, tf.name, cl_names)
+    promoter_dict = {}
+    target_dict = {}
+    for q, q_dict in (q_promoter, promoter_dict), (q_target, target_dict):
+        for (gene, snp, agsnp, ag, other_names) in q:
+            q_dict[gene.gene_id] = [gene.gene_name, snp.chromosome, snp.position,
+                                    'rs' + str(snp.rs_id), snp.ref, snp.alt, ag.name,
+                                    '{} ({})'.format(*(('ref', snp.ref) if agsnp.log_p_value_ref > agsnp.log_p_value_alt else ('alt', snp.alt))),
+                                    max(agsnp.log_p_value_ref, agsnp.log_p_value_alt),
+                                    agsnp.es_ref if agsnp.log_p_value_ref > agsnp.log_p_value_alt else agsnp.es_alt,
+                                    other_names]
+
+    all_genes = list(set(promoter_dict.keys()) | set(target_dict.keys()))
+
+    with open(os.path.expanduser('~/{}_genes.tsv'), 'w') as out:
+        out.write(
+            '\t'.join(
+                map(str, [
+                    'Gene_name',
+                    'Chromosome',
+                    'Position'
+                    'rs_ID',
+                    'Ref',
+                    'Alt',
+                    'TF' if AG == TF else 'Cells',
+                    'Preferred_allele',
+                    'Log10_p_value',
+                    'Effect_size(log2)',
+                    'Supporting_{}'.format('TFs' if AG == CL else 'Cell_types'),
+                    'eQTL',
+                    'promoter_SNP',
+                ])
+            )
+        )
+        for gene_id in all_genes:
+            if gene_id in target_dict:
+                data = target_dict[gene_id]
+            else:
+                data = promoter_dict[gene_id]
+            out.write(
+                '\t'.join(
+                    map(str, data + [gene_id in target_dict, gene_id in promoter_dict])
+                )
+            )
