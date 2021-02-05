@@ -55,10 +55,11 @@ q = session.query(
         CL,
         Experiment.cell_line,
     ).group_by(
-        Gene,
-        SNP,
-        TFSNP,
-        TF
+        Gene.gene_id,
+        SNP.chromosome,
+        SNP.position,
+        SNP.alt,
+        TFSNP.tf_snp_id,
     ).limit(10)
 
 
