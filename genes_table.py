@@ -7,6 +7,7 @@ release = ReleaseFord
 Gene = release.Gene
 SNP = release.SNP
 TFSNP = release.TranscriptionFactorSNP
+TF = release.TranscriptionFactor
 
 session = release.session
 
@@ -19,11 +20,12 @@ def get_filters_by_gene(self, gene):
         return self.SNP.chromosome == gene.chromosome, self.SNP.position.between(max(gene.start_pos, 1),
                                                                                  gene.end_pos + 5000)
 
-q = session.query(Gene, SNP, TFSNP)\
+q = session.query(Gene, SNP, TFSNP, TF)\
     .join(SNP, Gene.snps_by_target)\
     .join(TFSNP, SNP.tf_aggregated_snps)\
     .filter(TFSNP.best_p_value > np.log10(20))\
+    .join(TF, TFSNP.transcription_factor)\
     .limit(10)
 
-for (gene, snp, tfsnp) in q:
-    print(gene.gene_name, snp.rs_id, tfsnp.log_p_value_ref)
+for (gene, snp, tfsnp, tf) in q:
+    print(gene.gene_name, snp.rs_id, tfsnp.log_p_value_ref, tf.name)
