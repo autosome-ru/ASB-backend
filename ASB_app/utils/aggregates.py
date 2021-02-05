@@ -10,6 +10,8 @@ from ASB_app.releases import current_release
 session = current_release.session
 db = current_release.db
 
+chunk_size = 10000
+
 
 if current_release.name != 'dnase':
     TranscriptionFactorSNP, CellLineSNP, TranscriptionFactor, CellLine, Phenotype, SNP, \
@@ -45,7 +47,7 @@ def update_aggregated_fields(mappers=(CellLineSNP) if current_release.name == 'd
         logger.info('Updating aggregates, depending on {}'.format(cls.__name__))
         count = cls.query.count()
         offset = 0
-        max_count = 999
+        max_count = chunk_size
         while count > 0:
             print(count)
             objects = cls.query.order_by({TranscriptionFactorSNP: TranscriptionFactorSNP.tf_id,
@@ -65,7 +67,7 @@ def update_aggregated_snp_count():
         query = cls.query
         count = cls.query.count()
         offset = 0
-        max_count = 999
+        max_count = chunk_size
         while count > 0:
             for item in query.offset(offset).limit(max_count):
                 if cls == TranscriptionFactor:
@@ -90,7 +92,7 @@ def update_experiments_count():
         query = cls.query
         count = cls.query.count()
         offset = 0
-        max_count = 999
+        max_count = chunk_size
         while count > 0:
             for item in query.offset(offset).limit(max_count):
                 if cls == TranscriptionFactor:
@@ -113,7 +115,7 @@ def update_motif_concordance():
     query = TranscriptionFactorSNP.query
     count = query.count()
     offset = 0
-    max_count = 999
+    max_count = chunk_size
     while count > 0:
         print(count)
         for snp in query.offset(offset).limit(max_count):
@@ -162,7 +164,7 @@ def update_phenotype_associations():
     ).group_by(SNP.rs_id, SNP.alt, Phenotype.table_name)
     count = q.count()
     offset = 0
-    max_count = 999
+    max_count = chunk_size
     while count > 0:
         print(count)
         for snp, db_name in q.order_by(SNP.rs_id).limit(max_count).offset(offset):
@@ -185,7 +187,7 @@ def update_has_concordance():
     count = q.count()
     print(count)
     offset = 0
-    max_count = 999
+    max_count = chunk_size
     while count > 0:
         print(count)
         for snp, tf_snp in q.order_by(SNP.rs_id).limit(max_count).offset(offset):
@@ -196,38 +198,6 @@ def update_has_concordance():
         count -= max_count
 
 
-# one-time
-def scale_effect_size():
-    scale = np.log(2)
-
-    q = session.query(TranscriptionFactorSNP)
-    count = q.count()
-    offset = 0
-    max_count = 999
-    while count > 0:
-        print(count)
-        for tf_snp in q.order_by(TranscriptionFactorSNP.tf_snp_id).limit(max_count).offset(offset):
-            if tf_snp.es_ref is not None:
-                tf_snp.es_ref = tf_snp.es_ref / scale
-            if tf_snp.es_alt is not None:
-                tf_snp.es_alt = tf_snp.es_alt / scale
-        session.commit()
-        session.close()
-        offset += max_count
-        count -= max_count
-
-    q = session.query(CellLineSNP)
-    count = q.count()
-    offset = 0
-    max_count = 999
-    while count > 0:
-        print(count)
-        for cl_snp in q.order_by(CellLineSNP.cl_snp_id).limit(max_count).offset(offset):
-            if cl_snp.es_ref is not None:
-                cl_snp.es_ref = cl_snp.es_ref / scale
-            if cl_snp.es_alt is not None:
-                cl_snp.es_alt = cl_snp.es_alt / scale
-        session.commit()
-        session.close()
-        offset += max_count
-        count -= max_count
+def update_all():
+    update_phenotype_associations()
+    update_has_concordance()
