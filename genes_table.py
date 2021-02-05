@@ -25,42 +25,46 @@ def get_filters_by_gene(self, gene):
                                                                                  gene.end_pos + 5000)
 
 
-q = session.query(
-        Gene,
-        SNP,
-        TFSNP,
-        TF,
-        db.func.group_concat(db.func.distinct(CL.name), separator=', ')
-    ).join(
-        SNP,
-        Gene.snps_by_target
-    ).join(
-        TFSNP,
-        SNP.tf_aggregated_snps
-    ).filter(
-        TFSNP.best_p_value > np.log10(20)
-    ).join(
-        TF,
-        TFSNP.transcription_factor
-    ).join(
-        ExpSNP,
-        TFSNP.exp_snps
-    ).filter(
-        (ExpSNP.p_value_ref - ExpSNP.p_value_alt) * (
-                    TFSNP.log_p_value_alt - TFSNP.log_p_value_ref) > 0
-    ).join(
-        Experiment,
-        ExpSNP.experiment,
-    ).join(
-        CL,
-        Experiment.cell_line,
-    ).limit(10).group_by(
-        Gene.gene_id,
-        SNP.chromosome,
-        SNP.position,
-        SNP.alt,
-        TFSNP.tf_snp_id,
-    )
+if __name__ == '__main__':
+    q = session.query(
+            Gene,
+            SNP,
+            TFSNP,
+            TF,
+            db.func.group_concat(db.func.distinct(CL.name), separator=', ')
+        ).join(
+            SNP,
+            Gene.snps_by_target
+        ).join(
+            TFSNP,
+            SNP.tf_aggregated_snps
+        ).filter(
+            TFSNP.best_p_value > np.log10(20)
+        ).join(
+            TF,
+            TFSNP.transcription_factor
+        ).join(
+            ExpSNP,
+            TFSNP.exp_snps
+        ).filter(
+            (ExpSNP.p_value_ref - ExpSNP.p_value_alt) * (
+                        TFSNP.log_p_value_alt - TFSNP.log_p_value_ref) > 0
+        ).join(
+            Experiment,
+            ExpSNP.experiment,
+        ).join(
+            CL,
+            Experiment.cell_line,
+        ).limit(
+            10
+        ).from_self(
+        ).group_by(
+            Gene.gene_id,
+            SNP.chromosome,
+            SNP.position,
+            SNP.alt,
+            TFSNP.tf_snp_id,
+        )
 
 
 for (gene, snp, tfsnp, tf, cl_names) in q:
