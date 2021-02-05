@@ -161,7 +161,7 @@ def update_phenotype_associations():
     ).join(
         Phenotype,
         PhenotypeSNPCorrespondence.phenotype_id == Phenotype.phenotype_id
-    ).group_by(SNP.rs_id, SNP.alt, Phenotype.db_name)
+    ).group_by(SNP.chromosome, SNP.position, SNP.rs_id, SNP.ref, SNP.alt, Phenotype.db_name)
     count = q.count()
     offset = 0
     max_count = chunk_size
