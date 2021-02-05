@@ -153,7 +153,7 @@ def update_motif_concordance():
 
 
 def update_phenotype_associations():
-    q = session.query(SNP, Phenotype.table_name).join(
+    q = session.query(SNP, Phenotype.db_name).join(
         PhenotypeSNPCorrespondence,
         (SNP.chromosome == PhenotypeSNPCorrespondence.chromosome) &
         (SNP.position == PhenotypeSNPCorrespondence.position) &
@@ -161,7 +161,7 @@ def update_phenotype_associations():
     ).join(
         Phenotype,
         PhenotypeSNPCorrespondence.phenotype_id == Phenotype.phenotype_id
-    ).group_by(SNP.rs_id, SNP.alt, Phenotype.table_name)
+    ).group_by(SNP.rs_id, SNP.alt, Phenotype.db_name)
     count = q.count()
     offset = 0
     max_count = chunk_size
