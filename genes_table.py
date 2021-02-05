@@ -61,9 +61,9 @@ if __name__ == '__main__':
         ).join(
             ExpSNP,
             AGSNP.exp_snps
-        ).filter(
-            (ExpSNP.p_value_ref - ExpSNP.p_value_alt) * (
-                        AGSNP.log_p_value_alt - AGSNP.log_p_value_ref) > 0
+        # ).filter(
+        #     (ExpSNP.p_value_ref - ExpSNP.p_value_alt) * (
+        #                 AGSNP.log_p_value_alt - AGSNP.log_p_value_ref) > 0
         ).join(
             Experiment,
             ExpSNP.experiment,
@@ -96,9 +96,9 @@ if __name__ == '__main__':
         ).join(
             ExpSNP,
             AGSNP.exp_snps
-        ).filter(
-            (ExpSNP.p_value_ref - ExpSNP.p_value_alt) * (
-                        AGSNP.log_p_value_alt - AGSNP.log_p_value_ref) > 0
+        # ).filter(
+        #     (ExpSNP.p_value_ref - ExpSNP.p_value_alt) * (
+        #                 AGSNP.log_p_value_alt - AGSNP.log_p_value_ref) > 0
         ).join(
             Experiment,
             ExpSNP.experiment,
@@ -123,7 +123,7 @@ if __name__ == '__main__':
 
     all_genes = list(set(promoter_dict.keys()) | set(target_dict.keys()))
 
-    with open(os.path.expanduser('~/{}_genes.tsv'.format('tf' if AG == TF else 'cl')), 'w') as out:
+    with open(os.path.expanduser('~/{}_genes_all.tsv'.format('tf' if AG == TF else 'cl')), 'w') as out:
         out.write(
             '\t'.join(
                 map(str, [
@@ -137,7 +137,7 @@ if __name__ == '__main__':
                     'Preferred_allele',
                     'Log10_p_value',
                     'Effect_size(log2)',
-                    'Supporting_{}'.format('TFs' if AG == CL else 'Cell_types'),
+                    '{}'.format('TFs' if AG == CL else 'Cell_types'), ###
                     'eQTL',
                     'promoter_SNP',
                 ])
