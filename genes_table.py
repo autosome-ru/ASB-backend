@@ -132,7 +132,7 @@ if __name__ == '__main__':
 
     all_genes = list(set(promoter_dict.keys()) | set(target_dict.keys()))
 
-    with open(os.path.expanduser('~/{}_genes.tsv'), 'w') as out:
+    with open(os.path.expanduser('~/{}_genes.tsv'.format('tf' if AG == TF else 'cl')), 'w') as out:
         out.write(
             '\t'.join(
                 map(str, [
