@@ -54,13 +54,13 @@ q = session.query(
     ).join(
         CL,
         Experiment.cell_line,
-    ).group_by(
+    ).limit(10).group_by(
         Gene.gene_id,
         SNP.chromosome,
         SNP.position,
         SNP.alt,
         TFSNP.tf_snp_id,
-    ).limit(10)
+    )
 
 
 for (gene, snp, tfsnp, tf, cl_names) in q:
