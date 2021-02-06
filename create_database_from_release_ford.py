@@ -541,6 +541,6 @@ if __name__ == '__main__':
                     SNP.chromosome == gene.chromosome,
                     SNP.position.between(gene.start_pos - 500, gene.end_pos) if gene.orientation
                     else SNP.position.between(gene.start_pos, gene.end_pos + 500)
-            )
+            ).all()
             genes.append(gene)
         session.commit()
