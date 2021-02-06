@@ -176,7 +176,7 @@ def update_phenotype_associations():
 
 
 def update_has_concordance():
-    q = session.query(SNP, TranscriptionFactorSNP).join(
+    q = session.query(SNP, db.func.coalesce(TranscriptionFactorSNP)).join(
         TranscriptionFactorSNP,
         (SNP.chromosome == TranscriptionFactorSNP.chromosome) &
         (SNP.position == TranscriptionFactorSNP.position) &
