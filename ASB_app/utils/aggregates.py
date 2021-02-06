@@ -176,7 +176,7 @@ def update_phenotype_associations():
 
 
 def update_has_concordance():
-    q = session.query(SNP, db.func.coalesce(TranscriptionFactorSNP)).join(
+    q = session.query(SNP, db.func.coalesce(TranscriptionFactorSNP.tf_snp_id)).join(
         TranscriptionFactorSNP,
         (SNP.chromosome == TranscriptionFactorSNP.chromosome) &
         (SNP.position == TranscriptionFactorSNP.position) &
@@ -190,7 +190,7 @@ def update_has_concordance():
     max_count = chunk_size
     while count > 0:
         print(count)
-        for snp, tf_snp in q.order_by(SNP.rs_id).limit(max_count).offset(offset):
+        for snp, tf_snp_id in q.order_by(SNP.rs_id).limit(max_count).offset(offset):
             setattr(snp, 'has_concordance', True)
         session.commit()
         session.close()
