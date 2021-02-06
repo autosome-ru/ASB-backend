@@ -539,7 +539,7 @@ if __name__ == '__main__':
 
             gene.proximal_promoter_snps = SNP.query.filter(
                     SNP.chromosome == gene.chromosome,
-                    SNP.position.between(gene.start_pos - 500, gene.end_pos) if gene.orientration
+                    SNP.position.between(gene.start_pos - 500, gene.end_pos) if gene.orientation
                     else SNP.position.between(gene.start_pos, gene.end_pos + 500)
             )
             genes.append(gene)
