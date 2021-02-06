@@ -183,7 +183,7 @@ def update_has_concordance():
         (SNP.alt == TranscriptionFactorSNP.alt)
     ).filter(
         TranscriptionFactorSNP.motif_concordance.in_({'Concordant', 'Weak Concordant'})
-    ).group_by(SNP)
+    ).group_by(SNP, db.func.coalesce(TranscriptionFactorSNP.tf_snp_id))
     count = q.count()
     print(count)
     offset = 0
