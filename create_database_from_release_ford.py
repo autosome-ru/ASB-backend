@@ -47,10 +47,11 @@ TF_DICT = 0
 CL_DICT = 0
 PHEN = 0
 CONTEXT = 0
-CONTROLS = 1
-BAD_GROUP = 1
-GENES = 1
-TARGET_GENES = 1
+CONTROLS = 0
+BAD_GROUP = 0
+GENES = 0
+TARGET_GENES = 0
+PROMOTER_GENES = 1
 
 
 release_path = os.path.expanduser('~/RESULTS/DataChIP/')
@@ -498,7 +499,6 @@ if __name__ == '__main__':
         session.commit()
 
     if TARGET_GENES:
-        qtl_genes = {}
         # table = pd.read_table(os.path.join(release_path, 'release_stats', 'phenotypes_stats.tsv'))
         table = pd.read_table(os.path.join(release_path, 'release_stats', 'phenotypes_stats.tsv'))
         print(len(table.index))
@@ -529,4 +529,18 @@ if __name__ == '__main__':
             for mutation in mutations:
                 mutation.target_genes = all_target_genes
         session.add_all(genes)
+        session.commit()
+
+    if PROMOTER_GENES:
+        genes = []
+        for index, gene in enumerate(Gene.query.filter(~((Gene.start_pos == 1) & (Gene.end_pos == 1)))):
+            if (index + 1) % 1000 == 0:
+                print(index + 1)
+
+            gene.proximal_promoter_snps = SNP.query.filter(
+                    SNP.chromosome == gene.chromosome,
+                    SNP.position.between(gene.start_pos - 500, gene.end_pos) if gene.orientration
+                    else SNP.position.between(gene.start_pos, gene.end_pos + 500)
+            )
+            genes.append(gene)
         session.commit()

@@ -327,6 +327,12 @@ for release in Release.__subclasses__():
             backref='target_genes'
         )
 
+        proximal_promoter_snps = db.relationship(
+            'SNP',
+            secondary='genes_promoter_SNPs',
+            backref='genes_by_proximal_promoter'
+        )
+
 
     class GeneSNPCorrespondence(GenomePolymorphismLocation):
         __tablename__ = 'genes_SNPs'
@@ -342,6 +348,23 @@ for release in Release.__subclasses__():
         pair_id = db.Column(db.Integer, primary_key=True)
         gene_id = db.Column(db.String(30), db.ForeignKey('genes.gene_id'),
                                  nullable=False)
+
+
+    class ProximalPromoterSNPCorrespondence(GenomePolymorphismLocation):
+        __tablename__ = 'genes_promoter_SNPs'
+        __bind_key__ = release.name
+        __table_args__ = (db.ForeignKeyConstraint(['chromosome', 'position', 'alt'],
+                                                  ['snps.chromosome', 'snps.position', 'snps.alt']),
+                          db.UniqueConstraint('chromosome', 'position', 'alt', 'gene_id',
+                                              name='unique_gene_promoter_snp_pair'),
+                          db.Index('snp_genes_promoter_SNPs_index', 'chromosome', 'position', 'alt'),
+                          db.Index('gene_promoter_index', 'gene_id')
+                          )
+
+        pair_id = db.Column(db.Integer, primary_key=True)
+        gene_id = db.Column(db.String(30), db.ForeignKey('genes.gene_id'),
+                                 nullable=False)
+
 
     if release.name != 'dnase':
         models = [
