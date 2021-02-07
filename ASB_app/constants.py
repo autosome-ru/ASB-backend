@@ -13,6 +13,8 @@ db_name_property_dict = {
     for x in ['clinvar', 'ebi', 'finemapping', 'grasp', 'phewas', 'QTL']
 }
 
+default_fdr_tr = 0.05
+
 possible_tf_asbs = 390916
 possible_cl_asbs = 569814
 possible_all_asbs = 960730

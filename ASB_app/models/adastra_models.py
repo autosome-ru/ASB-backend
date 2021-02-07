@@ -198,6 +198,9 @@ for release in Release.__subclasses__():
         has_grasp_associations = db.Column(db.Boolean)
         has_finemapping_associations = db.Column(db.Boolean)
 
+        if int(release.version) >= 2:
+            best_p_value = db.Column(db.Float, index=True)
+
         context = db.Column(db.String(51))
 
         has_concordance = db.Column(db.Boolean, index=True, server_default='0', nullable=False)

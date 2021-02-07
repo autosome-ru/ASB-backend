@@ -12,7 +12,7 @@ class Release:
 
 class ReleaseSoos(Release):
     name = 'soos'
-    version = '2'
+    version = '1'
     full_version = '1.6'
 
 
@@ -24,7 +24,7 @@ class ReleaseDnase(Release):
 
 class ReleaseFord(Release):
     name = 'ford'
-    version = '1'
+    version = '2'
     full_version = '2.1'
 
 

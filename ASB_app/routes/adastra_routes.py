@@ -1,5 +1,6 @@
 from flask import render_template
 
+from ASB_app.constants import default_fdr_tr
 from ASB_app.service import ReleaseService
 from ASB_app.serializers import ReleaseSerializers
 from ASB_app.exceptions import ParsingError, ReleaseNotFound
@@ -12,6 +13,8 @@ from ASB_app.routes import search_parser, csv_columns_parser, used_hints_parser,
 from ASB_app.releases import Release, get_release_by_version
 
 from ASB_app import app
+
+import numpy as np
 
 
 def set_release_service(release_service):
@@ -91,7 +94,8 @@ for release in Release.__subclasses__():
             Get all SNPs by rs-ID short info
             """
             all_args = pagination_parser.parse_args()
-            filters = self.release_service.get_filters_by_rs_id(rs_id)
+            filters = self.release_service.get_filters_by_rs_id(rs_id) + \
+                self.release_service.get_filters_by_fdr(-np.log10(default_fdr_tr))
             result = self.paginate(all_args, extra_filters=filters)
             return {'results': result, 'total': self.items_count(extra_filters=filters)}
 
@@ -106,14 +110,15 @@ for release in Release.__subclasses__():
         @api.expect(pagination_parser)
         def get(self, gene_id):
             """
-            Get all SNPs by genome position short info
+            Get all SNPs by gene encode id short info
             """
             all_args = pagination_parser.parse_args()
             gene = self.release_service.get_gene_by_id(gene_id)
             if gene is None:
                 return {'results': [], 'gene': None, 'total': 0}
 
-            filters = self.release_service.get_filters_by_gene(self.release_service.get_gene_by_id(gene_id))
+            filters = self.release_service.get_filters_by_gene(self.release_service.get_gene_by_id(gene_id)) + \
+                self.release_service.get_filters_by_fdr(-np.log10(default_fdr_tr))
             result = self.paginate(all_args, extra_filters=filters)
 
             return {'results': result, 'gene': gene, 'total': self.items_count(extra_filters=filters)}
@@ -129,13 +134,14 @@ for release in Release.__subclasses__():
         @api.expect(pagination_parser)
         def get(self, gene_name):
             """
-            Get all SNPs by genome position short info
+            Get all SNPs by gene name short info
             """
             all_args = pagination_parser.parse_args()
             gene = self.release_service.get_gene_by_name(gene_name)
             if gene is None:
                 return {'results': [], 'gene': None, 'total': 0}
-            filters = self.release_service.get_filters_by_gene(gene)
+            filters = self.release_service.get_filters_by_gene(gene) + \
+                self.release_service.get_filters_by_fdr(-np.log10(default_fdr_tr))
             result = self.paginate(all_args, extra_filters=filters)
 
             return {'results': result, 'gene': gene, 'total': self.items_count(extra_filters=filters)}
@@ -155,6 +161,11 @@ for release in Release.__subclasses__():
             """
             all_args = search_parser.parse_args()
             try:
+                all_args['fdr'] = float(all_args['fdr'])
+                assert 0 < all_args['fdr'] <= 0.25
+            except (ValueError, AssertionError):
+                api.abort(400)
+            try:
                 filters = self.release_service.construct_advanced_filters(all_args)
                 result = self.paginate(all_args, extra_filters=filters)
                 return {'results': result, 'total': self.items_count(extra_filters=filters)}
@@ -170,8 +181,14 @@ for release in Release.__subclasses__():
             """
             Get all SNPs with advanced filters short info in tsv file
             """
+            all_args = search_parser.parse_args()
             try:
-                return self.release_service.get_snps_by_advanced_filters_tsv(search_parser.parse_args())
+                all_args['fdr'] = float(all_args['fdr'])
+                assert 0 < all_args['fdr'] <= 0.25
+            except (ValueError, AssertionError):
+                api.abort(400)
+            try:
+                return self.release_service.get_snps_by_advanced_filters_tsv(all_args)
             except ParsingError:
                 api.abort(400)
 

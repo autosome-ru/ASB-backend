@@ -6,6 +6,7 @@ from sqlalchemy import not_, or_
 import csv
 import tempfile
 from flask import send_file
+import numpy as np
 
 from math import ceil
 
@@ -20,6 +21,9 @@ class ReleaseService:
             for model in abstract_models_dnase:
                 setattr(self, model.__name__, getattr(release, model.__name__))
 
+    def get_filters_by_fdr(self, fdr):
+        return (self.SNP.best_p_value >= -np.log10(fdr),)
+
     def generate_tf_link(self, tf_name):
         return 'https://adastra.autosome.ru/{}/search/advanced?tf={}'.format(self.release.name, tf_name)
 
@@ -30,13 +34,14 @@ class ReleaseService:
         return 'https://adastra.autosome.ru/{0.name}/snps/rs{1.rs_id}/{1.alt}'.format(self.release, snp)
 
     def get_tf_links(self):
-        return [{'name': tf.name,  'link': self.generate_tf_link(tf.name)} for tf in
-                self.TranscriptionFactor.query.filter(self.TranscriptionFactor.aggregated_snps_count > 0).order_by(self.TranscriptionFactor.name)]
+        return [{'name': tf.name, 'link': self.generate_tf_link(tf.name)} for tf in
+                self.TranscriptionFactor.query.filter(self.TranscriptionFactor.aggregated_snps_count > 0).order_by(
+                    self.TranscriptionFactor.name)]
 
     def get_snp_links(self, page, on_page=20000):
         return (
             [{'name': self.generate_snp_name(snp), 'link': self.generate_snp_link(snp)} for snp in
-                self.SNP.query.order_by(self.SNP.rs_id).offset(on_page * page).limit(on_page)],
+             self.SNP.query.order_by(self.SNP.rs_id).offset(on_page * page).limit(on_page)],
             ceil(self.SNP.query.count() / on_page)
         )
 
@@ -44,8 +49,6 @@ class ReleaseService:
         return (self.SNP.rs_id == rs_id,)
 
     def get_full_snp(self, rs_id, alt):
-        print(self.release.name)
-        print(self.SNP.query.count())
         return self.SNP.query.filter(
             (self.SNP.rs_id == rs_id) &
             (self.SNP.alt == alt)
@@ -93,26 +96,43 @@ class ReleaseService:
     def get_filters_by_gene(self, gene):
         if gene.orientation:
             return self.SNP.chromosome == gene.chromosome, self.SNP.position.between(max(gene.start_pos - 500, 1),
-                                                                                 gene.end_pos)
+                                                                                     gene.end_pos)
         else:
             return self.SNP.chromosome == gene.chromosome, self.SNP.position.between(max(gene.start_pos, 1),
-                                                                                 gene.end_pos + 500)
+                                                                                     gene.end_pos + 500)
 
     def construct_advanced_filters(self, filters_object):
         filters = []
-        if filters_object['transcription_factors']:
-            filters += [self.SNP.tf_aggregated_snps.any(
-                self.TranscriptionFactorSNP.tf_id == getattr(self.TranscriptionFactor.query.filter(
-                    self.TranscriptionFactor.name == tf_name
-                ).one_or_none(), 'tf_id', None))
-                for tf_name in filters_object['transcription_factors']]
+        if int(self.release.version) >= 2:
+            if filters_object['transcription_factors']:
+                filters += [self.SNP.tf_aggregated_snps.any(
+                    (self.TranscriptionFactorSNP.tf_id == getattr(self.TranscriptionFactor.query.filter(
+                        self.TranscriptionFactor.name == tf_name
+                    ).one_or_none(), 'tf_id', None)) &
+                    (self.TranscriptionFactorSNP.best_p_value >= -np.log10(filters_object['fdr'])))
+                    for tf_name in filters_object['transcription_factors']]
 
-        if filters_object['cell_types']:
-            filters += [self.SNP.cl_aggregated_snps.any(
-                self.CellLineSNP.cl_id == getattr(self.CellLine.query.filter(
-                    self.CellLine.name == cl_name
-                ).one_or_none(), 'cl_id', None))
-                for cl_name in filters_object['cell_types']]
+            if filters_object['cell_types']:
+                filters += [self.SNP.cl_aggregated_snps.any(
+                    (self.CellLineSNP.cl_id == getattr(self.CellLine.query.filter(
+                        self.CellLine.name == cl_name
+                    ).one_or_none(), 'cl_id', None)) &
+                    (self.CellLineSNP.best_p_value >= -np.log10(filters_object['fdr'])))
+                    for cl_name in filters_object['cell_types']]
+        else:
+            if filters_object['transcription_factors']:
+                filters += [self.SNP.tf_aggregated_snps.any(
+                    self.TranscriptionFactorSNP.tf_id == getattr(self.TranscriptionFactor.query.filter(
+                        self.TranscriptionFactor.name == tf_name
+                    ).one_or_none(), 'tf_id', None))
+                    for tf_name in filters_object['transcription_factors']]
+
+            if filters_object['cell_types']:
+                filters += [self.SNP.cl_aggregated_snps.any(
+                    self.CellLineSNP.cl_id == getattr(self.CellLine.query.filter(
+                        self.CellLine.name == cl_name
+                    ).one_or_none(), 'cl_id', None))
+                    for cl_name in filters_object['cell_types']]
 
         if filters_object['chromosome']:
             if not filters_object['start'] or not filters_object['end']:
@@ -136,13 +156,17 @@ class ReleaseService:
                      (self.TranscriptionFactorSNP.motif_concordance.is_(None) if search_null else False)) &
                     self.TranscriptionFactorSNP.transcription_factor.has(
                         self.TranscriptionFactor.name.in_(filters_object['transcription_factors'])
-                    )
+                    ) & (self.TranscriptionFactorSNP.best_p_value >= -np.log10(filters_object['fdr']))
                 )]
             else:
                 filters += [self.SNP.tf_aggregated_snps.any(
-                    self.TranscriptionFactorSNP.motif_concordance.in_(filters_object['motif_concordance']) |
-                    (self.TranscriptionFactorSNP.motif_concordance.is_(None) if search_null else False)
+                    (self.TranscriptionFactorSNP.motif_concordance.in_(filters_object['motif_concordance']) |
+                     (self.TranscriptionFactorSNP.motif_concordance.is_(None) if search_null else False)) &
+                    (self.TranscriptionFactorSNP.best_p_value >= -np.log10(filters_object['fdr']))
                 ) | (~self.SNP.tf_aggregated_snps.any() if search_null else False)]
+
+        if not filters_object['transcription_factors'] and not filters_object['cell_types']:
+            filters += self.get_filters_by_fdr(filters_object['fdr'])
 
         return filters
 
@@ -220,7 +244,9 @@ class ReleaseService:
         for tup in found_snps:
             snp = tup[0]
             columns = tup[1:]
-            csv_writer.writerow([getattr(snp, names[header]) if names[header] != 'rs_id' else 'rs' + str(getattr(snp, names[header])) for header in headers[:len(names.keys())]] + list(columns))
+            csv_writer.writerow(
+                [getattr(snp, names[header]) if names[header] != 'rs_id' else 'rs' + str(getattr(snp, names[header]))
+                 for header in headers[:len(names.keys())]] + list(columns))
 
         file.flush()
         return send_file(

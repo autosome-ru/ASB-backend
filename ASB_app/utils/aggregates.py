@@ -198,6 +198,21 @@ def update_has_concordance():
         count -= max_count
 
 
+def update_snp_best_p_value():
+    q = session.query(SNP, TranscriptionFactorSNP, CellLineSNP).join(
+        TranscriptionFactorSNP,
+        SNP.tf_aggregated_snps
+    ).join(
+        CellLineSNP,
+        SNP.cl_aggregated_snps
+    )
+
+    for snp, tfsnp, clsnp in q:
+        snp.best_p_value = max(tfsnp.best_p_value, clsnp.best_p_value)
+
+    session.commit()
+
+
 def update_all():
     update_phenotype_associations()
     update_has_concordance()
