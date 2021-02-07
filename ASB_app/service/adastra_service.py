@@ -92,11 +92,11 @@ class ReleaseService:
 
     def get_filters_by_gene(self, gene):
         if gene.orientation:
-            return self.SNP.chromosome == gene.chromosome, self.SNP.position.between(max(gene.start_pos - 5000, 1),
+            return self.SNP.chromosome == gene.chromosome, self.SNP.position.between(max(gene.start_pos - 500, 1),
                                                                                  gene.end_pos)
         else:
             return self.SNP.chromosome == gene.chromosome, self.SNP.position.between(max(gene.start_pos, 1),
-                                                                                 gene.end_pos + 5000)
+                                                                                 gene.end_pos + 500)
 
     def construct_advanced_filters(self, filters_object):
         filters = []
