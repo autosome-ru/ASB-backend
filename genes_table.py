@@ -105,7 +105,7 @@ if __name__ == '__main__':
 
     promoter_dict = {}
     target_dict = {}
-    for i, (q, q_dict) in enumerate((q_promoter, promoter_dict), (q_target, target_dict)):
+    for i, (q, q_dict) in enumerate(((q_promoter, promoter_dict), (q_target, target_dict))):
         print(i)
         for (gene, snp, agsnp, ag, other_name) in q:
             if (gene.gene_id, snp.rs_id, snp.alt) in q_dict:
