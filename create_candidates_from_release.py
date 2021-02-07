@@ -1,6 +1,7 @@
 from ASB_app import *
 import os
 import json
+import numpy as np
 
 from ASB_app.models import CandidateSNP
 
@@ -36,8 +37,8 @@ TF = 1
 CL = 1
 
 
-release_path = os.path.expanduser('~/DataChIP/')
-parameters_path = os.path.expanduser('~/DataChIP/release_stats/')
+release_path = os.path.expanduser('~/RESULTS/DataChIP/')
+parameters_path = os.path.expanduser('~/RESULTS/Configs/')
 
 conv_bad = dict(zip(
     (1, 4 / 3, 3 / 2, 2, 5 / 2, 3, 4, 5, 6),
@@ -83,7 +84,7 @@ if __name__ == '__main__':
                         continue
                     else:
                         row = dict(zip(header, row.strip('\n').split('\t')))
-                    if row['fdrp_bh_ref'] == '':
+                    if row['fdrp_bh_ref'] == '' or row['fdrp_bh_ref'] == '.':
                         continue
                     int_fields = ['pos']
                     for field in int_fields:
@@ -92,7 +93,14 @@ if __name__ == '__main__':
                         else:
                             row[field] = int(row[field])
 
-                    row['ID'] = int(row['ID'][2:])
+                    float_fields = ['fdrp_bh_ref', 'fdrp_bh_alt']
+                    for field in float_fields:
+                        if row[field] == '' or row[field] == '.':
+                            row[field] = None
+                        else:
+                            row[field] = float(row[field])
+
+                    row['ID'] = int(row['ID'][row['ID'].rfind('rs') + 2:])
 
                     mutation = CandidateSNP(
                         rs_id=row['ID'],
@@ -101,7 +109,8 @@ if __name__ == '__main__':
                         ref=row['ref'],
                         alt=row['alt'],
                         ag_level=param,
-                        ag_id=ag_id
+                        ag_id=ag_id,
+                        best_p_value=-np.log10(min(row['fdrp_bh_ref'], row['fdrp_bh_alt']))
                     )
 
                     snps.append(mutation)

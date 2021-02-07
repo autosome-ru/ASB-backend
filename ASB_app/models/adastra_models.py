@@ -218,25 +218,38 @@ for release in Release.__subclasses__():
         peak_calls = db.Column(db.Integer)
         peak_callers = db.Column(db.Integer)
 
-        @hybrid_property
-        def best_p_value(self):
-            return max(self.log_p_value_alt, self.log_p_value_ref)
+        if release.name == 'ford':
+            best_p_value = db.Column(db.Float)
 
-        @best_p_value.expression
-        def best_p_value(cls):
-            return db.func.greatest(cls.log_p_value_alt, cls.log_p_value_ref)
+        else:
+            @hybrid_property
+            def best_p_value(self):
+                return max(self.log_p_value_alt, self.log_p_value_ref)
+
+            @best_p_value.expression
+            def best_p_value(cls):
+                return db.func.greatest(cls.log_p_value_alt, cls.log_p_value_ref)
 
 
     if release.name != 'dnase':
         class TranscriptionFactorSNP(AggregatedSNP):
             __tablename__ = 'tf_snps'
             __bind_key__ = release.name
-            __table_args__ = (db.ForeignKeyConstraint(['chromosome', 'position', 'alt'],
-                                                      ['snps.chromosome', 'snps.position', 'snps.alt']),
-                              db.Index('unique_tf_mutation_index', 'chromosome', 'position', 'alt', 'tf_id'),
-                              db.Index('tf_id_index', 'tf_id'),
-                              db.Index('motif_concordance_index', 'motif_concordance'),
-                              )
+            if release.name == 'ford':
+                __table_args__ = (db.ForeignKeyConstraint(['chromosome', 'position', 'alt'],
+                                                          ['snps.chromosome', 'snps.position', 'snps.alt']),
+                                  db.Index('unique_tf_mutation_index', 'chromosome', 'position', 'alt', 'tf_id'),
+                                  db.Index('tf_id_index', 'tf_id'),
+                                  db.Index('motif_concordance_index', 'motif_concordance'),
+                                  db.Index('ix_tf_snps_best_p_value'),
+                                  )
+            else:
+                __table_args__ = (db.ForeignKeyConstraint(['chromosome', 'position', 'alt'],
+                                                          ['snps.chromosome', 'snps.position', 'snps.alt']),
+                                  db.Index('unique_tf_mutation_index', 'chromosome', 'position', 'alt', 'tf_id'),
+                                  db.Index('tf_id_index', 'tf_id'),
+                                  db.Index('motif_concordance_index', 'motif_concordance'),
+                                  )
 
             tf_snp_id = db.Column(db.Integer, primary_key=True)
             tf_id = db.Column(db.Integer, db.ForeignKey('transcription_factors.tf_id'), nullable=False)
@@ -257,13 +270,23 @@ for release in Release.__subclasses__():
     class CellLineSNP(AggregatedSNP):
         __tablename__ = 'cl_snps'
         __bind_key__ = release.name
-        __table_args__ = (db.ForeignKeyConstraint(['chromosome', 'position', 'alt'],
-                                                  ['snps.chromosome', 'snps.position', 'snps.alt']),
-                          db.UniqueConstraint('chromosome', 'position', 'alt', 'cl_id',
-                                              name='cell_line_unique_mutation'),
-                          db.Index('unique_cl_mutation_index', 'chromosome', 'position', 'alt', 'cl_id'),
-                          db.Index('cl_id_index', 'cl_id')
-                          )
+        if release.name == 'ford':
+            __table_args__ = (db.ForeignKeyConstraint(['chromosome', 'position', 'alt'],
+                                                      ['snps.chromosome', 'snps.position', 'snps.alt']),
+                              db.UniqueConstraint('chromosome', 'position', 'alt', 'cl_id',
+                                                  name='cell_line_unique_mutation'),
+                              db.Index('unique_cl_mutation_index', 'chromosome', 'position', 'alt', 'cl_id'),
+                              db.Index('cl_id_index', 'cl_id'),
+                              db.Index('ix_cl_snps_best_p_value'),
+                              )
+        else:
+            __table_args__ = (db.ForeignKeyConstraint(['chromosome', 'position', 'alt'],
+                                                      ['snps.chromosome', 'snps.position', 'snps.alt']),
+                              db.UniqueConstraint('chromosome', 'position', 'alt', 'cl_id',
+                                                  name='cell_line_unique_mutation'),
+                              db.Index('unique_cl_mutation_index', 'chromosome', 'position', 'alt', 'cl_id'),
+                              db.Index('cl_id_index', 'cl_id')
+                              )
 
         cl_snp_id = db.Column(db.Integer, primary_key=True)
         cl_id = db.Column(db.Integer, db.ForeignKey('cell_lines.cl_id'), nullable=False)

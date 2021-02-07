@@ -42,6 +42,7 @@ class CandidateSNP(GenomePolymorphismLocation):
     rs_id = db.Column(db.Integer, nullable=False)
     ag_level = db.Column(db.Enum('TF', 'CL'), nullable=False)
     ag_id = db.Column(db.Integer)
+    best_p_value = db.Column(db.Float, index=True)
 
     def __repr__(self):
         return '<CandidateSNP rs{0.rs_id}, {0.alt}, {0.ag_level}, {0.ag_id}>'.format(self)
