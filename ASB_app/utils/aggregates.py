@@ -201,14 +201,21 @@ def update_has_concordance():
 def update_snp_best_p_value():
     q = session.query(SNP, TranscriptionFactorSNP, CellLineSNP).join(
         TranscriptionFactorSNP,
-        SNP.tf_aggregated_snps
+        SNP.tf_aggregated_snps,
+        isouter=True,
     ).join(
         CellLineSNP,
-        SNP.cl_aggregated_snps
+        SNP.cl_aggregated_snps,
+        isouter=True,
     )
 
     for snp, tfsnp, clsnp in q:
-        snp.best_p_value = max(tfsnp.best_p_value, clsnp.best_p_value)
+        if not tfsnp:
+            snp.best_p_value = clsnp.best_p_value
+        elif not clsnp:
+            snp.best_p_value = tfsnp.best_p_value
+        else:
+            snp.best_p_value = max(tfsnp.best_p_value, clsnp.best_p_value)
 
     session.commit()
 
