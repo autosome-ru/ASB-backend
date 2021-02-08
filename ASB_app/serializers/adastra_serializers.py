@@ -76,8 +76,8 @@ class ReleaseSerializers:
         })
 
         self.exp_model_short = api.model('Experiment (short info)', {
-            'exp_id': fields.String if float(release.version) >= 2 else fields.Integer,
-            'align': fields.String if float(release.version) >= 2 else fields.Integer,
+            'exp_id': fields.String,
+            'align': fields.String,
             'tf_name': fields.String(attribute='transcription_factor.name'),
             'cl_name': fields.String(attribute='cell_line.name'),
         })

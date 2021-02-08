@@ -22,7 +22,10 @@ class ReleaseService:
                 setattr(self, model.__name__, getattr(release, model.__name__))
 
     def get_filters_by_fdr(self, fdr):
-        return (self.SNP.best_p_value >= -np.log10(fdr),)
+        if int(self.release.version) >= 2:
+            return (self.SNP.best_p_value >= -np.log10(fdr),)
+        else:
+            return tuple()
 
     def generate_tf_link(self, tf_name):
         return 'https://adastra.autosome.ru/{}/search/advanced?tf={}'.format(self.release.name, tf_name)
