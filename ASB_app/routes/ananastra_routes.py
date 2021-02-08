@@ -25,6 +25,8 @@ ananastra_nsp = api.namespace('ANANASTRA web-service', path='/ananastra', descri
 
 commit_parser = file_parser.copy()
 commit_parser.add_argument('user_id')
+if int(current_release.version) >= 2:
+    commit_parser.add_argument('fdr', help='FDR threshold. (0..0.25]', default='0.05')
 
 
 @ananastra_nsp.route('/commit')
