@@ -350,9 +350,7 @@ if __name__ == '__main__':
                             assert other_id == {'TF': another_dict.get(cl_dict_reverse.get(parameter.get('CL'))),
                                                 'CL': another_dict.get(parameter.get('TF'))}[param]
                             assert exp_snp.ref_readcount == parameter['ref_counts']
-                            assert exp_snp.alt_readcount == parameter['alt_counts']
-                            print(parameter['alt_pvalues'], exp_snp.p_value_alt)
-                            assert exp_snp.p_value_alt == parameter['alt_pvalues']
+                            assert round(exp_snp.p_value_alt, 6) == round(parameter['alt_pvalues'], 6)
                             assert exp_snp.bad == conv_bad[parameter['BAD']]
 
                         exp_snps.append(exp_snp)
