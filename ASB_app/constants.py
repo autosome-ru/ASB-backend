@@ -15,16 +15,50 @@ db_name_property_dict = {
 
 default_fdr_tr = 0.05
 
-possible_tf_asbs = 390916
-possible_cl_asbs = 569814
-possible_all_asbs = 960730
-possible_tf_candidates = 14630545
-possible_cl_candidates = 9791542
-possible_all_candidates = 24422087
+stats_dict = {0.01: {'possible_tf_asbs': 192020,
+  'possible_cl_asbs': 328992,
+  'possible_all_asbs': 240533,
+  'possible_tf_asbs_rs': 139573,
+  'possible_cl_asbs_rs': 224246,
+  'possible_all_asbs_rs': 240503},
+ 0.05: {'possible_tf_asbs': 390916,
+  'possible_cl_asbs': 569814,
+  'possible_all_asbs': 377281,
+  'possible_tf_asbs_rs': 249216,
+  'possible_cl_asbs_rs': 349850,
+  'possible_all_asbs_rs': 377221},
+ 0.1: {'possible_tf_asbs': 612656,
+  'possible_cl_asbs': 796319,
+  'possible_all_asbs': 501195,
+  'possible_tf_asbs_rs': 354261,
+  'possible_cl_asbs_rs': 460328,
+  'possible_all_asbs_rs': 501114},
+ 0.25: {'possible_tf_asbs': 1693972,
+  'possible_cl_asbs': 1671933,
+  'possible_all_asbs': 990754,
+  'possible_tf_asbs_rs': 803457,
+  'possible_cl_asbs_rs': 889199,
+  'possible_all_asbs_rs': 990574},
+ 0.5: {'possible_tf_asbs': 1693972,
+  'possible_cl_asbs': 1671933,
+  'possible_all_asbs': 990754,
+  'possible_tf_asbs_rs': 803457,
+  'possible_cl_asbs_rs': 889199,
+  'possible_all_asbs_rs': 990574}
+}
 
-possible_tf_asbs_rs = 249216
-possible_cl_asbs_rs = 349850
-possible_all_asbs_rs = 377221
-possible_tf_candidates_rs = 3690724
-possible_cl_candidates_rs = 3690724
-possible_all_candidates_rs = 3690724
+
+
+# possible_tf_asbs = 390916
+# possible_cl_asbs = 569814
+# possible_all_asbs = 960730
+total_tf_candidates = 14630545
+total_cl_candidates = 9791542
+total_all_candidates = 24422087
+
+# possible_tf_asbs_rs = 249216
+# possible_cl_asbs_rs = 349850
+# possible_all_asbs_rs = 377221
+total_tf_candidates_rs = 3690724
+total_cl_candidates_rs = 3690724
+total_all_candidates_rs = 3690724

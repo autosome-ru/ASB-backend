@@ -60,6 +60,7 @@ def create_ticket(ticket_id, user_id):
         status='Created',
         user_id=user_id,
         date_created=datetime.now(),
+        fdr=None,
         expiration_date=datetime.now() + timedelta(days=2)
     )
     session.add(ticket)

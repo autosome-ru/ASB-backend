@@ -122,6 +122,30 @@ class ReleaseService:
                     ).one_or_none(), 'cl_id', None)) &
                     (self.CellLineSNP.best_p_value >= -np.log10(filters_object['fdr'])))
                     for cl_name in filters_object['cell_types']]
+
+            if not filters_object['transcription_factors'] and not filters_object['cell_types']:
+                filters += self.get_filters_by_fdr(filters_object['fdr'])
+
+            if filters_object['motif_concordance']:
+                search_null = False
+                if 'None' in filters_object['motif_concordance']:
+                    search_null = True
+                    filters_object['motif_concordance'] = [x for x in filters_object['motif_concordance'] if
+                                                           x != 'None']
+                if filters_object['transcription_factors']:
+                    filters += [self.SNP.tf_aggregated_snps.any(
+                        (self.TranscriptionFactorSNP.motif_concordance.in_(filters_object['motif_concordance']) |
+                         (self.TranscriptionFactorSNP.motif_concordance.is_(None) if search_null else False)) &
+                        self.TranscriptionFactorSNP.transcription_factor.has(
+                            self.TranscriptionFactor.name.in_(filters_object['transcription_factors'])
+                        ) & (self.TranscriptionFactorSNP.best_p_value >= -np.log10(filters_object['fdr']))
+                    )]
+                else:
+                    filters += [self.SNP.tf_aggregated_snps.any(
+                        (self.TranscriptionFactorSNP.motif_concordance.in_(filters_object['motif_concordance']) |
+                         (self.TranscriptionFactorSNP.motif_concordance.is_(None) if search_null else False)) &
+                        (self.TranscriptionFactorSNP.best_p_value >= -np.log10(filters_object['fdr']))
+                    ) | (~self.SNP.tf_aggregated_snps.any() if search_null else False)]
         else:
             if filters_object['transcription_factors']:
                 filters += [self.SNP.tf_aggregated_snps.any(
@@ -137,6 +161,26 @@ class ReleaseService:
                     ).one_or_none(), 'cl_id', None))
                     for cl_name in filters_object['cell_types']]
 
+            if filters_object['motif_concordance']:
+                search_null = False
+                if 'None' in filters_object['motif_concordance']:
+                    search_null = True
+                    filters_object['motif_concordance'] = [x for x in filters_object['motif_concordance'] if
+                                                           x != 'None']
+                if filters_object['transcription_factors']:
+                    filters += [self.SNP.tf_aggregated_snps.any(
+                        (self.TranscriptionFactorSNP.motif_concordance.in_(filters_object['motif_concordance']) |
+                         (self.TranscriptionFactorSNP.motif_concordance.is_(None) if search_null else False)) &
+                        self.TranscriptionFactorSNP.transcription_factor.has(
+                            self.TranscriptionFactor.name.in_(filters_object['transcription_factors'])
+                        )
+                    )]
+                else:
+                    filters += [self.SNP.tf_aggregated_snps.any(
+                        self.TranscriptionFactorSNP.motif_concordance.in_(filters_object['motif_concordance']) |
+                        (self.TranscriptionFactorSNP.motif_concordance.is_(None) if search_null else False)
+                    ) | (~self.SNP.tf_aggregated_snps.any() if search_null else False)]
+
         if filters_object['chromosome']:
             if not filters_object['start'] or not filters_object['end']:
                 filters += [self.SNP.chromosome == filters_object['chromosome']]
@@ -147,29 +191,6 @@ class ReleaseService:
         if filters_object['phenotype_databases']:
             filters += [or_(*(getattr(self.SNP, db_name_property_dict[phenotype_db])
                               for phenotype_db in filters_object['phenotype_databases']))]
-
-        if filters_object['motif_concordance']:
-            search_null = False
-            if 'None' in filters_object['motif_concordance']:
-                search_null = True
-                filters_object['motif_concordance'] = [x for x in filters_object['motif_concordance'] if x != 'None']
-            if filters_object['transcription_factors']:
-                filters += [self.SNP.tf_aggregated_snps.any(
-                    (self.TranscriptionFactorSNP.motif_concordance.in_(filters_object['motif_concordance']) |
-                     (self.TranscriptionFactorSNP.motif_concordance.is_(None) if search_null else False)) &
-                    self.TranscriptionFactorSNP.transcription_factor.has(
-                        self.TranscriptionFactor.name.in_(filters_object['transcription_factors'])
-                    ) & (self.TranscriptionFactorSNP.best_p_value >= -np.log10(filters_object['fdr']))
-                )]
-            else:
-                filters += [self.SNP.tf_aggregated_snps.any(
-                    (self.TranscriptionFactorSNP.motif_concordance.in_(filters_object['motif_concordance']) |
-                     (self.TranscriptionFactorSNP.motif_concordance.is_(None) if search_null else False)) &
-                    (self.TranscriptionFactorSNP.best_p_value >= -np.log10(filters_object['fdr']))
-                ) | (~self.SNP.tf_aggregated_snps.any() if search_null else False)]
-
-        if not filters_object['transcription_factors'] and not filters_object['cell_types']:
-            filters += self.get_filters_by_fdr(filters_object['fdr'])
 
         return filters
 

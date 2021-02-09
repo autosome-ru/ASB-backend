@@ -16,6 +16,7 @@ class Ticket(db.Model):
     expiration_date = db.Column(db.DATETIME)
     meta_info = db.Column(db.JSON, default={})
     user_id = db.Column(db.String(36))
+    fdr = db.Column(db.Float, default=0.05)
 
     def __repr__(self):
         return '<AnanastraTicket {0.ticket_id}, created {0.date_created}, {0.status}>'.format(self)

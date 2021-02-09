@@ -44,14 +44,14 @@ CL = 0
 tr = 0.25
 EXP = 0
 TF_DICT = 0
-CL_DICT = 0
+CL_DICT = 1
 PHEN = 0
 CONTEXT = 0
 CONTROLS = 0
 BAD_GROUP = 0
 GENES = 0
 TARGET_GENES = 0
-PROMOTER_GENES = 1
+PROMOTER_GENES = 0
 
 
 release_path = os.path.expanduser('~/RESULTS/DataChIP/')
@@ -262,13 +262,13 @@ if __name__ == '__main__':
             else:
                 ag_id = ag.tf_id
 
-            exp_snp = ExpSNP.query.filter(
-                getattr(ExpSNP, {'TF': 'tf_aggregated_snp', 'CL': 'cl_aggregated_snp'}[param]).has(
-                    getattr(SNPClass, {'TF': 'tf_id', 'CL': 'cl_id'}[param]) == ag_id,
-                ),
-            ).first()
-            if exp_snp:
-                continue
+            # exp_snp = ExpSNP.query.filter(
+            #     getattr(ExpSNP, {'TF': 'tf_aggregated_snp', 'CL': 'cl_aggregated_snp'}[param]).has(
+            #         getattr(SNPClass, {'TF': 'tf_id', 'CL': 'cl_id'}[param]) == ag_id,
+            #     ),
+            # ).first()
+            # if exp_snp:
+            #     continue
 
             items_length = len(content)
 

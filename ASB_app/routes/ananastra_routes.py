@@ -16,7 +16,7 @@ from ASB_app.models import Ticket
 
 from ASB_app.releases import current_release
 
-from ASB_app.routes import file_parser, pagination_parser, result_param_parser
+from ASB_app.routes import file_parser, pagination_parser, result_param_parser, fdr_parser, parse_fdr
 
 api = current_release.api
 
@@ -51,12 +51,14 @@ class CommitFile(Resource):
 class ProcessTicket(Resource):
     @api.response(202, 'Ticket accepted for processing')
     @api.response(404, 'Ticket not found')
+    @api.expect(fdr_parser)
     def post(self, ticket_id):
         """
         Submits a ticket for processing
         """
+        fdr = parse_fdr(fdr_parser.parse_args()['fdr'])
         ananastra_service.update_ticket_status(ticket_id, 'Processing')
-        process_snp_file.submit_stored(ticket_id, ticket_id)
+        process_snp_file.submit_stored(ticket_id, ticket_id, fdr)
         return {'message': 'success'}, 202
 
 

@@ -8,7 +8,7 @@ from flask_restplus import Resource
 from sqlalchemy.orm.exc import NoResultFound
 
 from ASB_app.utils import PaginationMixin
-from ASB_app.routes import search_parser, csv_columns_parser, used_hints_parser, pagination_parser
+from ASB_app.routes import search_parser, csv_columns_parser, used_hints_parser, pagination_parser, parse_fdr
 
 from ASB_app.releases import Release, get_release_by_version
 
@@ -160,11 +160,8 @@ for release in Release.__subclasses__():
             Get all SNPs with advanced filters short info
             """
             all_args = search_parser.parse_args()
-            try:
-                all_args['fdr'] = float(all_args['fdr'])
-                assert 0 < all_args['fdr'] <= 0.25
-            except (ValueError, AssertionError):
-                api.abort(400)
+            if int(self.release_service.release.version) >= 2:
+                all_args['fdr'] = parse_fdr(all_args['fdr'])
             try:
                 filters = self.release_service.construct_advanced_filters(all_args)
                 result = self.paginate(all_args, extra_filters=filters)
@@ -182,11 +179,8 @@ for release in Release.__subclasses__():
             Get all SNPs with advanced filters short info in tsv file
             """
             all_args = search_parser.parse_args()
-            try:
-                all_args['fdr'] = float(all_args['fdr'])
-                assert 0 < all_args['fdr'] <= 0.25
-            except (ValueError, AssertionError):
-                api.abort(400)
+            if int(self.release_service.release.version) >= 2:
+                all_args['fdr'] = parse_fdr(all_args['fdr'])
             try:
                 return self.release_service.get_snps_by_advanced_filters_tsv(all_args)
             except ParsingError:

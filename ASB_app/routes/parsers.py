@@ -18,8 +18,6 @@ for release in Release.__subclasses__():
     pagination_parser.add_argument('order_by', help='ORDER BY criterion: "field1", "-field2"')
 
     search_parser = pagination_parser.copy()
-    if int(release.version) >= 2:
-        search_parser.add_argument('fdr', help='FDR threshold. (0..0.25]', default='0.05')
     search_parser.add_argument('cell_types', action='split', help='Comma-separated list of cell types, search SNPs ASB for every cell type scpecified')
     search_parser.add_argument('transcription_factors', action='split', help='Comma-separated list of cell types, search SNPs ASB for every cell type scpecified')
     search_parser.add_argument('chromosome', choices=chromosomes, help='Search only SNPs on the specified chromosome')
@@ -40,3 +38,15 @@ result_param_parser = current_release.api.parser()
 result_param_parser.add_argument('result_param', choices=('tf', 'cl', 'tf_sum', 'cl_sum'), default='tf')
 result_param_parser.add_argument('format', choices=('json', 'tsv'), default='json')
 result_param_parser.add_argument('limit', type=inputs.positive, default=0)
+
+fdr_parser = current_release.api.parser()
+fdr_parser.add_argument('fdr', help='FDR threshold. (0..0.25]', default='0.05')
+
+
+def parse_fdr(fdr):
+    try:
+        fdr = float(fdr)
+        assert 0 < fdr <= 0.25
+    except (ValueError, AssertionError):
+        api.abort(400)
+    return fdr
