@@ -69,12 +69,12 @@ def update_aggregated_snp_count():
         offset = 0
         max_count = chunk_size
         while count > 0:
+            print(count)
             for item in query.offset(offset).limit(max_count):
                 if cls == TranscriptionFactor:
                     objects.append(TranscriptionFactorSNP.query.filter(
                         TranscriptionFactorSNP.tf_id == item.tf_id
                     ).first())
-                    print(objects[-1])
                 elif cls == CellLine:
                     objects.append(CellLineSNP.query.filter(
                         CellLineSNP.cl_id == item.cl_id

@@ -5,6 +5,7 @@ from ASB_app.constants import chromosomes, bads, nucleotides
 class ReleaseSerializers:
     def __init__(self, release):
         api = release.api
+        self.release = release
 
         self.genome_polymorphism_location_model = api.model('Genome Mutation Position and id', {
             'chromosome': fields.String(enumerate=chromosomes),
@@ -23,20 +24,38 @@ class ReleaseSerializers:
             'peak_callers': fields.Integer(min=0),
         })
 
-        self.transcription_factor_model = api.model('Transcription factor', {
-            'tf_id': fields.Integer(readonly=True),
-            'name': fields.String,
-            'uniprot_ac': fields.String,
-            'aggregated_snps_count': fields.Integer(readonly=True),
-            'experiments_count': fields.Integer(readonly=True),
-        })
+        if int(self.release.version) >= 3:
+            self.transcription_factor_model = api.model('Transcription factor', {
+                'tf_id': fields.Integer(readonly=True),
+                'name': fields.String,
+                'uniprot_ac': fields.String,
+                'aggregated_snps_count': fields.Integer(readonly=True),
+                'aggregated_snps_count005': fields.Integer(readonly=True),
+                'experiments_count': fields.Integer(readonly=True),
+            })
 
-        self.cell_line_model = api.model('Cell line', {
-            'cl_id': fields.Integer(readonly=True),
-            'name': fields.String,
-            'aggregated_snps_count': fields.Integer(readonly=True),
-            'experiments_count': fields.Integer(readonly=True),
-        })
+            self.cell_line_model = api.model('Cell line', {
+                'cl_id': fields.Integer(readonly=True),
+                'name': fields.String,
+                'aggregated_snps_count': fields.Integer(readonly=True),
+                'aggregated_snps_count005': fields.Integer(readonly=True),
+                'experiments_count': fields.Integer(readonly=True),
+            })
+        else:
+            self.transcription_factor_model = api.model('Transcription factor', {
+                'tf_id': fields.Integer(readonly=True),
+                'name': fields.String,
+                'uniprot_ac': fields.String,
+                'aggregated_snps_count': fields.Integer(readonly=True),
+                'experiments_count': fields.Integer(readonly=True),
+            })
+
+            self.cell_line_model = api.model('Cell line', {
+                'cl_id': fields.Integer(readonly=True),
+                'name': fields.String,
+                'aggregated_snps_count': fields.Integer(readonly=True),
+                'experiments_count': fields.Integer(readonly=True),
+            })
 
         self.gene_model = api.model('Gene', {
             'gene_id': fields.String(readonly=True),

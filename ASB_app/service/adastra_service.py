@@ -8,6 +8,8 @@ import tempfile
 from flask import send_file
 import numpy as np
 
+from ASB_app.constants import stats_dict
+
 from math import ceil
 
 
@@ -22,7 +24,7 @@ class ReleaseService:
                 setattr(self, model.__name__, getattr(release, model.__name__))
 
     def get_filters_by_fdr(self, fdr):
-        if int(self.release.version) >= 2:
+        if int(self.release.version) >= 3:
             return (self.SNP.best_p_value >= -np.log10(fdr),)
         else:
             return tuple()
@@ -106,7 +108,7 @@ class ReleaseService:
 
     def construct_advanced_filters(self, filters_object):
         filters = []
-        if int(self.release.version) >= 2:
+        if int(self.release.version) >= 3:
             if filters_object['transcription_factors']:
                 filters += [self.SNP.tf_aggregated_snps.any(
                     (self.TranscriptionFactorSNP.tf_id == getattr(self.TranscriptionFactor.query.filter(
@@ -282,9 +284,14 @@ class ReleaseService:
 
     def get_hints(self, what_for, in_str, used_options):
         cls = {'TF': self.TranscriptionFactor, 'CL': self.CellLine}[what_for]
-        filters = (((cls.name.like(in_str),) if in_str else ()) +
-                   ((not_(cls.name.in_(used_options)),) if used_options else ()) +
-                   (cls.aggregated_snps_count,))
+        if int(self.release.version) >= 3:
+            filters = (((cls.name.like(in_str),) if in_str else ()) +
+                       ((not_(cls.name.in_(used_options)),) if used_options else ()) +
+                       (cls.aggregated_snps_count005,))
+        else:
+            filters = (((cls.name.like(in_str),) if in_str else ()) +
+                       ((not_(cls.name.in_(used_options)),) if used_options else ()) +
+                       (cls.aggregated_snps_count,))
         return cls.query.filter(*filters).order_by(cls.aggregated_snps_count.desc()).limit(3).all()
 
     def get_hints_for_gene_name(self, in_str):
@@ -292,9 +299,17 @@ class ReleaseService:
         return self.Gene.query.filter(*filters).order_by(self.Gene.snps_count.desc()).limit(3).all()
 
     def get_overall_statistics(self):
-        return {
-            'transcription_factors_count': self.TranscriptionFactor.query.filter(
-                self.TranscriptionFactor.aggregated_snps_count > 0).count(),
-            'cell_types_count': self.CellLine.query.filter(self.CellLine.aggregated_snps_count > 0).count(),
-            'snps_count': self.release.session.query(self.SNP.rs_id).distinct().count(),
-        }
+        if int(self.release.version) >= 3:
+            return {
+                'transcription_factors_count': self.TranscriptionFactor.query.filter(
+                    self.TranscriptionFactor.aggregated_snps_count005 > 0).count(),
+                'cell_types_count': self.CellLine.query.filter(self.CellLine.aggregated_snps_count005 > 0).count(),
+                'snps_count': stats_dict[0.05]['possible_all_asbs_rs'],
+            }
+        else:
+            return {
+                'transcription_factors_count': self.TranscriptionFactor.query.filter(
+                    self.TranscriptionFactor.aggregated_snps_count > 0).count(),
+                'cell_types_count': self.CellLine.query.filter(self.CellLine.aggregated_snps_count > 0).count(),
+                'snps_count': self.release.session.query(self.SNP.rs_id).distinct().count(),
+            }

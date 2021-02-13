@@ -601,10 +601,8 @@ def process_snp_file(ticket_id, fdr_raw, annotate_tf=True, annotate_cl=True):
                 out.write(pack(cl_header))
 
             for q_cl in divide_query(lambda x: get_cl_query(x, logfdr), rs_ids):
-                print(q_cl)
                 with open(cl_path, 'a', encoding='utf-8') as out:
                     for tup in q_cl:
-                        print(tup)
                         cl_name = tup[6]
                         cl_asb_counts.setdefault(cl_name, {
                             'name': cl_name,
@@ -660,15 +658,15 @@ def process_snp_file(ticket_id, fdr_raw, annotate_tf=True, annotate_cl=True):
         update_ticket_status(ticket, 'Checking the control data of candidate but non-significant ASBs (non-ASBs)')
 
         logfdr_low = -np.log10(fdr_raw)  # alternative: 0.5 FIXME
-        tf_candidates_list = [x for query in divide_query(lambda x: get_tf_candidates(x, logfdr_low), rs_ids) for x in query]
+        tf_candidates_list = [x for query in divide_query(lambda x: get_tf_candidates(x, logfdr_low), rs_ids) for x in query if x not in tf_asbs_list]
         tf_candidates = len(tf_candidates_list)
-        tf_candidates_rs = len(set(x.rs_id for x in tf_candidates_list))
-        cl_candidates_list = [x for query in divide_query(lambda x: get_cl_candidates(x, logfdr_low), rs_ids) for x in query]
+        tf_candidates_rs = len(set(x.rs_id for x in tf_candidates_list) - set(x.snp.rs_id for x in tf_asbs_list))
+        cl_candidates_list = [x for query in divide_query(lambda x: get_cl_candidates(x, logfdr_low), rs_ids) for x in query if x not in cl_asbs_list]
         cl_candidates = len(cl_candidates_list)
-        cl_candidates_rs = len(set(x.rs_id for x in cl_candidates_list))
-        all_candidates_list = [x for query in divide_query(lambda x: get_all_candidates(x, logfdr_low), rs_ids) for x in query]
+        cl_candidates_rs = len(set(x.rs_id for x in cl_candidates_list) - set(x.snp.rs_id for x in cl_asbs_list))
+        all_candidates_list = [x for query in divide_query(lambda x: get_all_candidates(x, logfdr_low), rs_ids) for x in query if x not in all_asbs_list]
         all_candidates = tf_candidates + cl_candidates
-        all_candidates_rs = len(set(x.rs_id for x in all_candidates_list))
+        all_candidates_rs = len(set(x.rs_id for x in all_candidates_list) - set(x.rs_id for x in all_asbs_list))
 
         logger.info('Ticket {}: query count candidates done'.format(ticket_id))
         if fdr_raw not in stats_dict:

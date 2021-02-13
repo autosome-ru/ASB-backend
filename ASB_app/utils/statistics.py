@@ -94,7 +94,7 @@ def get_stats_dict(fdrs):
         stats_dict[fdr_raw] = {
             'possible_tf_asbs': len(possible_tf_asbs_lsit),
             'possible_cl_asbs': len(possible_cl_asbs_list),
-            'possible_all_asbs': len(possible_all_asbs_list),
+            'possible_all_asbs': len(possible_tf_asbs_lsit) + len(possible_cl_asbs_list),
             'possible_tf_asbs_rs': len(set(x.snp.rs_id for x in possible_tf_asbs_lsit)),
             'possible_cl_asbs_rs': len(set(x.snp.rs_id for x in possible_cl_asbs_list)),
             'possible_all_asbs_rs': len(set(x.rs_id for x in possible_all_asbs_list)),
