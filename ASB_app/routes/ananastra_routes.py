@@ -16,7 +16,7 @@ from ASB_app.models import Ticket
 
 from ASB_app.releases import current_release
 
-from ASB_app.routes import file_parser, pagination_parser, result_param_parser, fdr_parser, parse_fdr
+from ASB_app.routes import file_parser, pagination_parser, result_param_parser, fdr_parser
 
 api = current_release.api
 
@@ -56,7 +56,7 @@ class ProcessTicket(Resource):
         """
         Submits a ticket for processing
         """
-        fdr = parse_fdr(fdr_parser.parse_args()['fdr'])
+        fdr = fdr_parser.parse_args()['fdr']
         ananastra_service.update_ticket_status(ticket_id, 'Processing')
         process_snp_file.submit_stored(ticket_id, ticket_id, fdr)
         return {'message': 'success'}, 202

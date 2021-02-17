@@ -8,14 +8,14 @@ from ASB_app.constants import stats_dict, chromosomes, total_cl_candidates_rs, t
     total_all_candidates, total_all_candidates_rs, total_cl_candidates, total_tf_candidates
 from ASB_app.service import ananastra_service
 from ASB_app.utils import pack, process_row, group_concat_distinct_sep
-from ASB_app.utils.statistics import get_stats_dict
+from ASB_app.utils.statistics import get_stats_dict, get_corresponding_fdr_classes
 from sqlalchemy.orm import aliased
 import numpy as np
 import pandas as pd
 from scipy.stats import fisher_exact
 from statsmodels.stats.multitest import multipletests
 
-from ASB_app.models import CandidateSNP
+from ASB_app.models import CandidateSNP, CandidateRS, CandidateTFRS, CandidateCLRS
 
 from ASB_app.releases import current_release
 
@@ -82,7 +82,7 @@ def get_tf_query(rs_ids, fdr):
         db.func.group_concat(db.func.distinct(clinvar.phenotype_name), separator=', '),
         db.func.group_concat(db.func.distinct(Gene.gene_name), separator=', '),
     ).filter(
-        TranscriptionFactorSNP.best_p_value >= fdr
+        TranscriptionFactorSNP.fdr_class.in_(get_corresponding_fdr_classes(fdr))
     ).join(
         SNP,
         TranscriptionFactorSNP.snp
@@ -180,7 +180,7 @@ def get_cl_query(rs_ids, fdr):
         db.func.group_concat(db.func.distinct(clinvar.phenotype_name), separator=', '),
         db.func.group_concat(db.func.distinct(Gene.gene_name), separator=', '),
     ).filter(
-        CellLineSNP.best_p_value >= fdr
+        CellLineSNP.fdr_class.in_(get_corresponding_fdr_classes(fdr))
     ).join(
         SNP,
         CellLineSNP.snp
@@ -249,7 +249,7 @@ def get_cl_query(rs_ids, fdr):
 
 def get_tf_asbs(rs_ids, fdr, mode='all'):
     q = TranscriptionFactorSNP.query.filter(
-        TranscriptionFactorSNP.best_p_value >= fdr,
+        TranscriptionFactorSNP.fdr_class.in_(get_corresponding_fdr_classes(fdr)),
     ).join(
         SNP, TranscriptionFactorSNP.snp
     ).filter(
@@ -263,7 +263,7 @@ def get_tf_asbs(rs_ids, fdr, mode='all'):
 
 def get_cl_asbs(rs_ids, fdr, mode='all'):
     q = CellLineSNP.query.filter(
-        CellLineSNP.best_p_value >= fdr,
+        CellLineSNP.fdr_class.in_(get_corresponding_fdr_classes(fdr)),
     ).join(
         SNP, CellLineSNP.snp
     ).filter(
@@ -278,7 +278,7 @@ def get_cl_asbs(rs_ids, fdr, mode='all'):
 def get_all_asbs(rs_ids, fdr, mode='all'):
     q = SNP.query.filter(
         SNP.rs_id.in_(rs_ids),
-        SNP.best_p_value >= fdr
+        SNP.fdr_class.in_(get_corresponding_fdr_classes(fdr))
     )
     if mode == 'count':
         return q.count()
@@ -286,35 +286,74 @@ def get_all_asbs(rs_ids, fdr, mode='all'):
         return q.all()
 
 
-def get_tf_candidates(rs_ids, fdr, mode='all'):
-    q = CandidateSNP.query.filter(
-        CandidateSNP.rs_id.in_(rs_ids),
-        CandidateSNP.ag_level == 'TF',
-        CandidateSNP.best_p_value < fdr,
-    )
+def get_candidates_by_level(rs_ids, fdr, level='TF', alternative='less', mode='all', rs=False):
+    if rs:
+        if level == 'TF':
+            SNPClass = CandidateTFRS
+        elif level == 'CL':
+            SNPClass = CandidateCLRS
+        else:
+            raise ValueError
+        if alternative == 'less':
+            q = SNPClass.query.filter(
+                SNPClass.rs_id.in_(rs_ids),
+                SNPClass.fdr_class.in_(get_corresponding_fdr_classes(fdr, low=True)),
+            )
+        elif alternative == 'greater':
+            q = SNPClass.query.filter(
+                SNPClass.rs_id.in_(rs_ids),
+                SNPClass.fdr_class.in_(get_corresponding_fdr_classes(fdr, low=False)),
+            )
+        elif alternative == 'all':
+            q = SNPClass.query.filter(
+                SNPClass.rs_id.in_(rs_ids),
+            )
+        else:
+            raise ValueError
+    else:
+        if alternative == 'less':
+            q = CandidateSNP.query.filter(
+                CandidateSNP.rs_id.in_(rs_ids),
+                CandidateSNP.ag_level == level,
+                CandidateSNP.fdr_class.in_(get_corresponding_fdr_classes(fdr, low=True)),
+            )
+        elif alternative == 'greater':
+            q = CandidateSNP.query.filter(
+                CandidateSNP.rs_id.in_(rs_ids),
+                CandidateSNP.ag_level == level,
+                CandidateSNP.fdr_class.in_(get_corresponding_fdr_classes(fdr, low=False)),
+            )
+        elif alternative == 'all':
+            q = CandidateSNP.query.filter(
+                CandidateSNP.rs_id.in_(rs_ids),
+                CandidateSNP.ag_level == level,
+            )
+        else:
+            raise ValueError
     if mode == 'count':
         return q.count()
     elif mode == 'all':
         return q.all()
 
 
-def get_cl_candidates(rs_ids, fdr, mode='all'):
-    q = CandidateSNP.query.filter(
-        CandidateSNP.rs_id.in_(rs_ids),
-        CandidateSNP.ag_level == 'CL',
-        CandidateSNP.best_p_value < fdr,
-    )
-    if mode == 'count':
-        return q.count()
-    elif mode == 'all':
-        return q.all()
-
-
-def get_all_candidates(rs_ids, fdr, mode='all'):
-    q = CandidateSNP.query.filter(
-        CandidateSNP.rs_id.in_(rs_ids),
-        CandidateSNP.best_p_value < fdr
-    )
+def get_all_candidates(rs_ids, fdr, alternative='less', mode='all', rs=False):
+    SNPClass = CandidateRS if rs else CandidateSNP
+    if alternative == 'less':
+        q = SNPClass.query.filter(
+            SNPClass.rs_id.in_(rs_ids),
+            SNPClass.fdr_class.in_(get_corresponding_fdr_classes(fdr, low=True)),
+        )
+    elif alternative == 'greater':
+        q = SNPClass.query.filter(
+            SNPClass.rs_id.in_(rs_ids),
+            SNPClass.fdr_class.in_(get_corresponding_fdr_classes(fdr, low=False)),
+        )
+    elif alternative == 'all':
+        q = SNPClass.query.filter(
+            SNPClass.rs_id.in_(rs_ids)
+        )
+    else:
+        raise ValueError
     if mode == 'count':
         return q.count()
     elif mode == 'all':
@@ -326,7 +365,7 @@ def divide_chunks(l, n):
         yield l[i:i + n]
 
 
-def divide_query(get_query, values, chunk_size=2000):
+def divide_query(get_query, values, chunk_size=100000):
     for chunk in divide_chunks(values, chunk_size):
         yield get_query(chunk)
 
@@ -372,6 +411,8 @@ def modify_counts(asb_data, counts=None, top=False):
 
 
 def update_ticket_status(ticket, status):
+    session.close()
+    session.add(ticket)
     meta_info = dict(ticket.meta_info)
     meta_info.update({
         'status_details': status,
@@ -452,21 +493,23 @@ def marshall_data(asb_data):
 
 
 @executor.job
-def process_snp_file(ticket_id, fdr_raw, annotate_tf=True, annotate_cl=True):
+def process_snp_file(ticket_id, fdr_class, annotate_tf=True, annotate_cl=True, binary=False):
     processing_start_time = datetime.now()
     input_file_name = ananastra_service.get_path_by_ticket_id(ticket_id)
     ticket = ananastra_service.get_ticket(ticket_id)
-    ticket.fdr = fdr_raw
+    ticket.fdr = fdr_class
+    logger.info('start')
     session.commit()
-    logfdr = -np.log10(fdr_raw)
     change_status_on_fail = False
+
     try:
+        logger.info('start parsing')
         len_items = None
         ticket.status = 'Processing'
         ticket.meta_info = {'processing_started_at': str(datetime.now())}
         update_ticket_status(ticket, 'Processing started')
-        if fdr_raw not in stats_dict:
-            update_ticket_status(ticket, 'Non-standard fdr threshold values are not supported: {}'.format(fdr_raw))
+        if fdr_class not in stats_dict:
+            update_ticket_status(ticket, 'Non-standard fdr threshold values are not supported: {}'.format(fdr_class))
             raise ConvError
         try:
             with gzip.open(input_file_name, 'rt') as f:
@@ -513,8 +556,9 @@ def process_snp_file(ticket_id, fdr_raw, annotate_tf=True, annotate_cl=True):
         if len_items is None:
             len_items = len(rs_ids)
 
-        if len_items > 10000:
+        if len_items > 300000:
             update_ticket_status(ticket, 'Processing failed, maximum number of itmes exceeds 10000')
+            logger.info(len_items)
             raise ConvError
 
         change_status_on_fail = True
@@ -541,7 +585,7 @@ def process_snp_file(ticket_id, fdr_raw, annotate_tf=True, annotate_cl=True):
             with open(tf_path, 'w', encoding='utf-8') as out:
                 out.write(pack(tf_header))
 
-            for q_tf in divide_query(lambda x: get_tf_query(x, logfdr), rs_ids):
+            for q_tf in divide_query(lambda x: get_tf_query(x, fdr_class), rs_ids):
                 with open(tf_path, 'a', encoding='utf-8') as out:
                     for tup in q_tf:
                         tf_name = tup[6]
@@ -600,7 +644,7 @@ def process_snp_file(ticket_id, fdr_raw, annotate_tf=True, annotate_cl=True):
             with open(cl_path, 'w', encoding='utf-8') as out:
                 out.write(pack(cl_header))
 
-            for q_cl in divide_query(lambda x: get_cl_query(x, logfdr), rs_ids):
+            for q_cl in divide_query(lambda x: get_cl_query(x, fdr_class), rs_ids):
                 with open(cl_path, 'a', encoding='utf-8') as out:
                     for tup in q_cl:
                         cl_name = tup[6]
@@ -644,38 +688,54 @@ def process_snp_file(ticket_id, fdr_raw, annotate_tf=True, annotate_cl=True):
         cl_sum_counts = [{'name': key, 'count': value} for key, value in cl_sum_counts.items()]
 
         all_rs = len_items
-        tf_asbs_list = [x for query in divide_query(lambda x: get_tf_asbs(x, logfdr), rs_ids) for x in query]
+        tf_asbs_list = [x for query in divide_query(lambda x: get_tf_asbs(x, fdr_class), rs_ids) for x in query]
         tf_asbs = len(tf_asbs_list)
         tf_asbs_rs = len(set(x.snp.rs_id for x in tf_asbs_list))
-        cl_asbs_list = [x for query in divide_query(lambda x: get_cl_asbs(x, logfdr), rs_ids) for x in query]
+        cl_asbs_list = [x for query in divide_query(lambda x: get_cl_asbs(x, fdr_class), rs_ids) for x in query]
         cl_asbs = len(cl_asbs_list)
         cl_asbs_rs = len(set(x.snp.rs_id for x in cl_asbs_list))
-        all_asbs_list = [x for query in divide_query(lambda x: get_all_asbs(x, logfdr), rs_ids) for x in query]
+        all_asbs_list = [x for query in divide_query(lambda x: get_all_asbs(x, fdr_class), rs_ids) for x in query]
         all_asbs = tf_asbs + cl_asbs
         all_asbs_rs = len(set(x.rs_id for x in all_asbs_list))
 
         logger.info('Ticket {}: query count asb done'.format(ticket_id))
         update_ticket_status(ticket, 'Checking the control data of candidate but non-significant ASBs (non-ASBs)')
 
-        logfdr_low = -np.log10(fdr_raw)  # alternative: 0.5 FIXME
-        tf_candidates_list = [x for query in divide_query(lambda x: get_tf_candidates(x, logfdr_low), rs_ids) for x in query if x not in tf_asbs_list]
-        tf_candidates = len(tf_candidates_list)
-        tf_candidates_rs = len(set(x.rs_id for x in tf_candidates_list) - set(x.snp.rs_id for x in tf_asbs_list))
-        cl_candidates_list = [x for query in divide_query(lambda x: get_cl_candidates(x, logfdr_low), rs_ids) for x in query if x not in cl_asbs_list]
-        cl_candidates = len(cl_candidates_list)
-        cl_candidates_rs = len(set(x.rs_id for x in cl_candidates_list) - set(x.snp.rs_id for x in cl_asbs_list))
-        all_candidates_list = [x for query in divide_query(lambda x: get_all_candidates(x, logfdr_low), rs_ids) for x in query if x not in all_asbs_list]
-        all_candidates = tf_candidates + cl_candidates
-        all_candidates_rs = len(set(x.rs_id for x in all_candidates_list) - set(x.rs_id for x in all_asbs_list))
+        if binary:
+            fdr_class_neg = fdr_class
+        else:
+            fdr_class_neg = '0.25'
+            # tf_non_negative_candidates_rs_set = [x.rs_id for query in divide_query(lambda x: get_candidates_by_level(x, fdr_class_neg, level='TF', alternative='greater', rs=True), rs_ids) for x in query]
+            # cl_non_negative_candidates_rs_set = [x.rs_id for query in divide_query(lambda x: get_candidates_by_level(x, fdr_class_neg, level='CL', alternative='greater', rs=True), rs_ids) for x in query]
+            # all_non_negative_candidates_rs_set = [x.rs_id for query in divide_query(lambda x: get_all_candidates(x, fdr_class_neg, alternative='greater', rs=True), rs_ids) for x in query]
+            all_non_negative_candidates_rs = sum(query for query in divide_query(lambda x: get_all_candidates(x, fdr_class_neg, alternative='greater', rs=True, mode='count'), rs_ids))
+            logger.info('Ticket {}: non-negative candidates done'.format(ticket_id))
+
+        tf_negatives_list = [x for query in divide_query(lambda x: get_candidates_by_level(x, fdr_class_neg, level='TF'), rs_ids) for x in query]
+        tf_negatives = len(tf_negatives_list)
+        tf_negatives_rs = sum(query for query in divide_query(lambda x: get_candidates_by_level(x, fdr_class_neg, level='TF', rs=True, mode='count'), rs_ids))
+        cl_negatives_list = [x for query in divide_query(lambda x: get_candidates_by_level(x, fdr_class_neg, level='CL'), rs_ids) for x in query]
+        cl_negatives = len(cl_negatives_list)
+        cl_negatives_rs = sum(query for query in divide_query(lambda x: get_candidates_by_level(x, fdr_class_neg, level='CL', rs=True, mode='count'), rs_ids))
+        all_negatives = tf_negatives + cl_negatives
+        all_negatives_rs = sum(query for query in divide_query(lambda x: get_all_candidates(x, fdr_class_neg, rs=True, mode='count'), rs_ids))
+
+        if binary:
+            undefined = 0
+        else:
+            undefined = all_non_negative_candidates_rs - all_asbs_rs
 
         logger.info('Ticket {}: query count candidates done'.format(ticket_id))
-        if fdr_raw not in stats_dict:
+        if fdr_class not in stats_dict:
             update_ticket_status(ticket, 'Constructing the set of non-ASBs for a non-standard fdr threshold')
-            sd = get_stats_dict([fdr_raw])[fdr_raw]
+            sd = get_stats_dict([fdr_class])[fdr_class]
             logger.info('Ticket {}: stats dict done'.format(ticket_id))
         else:
-            sd = stats_dict[fdr_raw]
-        cand_sd = sd  # alternative: 0.5 FIXME
+            sd = stats_dict[fdr_class]
+        if binary:
+            cand_sd = sd
+        else:
+            cand_sd = stats_dict['0.25']
 
         possible_tf_asbs = sd['possible_tf_asbs']
         possible_tf_asbs_rs = sd['possible_tf_asbs_rs']
@@ -683,23 +743,23 @@ def process_snp_file(ticket_id, fdr_raw, annotate_tf=True, annotate_cl=True):
         possible_cl_asbs_rs = sd['possible_cl_asbs_rs']
         possible_all_asbs = sd['possible_all_asbs']
         possible_all_asbs_rs = sd['possible_all_asbs_rs']
-        possible_tf_candidates = total_tf_candidates - cand_sd['possible_tf_asbs']
-        possible_tf_candidates_rs = total_tf_candidates_rs - cand_sd['possible_tf_asbs_rs']
-        possible_cl_candidates = total_cl_candidates - cand_sd['possible_cl_asbs']
-        possible_cl_candidates_rs = total_cl_candidates_rs - cand_sd['possible_cl_asbs_rs']
-        possible_all_candidates = total_all_candidates - cand_sd['possible_all_asbs']
-        possible_all_candidates_rs = total_all_candidates_rs - cand_sd['possible_all_asbs_rs']
+        possible_tf_negatives = total_tf_candidates - cand_sd['possible_tf_asbs']
+        possible_tf_negatives_rs = total_tf_candidates_rs - cand_sd['possible_tf_asbs_rs']
+        possible_cl_negatives = total_cl_candidates - cand_sd['possible_cl_asbs']
+        possible_cl_negatives_rs = total_cl_candidates_rs - cand_sd['possible_cl_asbs_rs']
+        possible_all_negatives = total_all_candidates - cand_sd['possible_all_asbs']
+        possible_all_negatives_rs = total_all_candidates_rs - cand_sd['possible_all_asbs_rs']
 
         update_ticket_status(ticket, 'Performing statistical analysis')
 
-        tf_odds_rs, tf_p_rs = fisher_exact(((tf_asbs_rs, tf_candidates_rs), (possible_tf_asbs_rs, possible_tf_candidates_rs)), alternative='greater')
-        tf_odds, tf_p = fisher_exact(((tf_asbs, tf_candidates), (possible_tf_asbs, possible_tf_candidates)), alternative='greater')
+        tf_odds_rs, tf_p_rs = fisher_exact(((tf_asbs_rs, tf_negatives_rs), (possible_tf_asbs_rs, possible_tf_negatives_rs)), alternative='greater')
+        tf_odds, tf_p = fisher_exact(((tf_asbs, tf_negatives), (possible_tf_asbs, possible_tf_negatives)), alternative='greater')
 
-        cl_odds_rs, cl_p_rs = fisher_exact(((cl_asbs_rs, cl_candidates_rs), (possible_cl_asbs_rs, possible_cl_candidates_rs)), alternative='greater')
-        cl_odds, cl_p = fisher_exact(((cl_asbs, cl_candidates), (possible_cl_asbs, possible_cl_candidates)), alternative='greater')
+        cl_odds_rs, cl_p_rs = fisher_exact(((cl_asbs_rs, cl_negatives_rs), (possible_cl_asbs_rs, possible_cl_negatives_rs)), alternative='greater')
+        cl_odds, cl_p = fisher_exact(((cl_asbs, cl_negatives), (possible_cl_asbs, possible_cl_negatives)), alternative='greater')
 
-        all_odds_rs, all_p_rs = fisher_exact(((all_asbs_rs, all_candidates_rs), (possible_all_asbs_rs, possible_all_candidates_rs)), alternative='greater')
-        all_odds, all_p = fisher_exact(((all_asbs, all_candidates), (possible_all_asbs, possible_all_candidates)), alternative='greater')
+        all_odds_rs, all_p_rs = fisher_exact(((all_asbs_rs, all_negatives_rs), (possible_all_asbs_rs, possible_all_negatives_rs)), alternative='greater')
+        all_odds, all_p = fisher_exact(((all_asbs, all_negatives), (possible_all_asbs, possible_all_negatives)), alternative='greater')
 
         logger.info('Ticket {}: tests done'.format(ticket_id))
         update_ticket_status(ticket, 'Testing the enrichment of ASBs of individual TFs')
@@ -710,9 +770,9 @@ def process_snp_file(ticket_id, fdr_raw, annotate_tf=True, annotate_cl=True):
             tf_id = TranscriptionFactor.query.filter_by(name=tf).one().tf_id
             asbs = tf_asb_counts[tf]['count']
             asbs_rs = len(set(x.snp.rs_id for x in tf_asbs_list if x.tf_id == tf_id))
-            candidates = len([cand for cand in tf_candidates_list if cand.ag_id == tf_id])
-            candidates_rs = len(set(cand.rs_id for cand in tf_candidates_list if cand.ag_id == tf_id))
-            odds, p = fisher_exact(((asbs_rs, candidates_rs), (possible_tf_asbs_rs, possible_tf_candidates_rs)), alternative='greater')
+            candidates = len([cand for cand in tf_negatives_list if cand.ag_id == tf_id])
+            candidates_rs = len(set(cand.rs_id for cand in tf_negatives_list if cand.ag_id == tf_id))
+            odds, p = fisher_exact(((asbs_rs, candidates_rs), (possible_tf_asbs_rs, possible_tf_negatives_rs)), alternative='greater')
             tf_p_list.append(p)
             tf_asb_data.append({
                 'name': tf,
@@ -740,9 +800,9 @@ def process_snp_file(ticket_id, fdr_raw, annotate_tf=True, annotate_cl=True):
             cl_id = CellLine.query.filter_by(name=cl).one().cl_id
             asbs = cl_asb_counts[cl]['count']
             asbs_rs = len(set(x.snp.rs_id for x in cl_asbs_list if x.cl_id == cl_id))
-            candidates = len([cand for cand in cl_candidates_list if cand.ag_id == cl_id])
-            candidates_rs = len(set(cand.rs_id for cand in cl_candidates_list if cand.ag_id == cl_id))
-            odds, p = fisher_exact(((asbs_rs, candidates_rs), (possible_cl_asbs_rs, possible_cl_candidates_rs)), alternative='greater')
+            candidates = len([cand for cand in cl_negatives_list if cand.ag_id == cl_id])
+            candidates_rs = len(set(cand.rs_id for cand in cl_negatives_list if cand.ag_id == cl_id))
+            odds, p = fisher_exact(((asbs_rs, candidates_rs), (possible_cl_asbs_rs, possible_cl_negatives_rs)), alternative='greater')
             cl_p_list.append(p)
             cl_asb_data.append({
                 'name': cl,
@@ -778,12 +838,13 @@ def process_snp_file(ticket_id, fdr_raw, annotate_tf=True, annotate_cl=True):
             'cl_asbs_rs': cl_asbs_rs,
             'all_asbs': all_asbs,
             'all_asbs_rs': all_asbs_rs,
-            'tf_candidates': tf_candidates + tf_asbs,
-            'tf_candidates_rs': tf_candidates_rs + tf_asbs_rs,
-            'cl_candidates': cl_candidates + cl_asbs,
-            'cl_candidates_rs': cl_candidates_rs + cl_asbs_rs,
-            'all_candidates': all_candidates + all_asbs,
-            'all_candidates_rs': all_candidates_rs + all_asbs_rs,
+            'undefined_rs': undefined,
+            'tf_candidates': tf_negatives + tf_asbs,
+            'tf_candidates_rs': tf_negatives_rs + tf_asbs_rs,
+            'cl_candidates': cl_negatives + cl_asbs,
+            'cl_candidates_rs': cl_negatives_rs + cl_asbs_rs,
+            'all_candidates': all_negatives + all_asbs,
+            'all_candidates_rs': all_negatives_rs + all_asbs_rs,
             'tf_odds': marshal_inf(tf_odds),
             'tf_log10_p_value': marshal_logp(tf_p),
             'cl_odds': marshal_inf(cl_odds),
@@ -796,9 +857,9 @@ def process_snp_file(ticket_id, fdr_raw, annotate_tf=True, annotate_cl=True):
             'cl_log10_p_value_rs': marshal_logp(cl_p_rs),
             'all_odds_rs': marshal_inf(all_odds_rs),
             'all_log10_p_value_rs': -np.log10(all_p_rs),
-            'expected_fraction_all': possible_all_asbs_rs / (possible_all_candidates_rs + possible_all_asbs_rs),
-            'expected_fraction_tf': possible_tf_asbs_rs / (possible_tf_candidates_rs + possible_tf_asbs_rs),
-            'expected_fraction_cl': possible_cl_asbs_rs / (possible_cl_candidates_rs + possible_cl_asbs_rs),
+            'expected_fraction_all': possible_all_asbs_rs / (possible_all_negatives_rs + possible_all_asbs_rs),
+            'expected_fraction_tf': possible_tf_asbs_rs / (possible_tf_negatives_rs + possible_tf_asbs_rs),
+            'expected_fraction_cl': possible_cl_asbs_rs / (possible_cl_negatives_rs + possible_cl_asbs_rs),
             'tf_asb_counts': modify_counts(tf_asb_data, top=False),
             'tf_asb_counts_top': modify_counts(tf_asb_data, tf_sum_counts, top=True),
             'cl_asb_counts': modify_counts(cl_asb_data, top=False),
@@ -819,8 +880,8 @@ def process_snp_file(ticket_id, fdr_raw, annotate_tf=True, annotate_cl=True):
 
     ticket.meta_info = meta_info
     logger.info('Ticket {}: ticket info changed'.format(ticket_id))
-    with open('baalchip.json', 'w') as f:
-        f.write(str(meta_info))
+    # with open('baalchip.json', 'w') as f:
+    #     f.write(str(meta_info))
     session.commit()
 
     logger.info('Ticket {}: session commited'.format(ticket_id))

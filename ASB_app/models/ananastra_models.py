@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from ASB_app.constants import nucleotides, chromosomes
+from ASB_app.constants import nucleotides, chromosomes, fdr_classes
 from ASB_app.releases import current_release
 
 db = current_release.db
@@ -16,7 +16,7 @@ class Ticket(db.Model):
     expiration_date = db.Column(db.DATETIME)
     meta_info = db.Column(db.JSON, default={})
     user_id = db.Column(db.String(36))
-    fdr = db.Column(db.Float, default=0.05)
+    fdr = db.Column(db.Enum(*fdr_classes))
 
     def __repr__(self):
         return '<AnanastraTicket {0.ticket_id}, created {0.date_created}, {0.status}>'.format(self)
@@ -44,6 +44,52 @@ class CandidateSNP(GenomePolymorphismLocation):
     ag_level = db.Column(db.Enum('TF', 'CL'), nullable=False)
     ag_id = db.Column(db.Integer)
     best_p_value = db.Column(db.Float, index=True)
+    fdr_class = db.Column(db.Enum(*fdr_classes), index=True)
 
     def __repr__(self):
-        return '<CandidateSNP rs{0.rs_id}, {0.alt}, {0.ag_level}, {0.ag_id}>'.format(self)
+        return '<CandidateSNP rs{0.rs_id}, {0.alt}, {0.ag_level}, {0.ag_id}, {0.fdr_class}>'.format(self)
+
+
+class CandidateRS(db.Model):
+    __tablename__ = 'candidate_rs_snps'
+    __bind_key__ = 'candidates'
+    __table_args__ = (
+        db.PrimaryKeyConstraint('rs_id'),
+    )
+
+    rs_id = db.Column(db.Integer, nullable=False)
+    best_p_value = db.Column(db.Float, index=True)
+    fdr_class = db.Column(db.Enum(*fdr_classes), index=True)
+
+    def __repr__(self):
+        return '<CandidateRS rs{0.rs_id}, {0.fdr_class}>'.format(self)
+
+
+class CandidateTFRS(db.Model):
+    __tablename__ = 'candidate_tf_rs_snps'
+    __bind_key__ = 'candidates'
+    __table_args__ = (
+        db.PrimaryKeyConstraint('rs_id'),
+    )
+
+    rs_id = db.Column(db.Integer, nullable=False)
+    best_p_value = db.Column(db.Float, index=True)
+    fdr_class = db.Column(db.Enum(*fdr_classes), index=True)
+
+    def __repr__(self):
+        return '<CandidateRS rs{0.rs_id}, {0.fdr_class}>'.format(self)
+
+
+class CandidateCLRS(db.Model):
+    __tablename__ = 'candidate_cl_rs_snps'
+    __bind_key__ = 'candidates'
+    __table_args__ = (
+        db.PrimaryKeyConstraint('rs_id'),
+    )
+
+    rs_id = db.Column(db.Integer, nullable=False)
+    best_p_value = db.Column(db.Float, index=True)
+    fdr_class = db.Column(db.Enum(*fdr_classes), index=True)
+
+    def __repr__(self):
+        return '<CandidateRS rs{0.rs_id}, {0.fdr_class}>'.format(self)

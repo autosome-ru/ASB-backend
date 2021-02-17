@@ -1,11 +1,14 @@
 from ASB_app import logger
 from sqlalchemy_utils.aggregates import manager
+from sqlalchemy import update
 
 import numpy as np
 
-from ASB_app.constants import db_name_property_dict
+from ASB_app.constants import db_name_property_dict, fdr_classes, fdr_choices
 
 from ASB_app.releases import current_release
+from ASB_app.models import CandidateSNP, CandidateRS
+from ASB_app.utils.statistics import get_fdr_class
 
 session = current_release.session
 db = current_release.db
@@ -217,6 +220,21 @@ def update_snp_best_p_value():
         else:
             snp.best_p_value = max(tfsnp_bp, clsnp_bp)
     session.commit()
+
+
+def update_fdr_class(model):
+    table = model.__table__
+    for fdr in fdr_choices[::-1]:
+        print(fdr)
+        session.execute(update(table).where(table.c.best_p_value >= -np.log10(float(fdr))).values(fdr_class=fdr))
+        session.commit()
+        session.close()
+
+
+def update_all_fdr_class():
+    for model in SNP, TranscriptionFactorSNP, CellLineSNP, CandidateSNP:
+        print(model)
+        update_fdr_class(model)
 
 
 def update_all():

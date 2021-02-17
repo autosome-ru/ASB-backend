@@ -3,11 +3,12 @@ import os
 import json
 import numpy as np
 
-from ASB_app.models import CandidateSNP
-
+from ASB_app.models import CandidateSNP, CandidateRS, CandidateTFRS, CandidateCLRS
+from ASB_app.utils.statistics import get_fdr_class
 
 current_release = releases.ReleaseFord
 session = current_release.session
+db = current_release.db
 
 TranscriptionFactor, \
 CellLine, \
@@ -33,8 +34,11 @@ current_release.BADGroup, \
 current_release.Gene
 
 
-TF = 1
-CL = 1
+TF = 0
+CL = 0
+SNP = 0
+TF_SNP = 0
+CL_SNP = 0
 
 
 release_path = os.path.expanduser('~/RESULTS/DataChIP/')
@@ -119,3 +123,38 @@ if __name__ == '__main__':
         session.commit()
 
         session.close()
+
+    if SNP:
+        q = session.query(CandidateSNP.rs_id, db.func.max(CandidateSNP.best_p_value)).group_by(CandidateSNP.rs_id)
+        snps = []
+        for i, (rs_id, fdr) in enumerate(q, 1):
+            if i == 1:
+                print('start')
+            if i % 100000 == 0:
+                print(i)
+            snp = CandidateRS(
+                rs_id=rs_id,
+                best_p_value=fdr,
+                fdr_class=get_fdr_class(fdr)
+            )
+            snps.append(snp)
+        session.add_all(snps)
+        session.commit()
+
+    for param in ['TF'] * TF_SNP + ['CL'] * CL_SNP:
+        q = session.query(CandidateSNP.rs_id, db.func.max(CandidateSNP.best_p_value)).filter(CandidateSNP.ag_level==param).group_by(CandidateSNP.rs_id)
+        snps = []
+        SNPClass = {'TF': CandidateTFRS, 'CL': CandidateCLRS}[param]
+        for i, (rs_id, fdr) in enumerate(q, 1):
+            if i == 1:
+                print('start {}'.format(param))
+            if i % 100000 == 0:
+                print(i)
+            snp = SNPClass(
+                rs_id=rs_id,
+                best_p_value=fdr,
+                fdr_class=get_fdr_class(fdr)
+            )
+            snps.append(snp)
+        session.add_all(snps)
+        session.commit()

@@ -1,4 +1,5 @@
 from ASB_app import releases
+from ASB_app.constants import fdr_classes
 from ASB_app.models import CandidateSNP
 import numpy as np
 
@@ -80,18 +81,34 @@ def get_possible_all_candidates(fdr_low, mode='all'):
         return q.all()
 
 
+def get_fdr_class(logp):
+    trs = {tr: -np.log10(float(tr)) for tr in fdr_classes}
+    for fdr in trs:
+        tr = trs[fdr]
+        if logp >= tr:
+            return fdr
+
+
+def get_corresponding_fdr_classes(fdr_class, low=False):
+    index = dict(zip(fdr_classes, range(len(fdr_classes))))[fdr_class]
+    if low:
+        return fdr_classes[index + 1:]
+    else:
+        return fdr_classes[:index + 1]
+
+
 def get_stats_dict(fdrs):
     stats_dict = {}
-    for fdr_raw in fdrs:
-        print(fdr_raw)
-        fdr = -np.log10(fdr_raw)
+    for fdr_class in fdrs:
+        print(fdr_class)
+        fdr = -np.log10(float(fdr_class))
         possible_tf_asbs_lsit = get_possible_tf_asbs(fdr)
         print('tf_asb')
         possible_cl_asbs_list = get_possible_cl_asbs(fdr)
         print('cl_asb')
         possible_all_asbs_list = get_possible_all_asbs(fdr)
         print('all_asb')
-        stats_dict[fdr_raw] = {
+        stats_dict[fdr_class] = {
             'possible_tf_asbs': len(possible_tf_asbs_lsit),
             'possible_cl_asbs': len(possible_cl_asbs_list),
             'possible_all_asbs': len(possible_tf_asbs_lsit) + len(possible_cl_asbs_list),

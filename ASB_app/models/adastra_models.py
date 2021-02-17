@@ -1,7 +1,7 @@
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy_utils.aggregates import aggregated
 
-from ASB_app.constants import chromosomes, nucleotides, bads
+from ASB_app.constants import chromosomes, nucleotides, bads, fdr_classes
 
 from ASB_app.releases import Release
 from .placeholders import abstract_models, abstract_models_dnase
@@ -222,6 +222,7 @@ for release in Release.__subclasses__():
 
         if int(release.version) >= 3:
             best_p_value = db.Column(db.Float, index=True)
+            fdr_class = db.Column(db.Enum(*fdr_classes), index=True)
 
         context = db.Column(db.String(51))
 
@@ -245,6 +246,7 @@ for release in Release.__subclasses__():
 
         if int(release.version) >= 3:
             best_p_value = db.Column(db.Float)
+            fdr_class = db.Column(db.Enum(*fdr_classes))
 
         else:
             @hybrid_property
@@ -260,18 +262,21 @@ for release in Release.__subclasses__():
         class TranscriptionFactorSNP(AggregatedSNP):
             __tablename__ = 'tf_snps'
             __bind_key__ = release.name
-            if release.name == 'ford':
+            if int(release.version) >= 3:
                 __table_args__ = (db.ForeignKeyConstraint(['chromosome', 'position', 'alt'],
                                                           ['snps.chromosome', 'snps.position', 'snps.alt']),
-                                  db.Index('unique_tf_mutation_index', 'chromosome', 'position', 'alt', 'tf_id'),
+                                  db.UniqueConstraint('chromosome', 'position', 'alt', 'tf_id',
+                                                      name='tf_unique_mutation'),
                                   db.Index('tf_id_index', 'tf_id'),
                                   db.Index('motif_concordance_index', 'motif_concordance'),
-                                  db.Index('ix_tf_snps_best_p_value'),
+                                  db.Index('ix_tf_snps_best_p_value', 'best_p_value'),
+                                  db.Index('ix_tf_snps_fdr_class', 'fdr_class'),
                                   )
             else:
                 __table_args__ = (db.ForeignKeyConstraint(['chromosome', 'position', 'alt'],
                                                           ['snps.chromosome', 'snps.position', 'snps.alt']),
-                                  db.Index('unique_tf_mutation_index', 'chromosome', 'position', 'alt', 'tf_id'),
+                                  db.UniqueConstraint('chromosome', 'position', 'alt', 'tf_id',
+                                                      name='tf_unique_mutation'),
                                   db.Index('tf_id_index', 'tf_id'),
                                   db.Index('motif_concordance_index', 'motif_concordance'),
                                   )
@@ -295,21 +300,20 @@ for release in Release.__subclasses__():
     class CellLineSNP(AggregatedSNP):
         __tablename__ = 'cl_snps'
         __bind_key__ = release.name
-        if release.name == 'ford':
+        if int(release.version) >= 3:
             __table_args__ = (db.ForeignKeyConstraint(['chromosome', 'position', 'alt'],
                                                       ['snps.chromosome', 'snps.position', 'snps.alt']),
                               db.UniqueConstraint('chromosome', 'position', 'alt', 'cl_id',
                                                   name='cell_line_unique_mutation'),
-                              db.Index('unique_cl_mutation_index', 'chromosome', 'position', 'alt', 'cl_id'),
                               db.Index('cl_id_index', 'cl_id'),
-                              db.Index('ix_cl_snps_best_p_value'),
+                              db.Index('ix_cl_snps_best_p_value', 'best_p_value'),
+                              db.Index('ix_cl_snps_fdr_class', 'fdr_class'),
                               )
         else:
             __table_args__ = (db.ForeignKeyConstraint(['chromosome', 'position', 'alt'],
                                                       ['snps.chromosome', 'snps.position', 'snps.alt']),
                               db.UniqueConstraint('chromosome', 'position', 'alt', 'cl_id',
                                                   name='cell_line_unique_mutation'),
-                              db.Index('unique_cl_mutation_index', 'chromosome', 'position', 'alt', 'cl_id'),
                               db.Index('cl_id_index', 'cl_id')
                               )
 

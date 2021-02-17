@@ -41,6 +41,7 @@ meta_info_model = api.model('Ticket meta info', {
     'tf_asbs_rs': fields.Integer,
     'cl_asbs_rs': fields.Integer,
     'all_asbs_rs': fields.Integer,
+    'undefined_rs': fields.Integer,
     'tf_candidates_rs': fields.Integer,
     'cl_candidates_rs': fields.Integer,
     'all_candidates_rs': fields.Integer,
@@ -73,6 +74,7 @@ ticket_model = api.model('ANANASTRA ticket', {
     'date_created': fields.DateTime,
     'expiration_date': fields.DateTime,
     'status': fields.String(enum=('Created', 'Processing', 'Processed', 'Failed')),
+    'fdr': fields.String,
     'meta_info': fields.Nested(meta_info_model),
 })
 
@@ -85,4 +87,5 @@ ticket_model_short = api.model('ANANASTRA ticket (short)', {
     'status_details': fields.String,
     'processing_started_at': fields.String,
     'position_in_queue': fields.Integer,
+    'fdr': fields.String,
 })
