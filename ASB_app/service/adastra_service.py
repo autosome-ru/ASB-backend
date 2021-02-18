@@ -12,6 +12,8 @@ from ASB_app.constants import stats_dict
 
 from math import ceil
 
+from ASB_app.utils.statistics import get_corresponding_fdr_classes
+
 
 class ReleaseService:
     def __init__(self, release):
@@ -25,7 +27,7 @@ class ReleaseService:
 
     def get_filters_by_fdr(self, fdr):
         if int(self.release.version) >= 3:
-            return (self.SNP.best_p_value >= -np.log10(fdr),)
+            return (self.SNP.fdr_class.in_(get_corresponding_fdr_classes(fdr)),)
         else:
             return tuple()
 
@@ -114,7 +116,7 @@ class ReleaseService:
                     (self.TranscriptionFactorSNP.tf_id == getattr(self.TranscriptionFactor.query.filter(
                         self.TranscriptionFactor.name == tf_name
                     ).one_or_none(), 'tf_id', None)) &
-                    (self.TranscriptionFactorSNP.best_p_value >= -np.log10(filters_object['fdr'])))
+                    (self.TranscriptionFactorSNP.fdr_class.in_(get_corresponding_fdr_classes(filters_object['fdr']))))
                     for tf_name in filters_object['transcription_factors']]
 
             if filters_object['cell_types']:
@@ -122,7 +124,7 @@ class ReleaseService:
                     (self.CellLineSNP.cl_id == getattr(self.CellLine.query.filter(
                         self.CellLine.name == cl_name
                     ).one_or_none(), 'cl_id', None)) &
-                    (self.CellLineSNP.best_p_value >= -np.log10(filters_object['fdr'])))
+                    (self.CellLineSNP.fdr_class.in_(get_corresponding_fdr_classes(filters_object['fdr']))))
                     for cl_name in filters_object['cell_types']]
 
             if not filters_object['transcription_factors'] and not filters_object['cell_types']:
@@ -140,13 +142,13 @@ class ReleaseService:
                          (self.TranscriptionFactorSNP.motif_concordance.is_(None) if search_null else False)) &
                         self.TranscriptionFactorSNP.transcription_factor.has(
                             self.TranscriptionFactor.name.in_(filters_object['transcription_factors'])
-                        ) & (self.TranscriptionFactorSNP.best_p_value >= -np.log10(filters_object['fdr']))
+                        ) & (self.TranscriptionFactorSNP.fdr_class.in_(get_corresponding_fdr_classes(filters_object['fdr'])))
                     )]
                 else:
                     filters += [self.SNP.tf_aggregated_snps.any(
                         (self.TranscriptionFactorSNP.motif_concordance.in_(filters_object['motif_concordance']) |
                          (self.TranscriptionFactorSNP.motif_concordance.is_(None) if search_null else False)) &
-                        (self.TranscriptionFactorSNP.best_p_value >= -np.log10(filters_object['fdr']))
+                        (self.TranscriptionFactorSNP.fdr_class.in_(get_corresponding_fdr_classes(filters_object['fdr'])))
                     ) | (~self.SNP.tf_aggregated_snps.any() if search_null else False)]
         else:
             if filters_object['transcription_factors']:
@@ -304,7 +306,7 @@ class ReleaseService:
                 'transcription_factors_count': self.TranscriptionFactor.query.filter(
                     self.TranscriptionFactor.aggregated_snps_count005 > 0).count(),
                 'cell_types_count': self.CellLine.query.filter(self.CellLine.aggregated_snps_count005 > 0).count(),
-                'snps_count': stats_dict[0.05]['possible_all_asbs_rs'],
+                'snps_count': stats_dict['0.05']['possible_all_asbs_rs'],
             }
         else:
             return {

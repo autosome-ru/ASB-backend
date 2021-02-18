@@ -160,8 +160,6 @@ for release in Release.__subclasses__():
             Get all SNPs with advanced filters short info
             """
             all_args = search_parser.parse_args()
-            if int(self.release_service.release.version) >= 3:
-                all_args['fdr'] = parse_fdr(all_args['fdr'])
             try:
                 filters = self.release_service.construct_advanced_filters(all_args)
                 result = self.paginate(all_args, extra_filters=filters)
@@ -179,8 +177,6 @@ for release in Release.__subclasses__():
             Get all SNPs with advanced filters short info in tsv file
             """
             all_args = search_parser.parse_args()
-            if int(self.release_service.release.version) >= 3:
-                all_args['fdr'] = parse_fdr(all_args['fdr'])
             try:
                 return self.release_service.get_snps_by_advanced_filters_tsv(all_args)
             except ParsingError:
