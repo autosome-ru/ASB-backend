@@ -14,8 +14,6 @@ from ASB_app.releases import Release, get_release_by_version
 
 from ASB_app import app
 
-import numpy as np
-
 
 def set_release_service(release_service):
     def wrapper(cls):
@@ -95,7 +93,7 @@ for release in Release.__subclasses__():
             """
             all_args = pagination_parser.parse_args()
             filters = self.release_service.get_filters_by_rs_id(rs_id) + \
-                self.release_service.get_filters_by_fdr(-np.log10(default_fdr_tr))
+                self.release_service.get_filters_by_fdr(default_fdr_tr)
             result = self.paginate(all_args, extra_filters=filters)
             return {'results': result, 'total': self.items_count(extra_filters=filters)}
 
@@ -118,7 +116,7 @@ for release in Release.__subclasses__():
                 return {'results': [], 'gene': None, 'total': 0}
 
             filters = self.release_service.get_filters_by_gene(self.release_service.get_gene_by_id(gene_id)) + \
-                self.release_service.get_filters_by_fdr(-np.log10(default_fdr_tr))
+                self.release_service.get_filters_by_fdr(default_fdr_tr)
             result = self.paginate(all_args, extra_filters=filters)
 
             return {'results': result, 'gene': gene, 'total': self.items_count(extra_filters=filters)}
@@ -141,7 +139,7 @@ for release in Release.__subclasses__():
             if gene is None:
                 return {'results': [], 'gene': None, 'total': 0}
             filters = self.release_service.get_filters_by_gene(gene) + \
-                self.release_service.get_filters_by_fdr(-np.log10(default_fdr_tr))
+                self.release_service.get_filters_by_fdr(default_fdr_tr)
             result = self.paginate(all_args, extra_filters=filters)
 
             return {'results': result, 'gene': gene, 'total': self.items_count(extra_filters=filters)}

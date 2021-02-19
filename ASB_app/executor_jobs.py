@@ -81,8 +81,6 @@ def get_tf_query(rs_ids, fdr):
         db.func.group_concat(db.func.distinct(grasp.phenotype_name), separator=', '),
         db.func.group_concat(db.func.distinct(clinvar.phenotype_name), separator=', '),
         db.func.group_concat(db.func.distinct(Gene.gene_name), separator=', '),
-    ).filter(
-        TranscriptionFactorSNP.fdr_class.in_(get_corresponding_fdr_classes(fdr))
     ).join(
         SNP,
         TranscriptionFactorSNP.snp
@@ -179,8 +177,6 @@ def get_cl_query(rs_ids, fdr):
         db.func.group_concat(db.func.distinct(grasp.phenotype_name), separator=', '),
         db.func.group_concat(db.func.distinct(clinvar.phenotype_name), separator=', '),
         db.func.group_concat(db.func.distinct(Gene.gene_name), separator=', '),
-    ).filter(
-        CellLineSNP.fdr_class.in_(get_corresponding_fdr_classes(fdr))
     ).join(
         SNP,
         CellLineSNP.snp

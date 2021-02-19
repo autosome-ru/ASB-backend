@@ -118,13 +118,13 @@ def update_motif_concordance():
     query = TranscriptionFactorSNP.query
     count = query.count()
     offset = 0
-    max_count = chunk_size
+    max_count = chunk_size * 100
     while count > 0:
         print(count)
         for snp in query.offset(offset).limit(max_count):
             if snp.motif_log_p_ref:
                 snp.motif_log_2_fc = (snp.motif_log_p_alt - snp.motif_log_p_ref) / np.log10(2)
-                passes_fdr_filters = snp.best_p_value >= 1 + np.log10(2)  # 0.05
+                # passes_fdr_filters = snp.best_p_value >= 1 + np.log10(2)  # 0.05
                 passes_motif_filters = ((snp.motif_log_p_ref >= 3 + np.log10(2)) or
                                         (snp.motif_log_p_alt >= 3 + np.log10(2)))  # 0.0005
             else:
@@ -138,17 +138,14 @@ def update_motif_concordance():
 
             snp.motif_log_2_fc = (snp.motif_log_p_alt - snp.motif_log_p_ref) / np.log10(2)
 
-            if passes_fdr_filters:
-                if abs((snp.motif_log_p_alt - snp.motif_log_p_ref) / np.log10(2)) >= 2:
-                    snp.motif_concordance = 'Concordant' if (snp.motif_log_p_alt - snp.motif_log_p_ref) * \
-                                                            (snp.log_p_value_alt - snp.log_p_value_ref) > 0 \
-                        else 'Discordant'
-                else:
-                    snp.motif_concordance = 'Weak Concordant' if (snp.motif_log_p_alt - snp.motif_log_p_ref) * \
-                                                                 (snp.log_p_value_alt - snp.log_p_value_ref) > 0 \
-                        else 'Weak Discordant'
+            if abs((snp.motif_log_p_alt - snp.motif_log_p_ref) / np.log10(2)) >= 2:
+                snp.motif_concordance = 'Concordant' if (snp.motif_log_p_alt - snp.motif_log_p_ref) * \
+                                                        (snp.log_p_value_alt - snp.log_p_value_ref) > 0 \
+                    else 'Discordant'
             else:
-                snp.motif_concordance = None
+                snp.motif_concordance = 'Weak Concordant' if (snp.motif_log_p_alt - snp.motif_log_p_ref) * \
+                                                             (snp.log_p_value_alt - snp.log_p_value_ref) > 0 \
+                    else 'Weak Discordant'
         session.commit()
         session.close()
         offset += max_count
