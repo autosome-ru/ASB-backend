@@ -290,11 +290,12 @@ class ReleaseService:
             filters = (((cls.name.like(in_str),) if in_str else ()) +
                        ((not_(cls.name.in_(used_options)),) if used_options else ()) +
                        (cls.aggregated_snps_count005,))
+            return cls.query.filter(*filters).order_by(cls.aggregated_snps_count005.desc()).limit(3).all()
         else:
             filters = (((cls.name.like(in_str),) if in_str else ()) +
                        ((not_(cls.name.in_(used_options)),) if used_options else ()) +
                        (cls.aggregated_snps_count,))
-        return cls.query.filter(*filters).order_by(cls.aggregated_snps_count.desc()).limit(3).all()
+            return cls.query.filter(*filters).order_by(cls.aggregated_snps_count.desc()).limit(3).all()
 
     def get_hints_for_gene_name(self, in_str):
         filters = (self.Gene.gene_name.like(in_str),) if in_str else ()
