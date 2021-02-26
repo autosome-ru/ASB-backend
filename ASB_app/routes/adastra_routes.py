@@ -8,7 +8,7 @@ from flask_restplus import Resource
 from sqlalchemy.orm.exc import NoResultFound
 
 from ASB_app.utils import PaginationMixin
-from ASB_app.routes import search_parser, csv_columns_parser, used_hints_parser, pagination_parser, parse_fdr
+from ASB_app.routes import search_parser, csv_columns_parser, used_hints_parser, pagination_parser
 
 from ASB_app.releases import Release, get_release_by_version
 
@@ -104,7 +104,7 @@ for release in Release.__subclasses__():
         BaseEntity = release_service.SNP
         used_release = release
 
-        @api.marshal_with(release_serializers.search_results_model)
+        @api.marshal_with(release_serializers.gene_search_results_model)
         @api.expect(pagination_parser)
         def get(self, gene_id):
             """
@@ -114,7 +114,7 @@ for release in Release.__subclasses__():
             gene = self.release_service.get_gene_by_id(gene_id)
             if gene is None:
                 return {'results': [], 'gene': None, 'total': 0}
-
+            gene.locus_start, gene.locus_end = self.release_service.get_gene_locus(gene)
             filters = self.release_service.get_filters_by_gene(self.release_service.get_gene_by_id(gene_id)) + \
                 self.release_service.get_filters_by_fdr(default_fdr_tr)
             result = self.paginate(all_args, extra_filters=filters)
@@ -128,7 +128,7 @@ for release in Release.__subclasses__():
         BaseEntity = release_service.SNP
         used_release = release
 
-        @api.marshal_with(release_serializers.search_results_model)
+        @api.marshal_with(release_serializers.gene_search_results_model)
         @api.expect(pagination_parser)
         def get(self, gene_name):
             """
@@ -138,11 +138,62 @@ for release in Release.__subclasses__():
             gene = self.release_service.get_gene_by_name(gene_name)
             if gene is None:
                 return {'results': [], 'gene': None, 'total': 0}
+            gene.locus_start, gene.locus_end = self.release_service.get_gene_locus(gene)
             filters = self.release_service.get_filters_by_gene(gene) + \
                 self.release_service.get_filters_by_fdr(default_fdr_tr)
             result = self.paginate(all_args, extra_filters=filters)
 
             return {'results': result, 'gene': gene, 'total': self.items_count(extra_filters=filters)}
+
+
+    if int(release.version) >= 3:
+        @search_nsp.route('/snps/eqtl_gene_id/<string:gene_id>')
+        @set_release_service(release_service)
+        class SearchSNPByGeneIdCollection(Resource, PaginationMixin):
+            BaseEntity = release_service.SNP
+            used_release = release
+
+            @api.marshal_with(release_serializers.gene_search_results_model)
+            @api.expect(pagination_parser)
+            def get(self, gene_id):
+                """
+                Get all SNPs by eqtl target gene encode id short info
+                """
+                all_args = pagination_parser.parse_args()
+                gene = self.release_service.get_gene_by_id(gene_id)
+                if gene is None:
+                    return {'results': [], 'gene': None, 'total': 0}
+                gene.locus_start, gene.locus_end = self.release_service.get_gene_locus(gene)
+                filters = self.release_service.get_filters_by_eqtl_gene(self.release_service.get_gene_by_id(gene_id)) + \
+                    self.release_service.get_filters_by_fdr(default_fdr_tr)
+                result = self.paginate(all_args, extra_filters=filters)
+
+                return {'results': result, 'gene': gene, 'total': self.items_count(extra_filters=filters)}
+
+
+        @search_nsp.route('/snps/eqtl_gene_name/<string:gene_name>')
+        @set_release_service(release_service)
+        class SearchSNPByGeneNameCollection(Resource, PaginationMixin):
+            BaseEntity = release_service.SNP
+            used_release = release
+
+            @api.marshal_with(release_serializers.gene_search_results_model)
+            @api.expect(pagination_parser)
+            def get(self, gene_name):
+                """
+                Get all SNPs by eqtl target gene name short info
+                """
+                all_args = pagination_parser.parse_args()
+                gene = self.release_service.get_gene_by_name(gene_name)
+                if gene is None:
+                    print('None')
+                    return {'results': [], 'gene': None, 'total': 0}
+                gene.locus_start, gene.locus_end = self.release_service.get_gene_locus(gene)
+                filters = self.release_service.get_filters_by_eqtl_gene(gene) + \
+                    self.release_service.get_filters_by_fdr(default_fdr_tr)
+                result = self.paginate(all_args, extra_filters=filters)
+
+                return {'results': result, 'gene': gene, 'total': self.items_count(extra_filters=filters)}
 
 
     @search_nsp.route('/snps/advanced')
@@ -188,14 +239,16 @@ for release in Release.__subclasses__():
             BaseEntity = release_service.TranscriptionFactor
             used_release = release
 
-            @api.marshal_list_with(release_serializers.transcription_factor_model)
+            @api.marshal_with(release_serializers.transcription_factor_browse_model)
             @api.expect(pagination_parser)
             def get(self):
                 """
                 Get the list of transcription factors available in the database
                 """
-                return self.paginate(pagination_parser.parse_args(),
-                                     extra_filters=(self.BaseEntity.aggregated_snps_count > 0, ))
+                filters = (self.BaseEntity.aggregated_snps_count > 0, )
+                result = self.paginate(pagination_parser.parse_args(), extra_filters=filters)
+                total = self.items_count(extra_filters=filters)
+                return {'results': result, 'total': total}
 
 
     @browse_nsp.route('/cl')
@@ -204,14 +257,16 @@ for release in Release.__subclasses__():
         BaseEntity = release_service.CellLine
         used_release = release
 
-        @api.marshal_list_with(release_serializers.cell_line_model)
+        @api.marshal_with(release_serializers.cell_line_browse_model)
         @api.expect(pagination_parser)
         def get(self):
             """
             Get the list of cell types available in the database
             """
-            return self.paginate(pagination_parser.parse_args(),
-                                 extra_filters=(self.BaseEntity.aggregated_snps_count > 0, ))
+            filters = (self.BaseEntity.aggregated_snps_count > 0,)
+            result = self.paginate(pagination_parser.parse_args(), extra_filters=filters)
+            total = self.items_count(extra_filters=filters)
+            return {'results': result, 'total': total}
 
 
     @browse_nsp.route('/total')
@@ -255,6 +310,17 @@ for release in Release.__subclasses__():
         def get(self):
             args = used_hints_parser.parse_args()
             return self.release_service.get_hints_for_gene_name(args.get('search', ''))
+
+
+    @search_nsp.route('/eqtl_gene_name/hint')
+    @api.hide
+    @set_release_service(release_service)
+    class GeneNameHint(Resource):
+        @api.expect(used_hints_parser)
+        @api.marshal_list_with(release_serializers.gene_model)
+        def get(self):
+            args = used_hints_parser.parse_args()
+            return self.release_service.get_hints_for_eqtl_gene_name(args.get('search', ''))
 
 
     @snp_nsp.route('/<int:rs_id>/<string:alt>/<string:what_for>/tsv')
