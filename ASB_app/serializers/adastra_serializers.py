@@ -57,14 +57,31 @@ class ReleaseSerializers:
                 'experiments_count': fields.Integer(readonly=True),
             })
 
-        self.gene_model = api.model('Gene', {
-            'gene_id': fields.String(readonly=True),
-            'gene_name': fields.String,
-            'chromosome': fields.String(enumerate=chromosomes),
-            'start_pos': fields.Integer,
-            'end_pos': fields.Integer,
-            'snps_count': fields.Integer,
-        })
+        if int(self.release.version) >= 3:
+            self.gene_model = api.model('Gene', {
+                'gene_id': fields.String(readonly=True),
+                'gene_name': fields.String,
+                'chromosome': fields.String(enumerate=chromosomes),
+                'start_pos': fields.Integer,
+                'end_pos': fields.Integer,
+                'locus_start': fields.Integer,
+                'locus_end': fields.Integer,
+                'snps_count': fields.Integer,
+                'snps_count005': fields.Integer,
+                'eqtl_snps_count': fields.Integer,
+                'eqtl_snps_count005': fields.Integer,
+            })
+        else:
+            self.gene_model = api.model('Gene', {
+                'gene_id': fields.String(readonly=True),
+                'gene_name': fields.String,
+                'chromosome': fields.String(enumerate=chromosomes),
+                'start_pos': fields.Integer,
+                'end_pos': fields.Integer,
+                'locus_start': fields.Integer,
+                'locus_end': fields.Integer,
+                'snps_count': fields.Integer,
+            })
 
         self.tf_snp_model = api.inherit('Transcription Factor SNP (no genome info)', self.aggregated_snp_model, {
             'tf_snp_id': fields.Integer(readonly=True),
@@ -90,8 +107,23 @@ class ReleaseSerializers:
 
         self.search_results_model = api.model('SNP search results model', {
             'total': fields.Integer,
+            'results': fields.List(fields.Nested(self.rs_snp_model))
+        })
+
+        self.gene_search_results_model = api.model('SNP search results model, gene model included', {
+            'total': fields.Integer,
             'gene': fields.Nested(self.gene_model),
             'results': fields.List(fields.Nested(self.rs_snp_model))
+        })
+
+        self.transcription_factor_browse_model = api.model('TF search results model', {
+            'total': fields.Integer,
+            'results': fields.List(fields.Nested(self.transcription_factor_model))
+        })
+
+        self.cell_line_browse_model = api.model('CellType search results model', {
+            'total': fields.Integer,
+            'results': fields.List(fields.Nested(self.cell_line_model))
         })
 
         self.exp_model_short = api.model('Experiment (short info)', {

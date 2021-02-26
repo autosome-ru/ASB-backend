@@ -18,16 +18,16 @@ chunk_size = 10000
 
 if current_release.name != 'dnase':
     TranscriptionFactorSNP, CellLineSNP, TranscriptionFactor, CellLine, Phenotype, SNP, \
-    PhenotypeSNPCorrespondence, Experiment = \
+    PhenotypeSNPCorrespondence, Experiment, Gene = \
         current_release.TranscriptionFactorSNP, current_release.CellLineSNP, current_release.TranscriptionFactor, \
         current_release.CellLine, current_release.Phenotype, current_release.SNP, current_release.PhenotypeSNPCorrespondence, \
-        current_release.Experiment
+        current_release.Experiment, current_release.Gene
 else:
     CellLineSNP, CellLine, Phenotype, SNP, \
-    PhenotypeSNPCorrespondence, Experiment = \
+    PhenotypeSNPCorrespondence, Experiment, Gene = \
         current_release.CellLineSNP, \
         current_release.CellLine, current_release.Phenotype, current_release.SNP, current_release.PhenotypeSNPCorrespondence, \
-        current_release.Experiment
+        current_release.Experiment, current_release.Gene
 
 
 class TsvDialect:
@@ -232,6 +232,46 @@ def update_all_fdr_class():
     for model in SNP, TranscriptionFactorSNP, CellLineSNP, CandidateSNP:
         print(model)
         update_fdr_class(model)
+
+
+def migrate_genes():
+    print(Gene.query.count())
+    for i, gene in enumerate(Gene.query.all(), 1):
+        if i % 10000 == 0:
+            print(i)
+        if gene.start_pos == 1 and gene.end_pos == 1:
+            assert gene.gene_id == gene.gene_name
+            gene.snps_count = None
+            continue
+
+        if gene.orientation:
+            gene.start_pos += 5000
+        else:
+            gene.end_pos -= 5000
+
+        if gene.orientation:
+            filters = SNP.chromosome == gene.chromosome, SNP.position.between(gene.start_pos - 5000, gene.end_pos)
+        else:
+            filters = SNP.chromosome == gene.chromosome, SNP.position.between(gene.start_pos, gene.end_pos + 5000)
+
+        gene.snps_count = SNP.query.filter(*filters).count()
+    session.commit()
+
+
+def update_gene_snps_count():
+    for i, gene in enumerate(Gene.query.all(), 1):
+        if i % 100 == 0:
+            print(i)
+        if gene.orientation:
+            filters = SNP.chromosome == gene.chromosome, SNP.position.between(gene.start_pos - 5000, gene.end_pos)
+        else:
+            filters = SNP.chromosome == gene.chromosome, SNP.position.between(gene.start_pos, gene.end_pos + 5000)
+
+        # gene.snps_count = SNP.query.filter(*filters).count()
+        gene.snps_count005 = SNP.query.filter(*filters, SNP.fdr_class.in_(('0.01', '0.05'))).count()
+        gene.eqtl_snps_count = SNP.query.join(Gene, SNP.target_genes).filter(Gene.gene_id == gene.gene_id).count()
+        gene.eqtl_snps_count005 = SNP.query.filter(SNP.fdr_class.in_(('0.01', '0.05'))).join(Gene, SNP.target_genes).filter(Gene.gene_id == gene.gene_id).count()
+    session.commit()
 
 
 def update_all():

@@ -102,11 +102,14 @@ class ReleaseService:
 
     def get_filters_by_gene(self, gene):
         if gene.orientation:
-            return self.SNP.chromosome == gene.chromosome, self.SNP.position.between(max(gene.start_pos - 500, 1),
+            return self.SNP.chromosome == gene.chromosome, self.SNP.position.between(max(gene.start_pos - 5000, 1),
                                                                                      gene.end_pos)
         else:
             return self.SNP.chromosome == gene.chromosome, self.SNP.position.between(max(gene.start_pos, 1),
-                                                                                     gene.end_pos + 500)
+                                                                                     gene.end_pos + 5000)
+
+    def get_filters_by_eqtl_gene(self, gene):
+        return (self.SNP.target_genes.any(self.Gene.gene_id == gene.gene_id), )
 
     def construct_advanced_filters(self, filters_object):
         filters = []
@@ -297,9 +300,28 @@ class ReleaseService:
                        (cls.aggregated_snps_count,))
             return cls.query.filter(*filters).order_by(cls.aggregated_snps_count.desc()).limit(3).all()
 
+    def get_gene_locus(self, gene, offset=5000):
+        if int(self.release.version) >= 3:
+            if gene.orientation:
+                return max(gene.start_pos - offset, 1), gene.end_pos
+            else:
+                return gene.start_pos, gene.end_pos + offset
+        else:
+            return gene.start_pos, gene.end_pos
+
     def get_hints_for_gene_name(self, in_str):
-        filters = (self.Gene.gene_name.like(in_str),) if in_str else ()
-        return self.Gene.query.filter(*filters).order_by(self.Gene.snps_count.desc()).limit(3).all()
+        filters = (self.Gene.gene_name.like(in_str), self.Gene.gene_name != self.Gene.gene_id) if in_str else (self.Gene.gene_name != self.Gene.gene_id, )
+        genes = self.Gene.query.filter(*filters).order_by(self.Gene.snps_count.desc()).limit(3).all()
+        for g in genes:
+            g.locus_start, g.locus_end = self.get_gene_locus(g)
+        return genes
+
+    def get_hints_for_eqtl_gene_name(self, in_str):
+        filters = (self.Gene.gene_name.like(in_str), ) if in_str else ()
+        genes = self.Gene.query.filter(*filters).order_by(self.Gene.eqtl_snps_count.desc()).limit(3).all()
+        for g in genes:
+            g.locus_start, g.locus_end = self.get_gene_locus(g)
+        return genes
 
     def get_overall_statistics(self):
         if int(self.release.version) >= 3:

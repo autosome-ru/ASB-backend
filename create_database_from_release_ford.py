@@ -470,14 +470,16 @@ if __name__ == '__main__':
                 gene_name = params_dict['gene_name'].strip('"')
                 gene_id = params_dict['gene_id'].strip('"')
                 if orient == '+':
-                    start_pos = max(start_pos - 5000, 1)
+                    start_pos_ext = max(start_pos - 5000, 1)
+                    end_pos_ext = end_pos
                 elif orient == '-':
-                    end_pos = end_pos + 5000
+                    start_pos_ext = start_pos
+                    end_pos_ext = end_pos + 5000
                 else:
                     raise ValueError
 
                 snps = SNP.query.filter(SNP.chromosome == chrom,
-                                        SNP.position.between(start_pos, end_pos)).count()
+                                        SNP.position.between(start_pos_ext, end_pos_ext)).count()
 
                 gene = Gene(gene_id=gene_id, gene_name=gene_name, start_pos=start_pos, end_pos=end_pos, chromosome=chrom,
                             orientation=True if orient == '+' else False if orient == '-' else None, snps_count=snps)
