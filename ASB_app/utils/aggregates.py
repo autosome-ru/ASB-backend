@@ -267,11 +267,45 @@ def update_gene_snps_count():
         else:
             filters = SNP.chromosome == gene.chromosome, SNP.position.between(gene.start_pos, gene.end_pos + 5000)
 
+        snps = gene.proximal_promoter_snps
+        gene.snps_count = len(snps)
+        gene.snps_count005 = len([x for x in gene.proximal_promoter_snps if x.fdr_class in ('0.01', '0.05')])
         # gene.snps_count = SNP.query.filter(*filters).count()
-        gene.snps_count005 = SNP.query.filter(*filters, SNP.fdr_class.in_(('0.01', '0.05'))).count()
-        gene.eqtl_snps_count = SNP.query.join(Gene, SNP.target_genes).filter(Gene.gene_id == gene.gene_id).count()
-        gene.eqtl_snps_count005 = SNP.query.filter(SNP.fdr_class.in_(('0.01', '0.05'))).join(Gene, SNP.target_genes).filter(Gene.gene_id == gene.gene_id).count()
+        # gene.snps_count005 = SNP.query.filter(*filters, SNP.fdr_class.in_(('0.01', '0.05'))).count()
+        # gene.eqtl_snps_count = SNP.query.join(Gene, SNP.target_genes).filter(Gene.gene_id == gene.gene_id).count()
+        # gene.eqtl_snps_count005 = SNP.query.filter(SNP.fdr_class.in_(('0.01', '0.05'))).join(Gene, SNP.target_genes).filter(Gene.gene_id == gene.gene_id).count()
     session.commit()
+
+
+def update_best_p_value():
+    pass
+
+
+def update_gene_promoter_snp_correspondence():
+    with open('D:\\Sashok\\Desktop\\genes_promoter_snps.sql', 'w') as f:
+        f.write('INSERT INTO adastra_dan.genes_promoter_snps (chromosome, position, alt, pair_id, gene_id) VALUES\n')
+        ai = 1
+        for i, gene in enumerate(Gene.query.all(), 1):
+            if i == 1:
+                session.close()
+            if i % 100 == 0:
+                print(i)
+            if gene.orientation:
+                filters = SNP.chromosome == gene.chromosome, SNP.position.between(gene.start_pos - 5000, gene.end_pos)
+            else:
+                filters = SNP.chromosome == gene.chromosome, SNP.position.between(gene.start_pos, gene.end_pos + 5000)
+            snps = session.query(SNP.chromosome, SNP.position, SNP.alt).filter(*filters).all()
+            if snps:
+                gene.snps_count = len(snps)
+                for k, (c, p, a) in enumerate(snps, 1):
+                    if i != 1 or k != 1:
+                        f.write(', ')
+                    # gene.proximal_promoter_snps = snps
+                    f.write("('{}', {}, '{}', {}, '{}')".format(c, p, a, ai, gene.gene_id))
+                    ai += 1
+            if i % 10000 == 0:
+                session.close()
+        f.write(';')
 
 
 def update_all():

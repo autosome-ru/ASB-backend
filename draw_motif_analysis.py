@@ -4,8 +4,8 @@ from math import lgamma
 import os
 
 from ASB_app import *
-from ASB_app.releases import ReleaseFord, ReleaseSoos
-current_release = ReleaseFord
+from ASB_app.releases import ReleaseFord, ReleaseSoos, ReleaseDan
+current_release = ReleaseDan
 
 session = current_release.session
 SNP = current_release.SNP
@@ -180,7 +180,7 @@ if __name__ == '__main__':
     }
 
     for tf_snp, snp, tf in session.query(TranscriptionFactorSNP, SNP, TranscriptionFactor).filter(TranscriptionFactorSNP.motif_concordance.isnot(None) &
-                                                                         TranscriptionFactorSNP.motif_concordance.isnot('No Hit')).join(
+                                                                                                  (TranscriptionFactorSNP.motif_concordance != 'No Hit')).join(
         SNP,
         (SNP.chromosome == TranscriptionFactorSNP.chromosome) &
         (SNP.position == TranscriptionFactorSNP.position) &
@@ -302,4 +302,4 @@ if __name__ == '__main__':
             place_letter_on_svg(fig, os.path.expanduser('~/letters/rect2.svg'), conc_label_space*2*unit_width+concordance_w, (1/2 - bracket_thick/600/2) * unit_height, bracket_thick/600*unit_height, (add_letters + concordance_indent - 3*conc_label_space)*unit_width - concordance_w)
             place_letter_on_svg(fig, os.path.expanduser('~/letters/rect2.svg'), conc_label_space*2*unit_width+concordance_w, (1 + full_gap + text_h + indent + hill_gap + strands_h/2 + ref_height - bracket_thick/600/2) * unit_height, bracket_thick/600*unit_height, (add_letters + concordance_indent - 3*conc_label_space)*unit_width - concordance_w)
 
-            fig.save('D:\Shashok\svgs_{}/{}_{}_{}{}.svg'.format(current_release.name, tf.name, snp.rs_id, snp.alt, '_revcomp' if draw_revcomp else ''))
+            fig.save('D:\Sashok\svgs_{}/{}_{}_{}{}.svg'.format(current_release.name, tf.name, snp.rs_id, snp.alt, '_revcomp' if draw_revcomp else ''))
