@@ -38,6 +38,10 @@ class ConvError(ValueError):
     pass
 
 
+class TooBigError(ValueError):
+    pass
+
+
 def convert_rs_to_int(rs_str):
     rs_str = rs_str.strip()
     if not re.match(r'^rs\d+$', rs_str):
@@ -454,6 +458,8 @@ def get_snps_from_interval(interval_str):
         chr = 'chr' + chr
         start = int(start)
         end = int(end)
+        if end - start > 100000:
+            raise TooBigError(interval_str)
         return list(set(x for (x, ) in session.query(SNP.rs_id).filter(
             SNP.chromosome == chr,
             SNP.position.between(start, end)
@@ -533,6 +539,9 @@ def process_snp_file(ticket_id, fdr_class, annotate_tf=True, annotate_cl=True, b
                     rs_ids = get_snps_from_interval(data[0][0])
                 except ConvError:
                     pass
+                except TooBigError:
+                    update_ticket_status(ticket, 'Processing failed, interval length exceeds 100000')
+                    raise ConvError
                 except:
                     change_status_on_fail = True
                     raise
@@ -552,9 +561,8 @@ def process_snp_file(ticket_id, fdr_class, annotate_tf=True, annotate_cl=True, b
         if len_items is None:
             len_items = len(rs_ids)
 
-        if len_items > 300000:
-            update_ticket_status(ticket, 'Processing failed, maximum number of itmes exceeds 10000')
-            logger.info(len_items)
+        if len_items > 10000:
+            update_ticket_status(ticket, 'Processing failed, the number of itmes exceeds 10000')
             raise ConvError
 
         change_status_on_fail = True
