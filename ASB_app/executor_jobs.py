@@ -458,7 +458,7 @@ def get_snps_from_interval(interval_str):
         chr = 'chr' + chr
         start = int(start)
         end = int(end)
-        if end - start > 100000:
+        if end - start > 10000000:
             raise TooBigError(interval_str)
         return list(set(x for (x, ) in session.query(SNP.rs_id).filter(
             SNP.chromosome == chr,
@@ -540,7 +540,7 @@ def process_snp_file(ticket_id, fdr_class, annotate_tf=True, annotate_cl=True, b
                 except ConvError:
                     pass
                 except TooBigError:
-                    update_ticket_status(ticket, 'Processing failed, interval length exceeds 100000')
+                    update_ticket_status(ticket, 'Processing failed, interval length exceeds 10000000bp')
                     raise ConvError
                 except:
                     change_status_on_fail = True
