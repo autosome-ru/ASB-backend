@@ -8,7 +8,7 @@ class Config(object):
     # 'mysql://local_user:local_password9@localhost:3306/lct?charset=utf8'
     SQLALCHEMY_BINDS = {
         'soos': 'mysql://adastra:pass=ADASTRA880@localhost:3306/adastra_soos?charset=utf8',
-        'ford': 'mysql://adastra:pass=ADASTRA880@localhost:3306/adastra_ford?charset=utf8',
+        # 'ford': 'mysql://adastra:pass=ADASTRA880@localhost:3306/adastra_ford?charset=utf8',
         'dan': 'mysql://adastra:pass=ADASTRA880@localhost:3306/adastra_dan?charset=utf8',
         # 'dnase': 'mysql://adastra:pass=ADASTRA880@localhost:3306/adastra_dnase?charset=utf8',
         'candidates': 'mysql://adastra:pass=ADASTRA880@localhost:3306/adastra_candidates?charset=utf8',

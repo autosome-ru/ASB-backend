@@ -16,12 +16,6 @@ class ReleaseSoos(Release):
     full_version = '1.6'
 
 
-class ReleaseFord(Release):
-    name = 'ford'
-    version = '2'
-    full_version = '2.1'
-
-
 class ReleaseDan(Release):
     name = 'dan'
     version = '3'
