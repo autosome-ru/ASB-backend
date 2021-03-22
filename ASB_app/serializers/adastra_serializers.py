@@ -177,8 +177,16 @@ class ReleaseSerializers:
             'phenotypes': fields.List(fields.Nested(self.phenotype_model))
         })
 
-        self.frontpage_statistics_model = api.inherit('Front page statistics', {
-            'transcription_factors_count': fields.Integer,
-            'cell_types_count': fields.Integer,
-            'snps_count': fields.Integer,
-        })
+        if int(self.release.version) >= 3:
+            self.frontpage_statistics_model = api.inherit('Front page statistics', {
+                'transcription_factors_count': fields.Integer,
+                'cell_types_count': fields.Integer,
+                'snps_count': fields.Integer,
+                'asbs_count': fields.Integer,
+            })
+        else:
+            self.frontpage_statistics_model = api.inherit('Front page statistics', {
+                'transcription_factors_count': fields.Integer,
+                'cell_types_count': fields.Integer,
+                'snps_count': fields.Integer,
+            })

@@ -540,7 +540,7 @@ def process_snp_file(ticket_id, fdr_class, annotate_tf=True, annotate_cl=True, b
                 except ConvError:
                     pass
                 except TooBigError:
-                    update_ticket_status(ticket, 'Processing failed, interval length exceeds 10000000bp')
+                    update_ticket_status(ticket, 'The provided genomic interval is too large (>10Mbp). Consider using complete ADASTRA database dump (https://adastra.autosome.ru/{}}/downloads) and performing stand-alone enrichment analysis.'.format(current_release.name))
                     raise ConvError
                 except:
                     change_status_on_fail = True
@@ -562,7 +562,7 @@ def process_snp_file(ticket_id, fdr_class, annotate_tf=True, annotate_cl=True, b
             len_items = len(rs_ids)
 
         if len_items > 10000:
-            update_ticket_status(ticket, 'Processing failed, the number of itmes exceeds 10000')
+            update_ticket_status(ticket, 'Too many SNPs found (>10000). Consider using complete ADASTRA database dump (https://adastra.autosome.ru/{}/downloads) and performing stand-alone enrichment analysis.'.format(current_release.name))
             raise ConvError
 
         change_status_on_fail = True
