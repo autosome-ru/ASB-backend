@@ -330,7 +330,7 @@ class ReleaseService:
                     self.TranscriptionFactor.aggregated_snps_count005 > 0).count(),
                 'cell_types_count': self.CellLine.query.filter(self.CellLine.aggregated_snps_count005 > 0).count(),
                 'snps_count': stats_dict['0.05']['possible_all_asbs_rs'],
-                'asbs_count': self.CellLineSNP.query.count() + self.TranscriptionFactorSNP.query.count()
+                'asbs_count': stats_dict['0.05']['possible_all_asbs']
             }
         else:
             return {
