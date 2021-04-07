@@ -41,10 +41,10 @@ current_release.GeneSNPCorrespondence, \
 current_release.Gene
 
 
-TF = 1
-CL = 1
+TF = 0
+CL = 0
 tr = 0.25
-EXP = 1
+EXP = 0
 TF_DICT = 1
 CL_DICT = 1
 PHEN = 1
@@ -330,7 +330,11 @@ if __name__ == '__main__':
 
                     for parameter in parameters_list:
                         # FIXME TEMPORARY
-                        exp_id = Experiment.query.filter(Experiment.align == parameter['aligns'][0]).one().exp_id
+                        try:
+                            exp_id = Experiment.query.filter(Experiment.align == parameter['aligns'][0]).one().exp_id
+                        except:
+                            print(parameter)
+                            raise
 
                         exp_snp = ExpSNP.query.filter(
                             ExpSNP.exp_id == exp_id,
