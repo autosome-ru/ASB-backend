@@ -199,7 +199,7 @@ if __name__ == '__main__':
                         'fdr_class': get_fdr_class(-np.log10(min_pv)),
                         'es_ref': row['es_mean_ref'],
                         'es_alt': row['es_mean_alt'],
-                        'is_asb': min_pv <= 0.05,
+                        'is_asb': min_pv <= 0.1,
                         'mean_bad': row['mean_BAD'],
                         'peak_calls': row['n_peak_calls'],
                         'peak_callers': row['n_peak_callers'],
