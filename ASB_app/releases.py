@@ -22,6 +22,12 @@ class ReleaseDan(Release):
     full_version = '3.0'
 
 
+class ReleaseBud(Release):
+    name = 'bud'
+    version = '4'
+    full_version = '4.0'
+
+
 def get_release_by_version(version):
     for release in Release.__subclasses__():
         if release.version == version:

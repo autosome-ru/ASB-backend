@@ -93,7 +93,7 @@ for release in Release.__subclasses__():
             """
             all_args = pagination_parser.parse_args()
             filters = self.release_service.get_filters_by_rs_id(rs_id) + \
-                self.release_service.get_filters_by_fdr(default_fdr_tr)
+                self.release_service.get_filters_by_fdr(default_fdr_tr(int(self.used_release.version)))
             result = self.paginate(all_args, extra_filters=filters)
             return {'results': result, 'total': self.items_count(extra_filters=filters)}
 
@@ -116,7 +116,7 @@ for release in Release.__subclasses__():
                 return {'results': [], 'gene': None, 'total': 0}
             gene.locus_start, gene.locus_end = self.release_service.get_gene_locus(gene)
             filters = self.release_service.get_filters_by_gene(self.release_service.get_gene_by_id(gene_id)) + \
-                self.release_service.get_filters_by_fdr(default_fdr_tr)
+                self.release_service.get_filters_by_fdr(default_fdr_tr(int(self.used_release.version)))
             result = self.paginate(all_args, extra_filters=filters)
 
             return {'results': result, 'gene': gene, 'total': self.items_count(extra_filters=filters)}
@@ -140,7 +140,7 @@ for release in Release.__subclasses__():
                 return {'results': [], 'gene': None, 'total': 0}
             gene.locus_start, gene.locus_end = self.release_service.get_gene_locus(gene)
             filters = self.release_service.get_filters_by_gene(gene) + \
-                self.release_service.get_filters_by_fdr(default_fdr_tr)
+                self.release_service.get_filters_by_fdr(default_fdr_tr(int(self.used_release.version)))
             result = self.paginate(all_args, extra_filters=filters)
 
             return {'results': result, 'gene': gene, 'total': self.items_count(extra_filters=filters)}
@@ -165,7 +165,7 @@ for release in Release.__subclasses__():
                     return {'results': [], 'gene': None, 'total': 0}
                 gene.locus_start, gene.locus_end = self.release_service.get_gene_locus(gene)
                 filters = self.release_service.get_filters_by_eqtl_gene(self.release_service.get_gene_by_id(gene_id)) + \
-                    self.release_service.get_filters_by_fdr(default_fdr_tr)
+                    self.release_service.get_filters_by_fdr(default_fdr_tr(int(self.used_release.version)))
                 result = self.paginate(all_args, extra_filters=filters)
 
                 return {'results': result, 'gene': gene, 'total': self.items_count(extra_filters=filters)}
@@ -190,7 +190,7 @@ for release in Release.__subclasses__():
                     return {'results': [], 'gene': None, 'total': 0}
                 gene.locus_start, gene.locus_end = self.release_service.get_gene_locus(gene)
                 filters = self.release_service.get_filters_by_eqtl_gene(gene) + \
-                    self.release_service.get_filters_by_fdr(default_fdr_tr)
+                    self.release_service.get_filters_by_fdr(default_fdr_tr(int(self.used_release.version)))
                 result = self.paginate(all_args, extra_filters=filters)
 
                 return {'results': result, 'gene': gene, 'total': self.items_count(extra_filters=filters)}

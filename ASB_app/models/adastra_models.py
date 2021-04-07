@@ -371,10 +371,16 @@ for release in Release.__subclasses__():
         start_pos = db.Column(db.Integer, nullable=False)
         end_pos = db.Column(db.Integer, nullable=False)
         orientation = db.Column(db.Boolean, nullable=False)
-        snps_count = db.Column(db.Integer)
-        snps_count005 = db.Column(db.Integer)
-        eqtl_snps_count = db.Column(db.Integer)
-        eqtl_snps_count005 = db.Column(db.Integer)
+        if release.version >= 4:
+            snps_count = db.Column(db.Integer)
+            snps_count010 = db.Column(db.Integer)
+            eqtl_snps_count = db.Column(db.Integer)
+            eqtl_snps_count010 = db.Column(db.Integer)
+        else:
+            snps_count = db.Column(db.Integer)
+            snps_count005 = db.Column(db.Integer)
+            eqtl_snps_count = db.Column(db.Integer)
+            eqtl_snps_count005 = db.Column(db.Integer)
 
         snps_by_target = db.relationship(
             'SNP',
