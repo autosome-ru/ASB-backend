@@ -40,14 +40,14 @@ current_release.BADGroup, \
 current_release.GeneSNPCorrespondence, \
 current_release.Gene
 
+tr = 0.25
 
+EXP = 0
 TF = 0
 CL = 0
-tr = 0.25
-EXP = 0
+PHEN = 0
 TF_DICT = 1
 CL_DICT = 1
-PHEN = 1
 CONTEXT = 1
 CONTROLS = 1
 BAD_GROUP = 1
