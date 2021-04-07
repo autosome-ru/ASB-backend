@@ -371,7 +371,7 @@ for release in Release.__subclasses__():
         start_pos = db.Column(db.Integer, nullable=False)
         end_pos = db.Column(db.Integer, nullable=False)
         orientation = db.Column(db.Boolean, nullable=False)
-        if release.version >= 4:
+        if int(release.version) >= 4:
             snps_count = db.Column(db.Integer)
             snps_count010 = db.Column(db.Integer)
             eqtl_snps_count = db.Column(db.Integer)
