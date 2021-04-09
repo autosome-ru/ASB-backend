@@ -22,8 +22,8 @@ class ReleaseDan(Release):
     full_version = '3.0'
 
 
-class ReleaseLazy(Release):
-    name = 'lazy'
+class ReleaseSusan(Release):
+    name = 'susan'
     version = '4'
     full_version = '4.0'
 

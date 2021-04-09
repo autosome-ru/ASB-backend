@@ -12,7 +12,7 @@ from ASB_app.utils.statistics import get_fdr_class
 
 from sqlalchemy.sql import case
 
-current_release = releases.ReleaseLazy
+current_release = releases.ReleaseSusan
 session = current_release.session
 
 TranscriptionFactor, \
