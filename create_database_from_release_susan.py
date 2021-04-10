@@ -59,11 +59,12 @@ TARGET_GENE_SNP_COUNT = 0
 UPDATE_CONCORDANCE = 0  # Don't forget to change current_release in releases.py
 UPDATE_PHEN_COUNT = 0
 UPDATE_HAS_CONCORDANCE = 0
-UPDATE_BEST_P_VALUE = 0
+UPDATE_BEST_P_VALUE = 1
 PROMOTER_GENE_COUNT = 0
-TARGET_GENE_COUNT_010 = 0
-PROMOTER_GENE_COUNT_010 = 0
-SET_NONE_TO_ZERO = 1
+TARGET_GENE_COUNT_010 = 1
+PROMOTER_GENE_COUNT_010 = 1
+SET_NONE_TO_ZERO = 0
+CHECK_NONE = 1
 
 
 release_path = os.path.expanduser('~/DataChip/')
@@ -634,6 +635,7 @@ if __name__ == '__main__':
         session.close()
 
     if SET_NONE_TO_ZERO:
+        print('Setting 0 when NULL')
         items_dict = {
             Gene: ['snps_count', 'snps_count010', 'eqtl_snps_count', 'eqtl_snps_count010'],
             SNP: ['has_clinvar_associations', 'has_phewas_associations', 'has_ebi_associations',
@@ -648,4 +650,19 @@ if __name__ == '__main__':
                 for item in cls.query.filter(getattr(cls, field).is_(None)):
                     setattr(item, field, 0)
                 session.commit()
+
+    if CHECK_NONE:
+        print('Performing NULL checks')
+        items_dict = {
+            Gene: ['snps_count', 'snps_count010', 'eqtl_snps_count', 'eqtl_snps_count010'],
+            SNP: ['best_p_value', 'fdr_class', 'context', 'snps_count', 'snps_count010', 'eqtl_snps_count', 'eqtl_snps_count010'],
+            TranscriptionFactor: ['aggregated_snps_count', 'aggregated_snps_count005', 'aggregated_snps_count010'],
+            CellLine: ['aggregated_snps_count', 'aggregated_snps_count005', 'aggregated_snps_count010']
+        }
+        for cls, lst in items_dict.items():
+            for field in lst:
+                print(cls.__name__, field)
+                ctr = cls.query.filter(getattr(cls, field).is_(None)).count()
+                if ctr > 0:
+                    print('WARN: {} occasions of {}.{} = NULL'.format(ctr, cls, field))
 
