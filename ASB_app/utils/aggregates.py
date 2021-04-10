@@ -278,7 +278,7 @@ def update_gene_snps_count():
 
 
 def update_best_p_value():
-    q = session.query(SNP, db.func.greatest(TranscriptionFactorSNP.best_p_value.max(), CellLineSNP.best_p_value.max()))\
+    q = session.query(SNP, db.func.greatest(db.func.max(TranscriptionFactorSNP.best_p_value), db.func.max(CellLineSNP.best_p_value)))\
         .join(TranscriptionFactorSNP, SNP.tf_aggregated_snps)\
         .join(CellLineSNP, SNP.cl_aggregated_snps)\
         .group_by(SNP)
