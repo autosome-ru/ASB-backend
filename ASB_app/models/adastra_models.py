@@ -34,24 +34,15 @@ for release in Release.__subclasses__():
             def experiments_count(self):
                 return db.func.count(Experiment.exp_id)
 
-            # if int(release.version) >= 3:
-            #     tf_aggregated_snps010 = db.relationship(
-            #         'TranscriptionFactorSNP',
-            #         primaryjoin='(TranscriptionFactor.tf_id == TranscriptionFactorSNP.tf_id) & (TranscriptionFactorSNP.best_p_value >= {})'.format(-np.log10(0.10))
-            #     )
-            #
-            #     @aggregated('tf_aggregated_snps010', db.Column(db.Integer))
-            #     def aggregated_snps_count010(self):
-            #         return db.func.count(TranscriptionFactorSNP.tf_snp_id)
-            #
-            #     tf_aggregated_snps005 = db.relationship(
-            #         'TranscriptionFactorSNP',
-            #         primaryjoin='(TranscriptionFactor.tf_id == TranscriptionFactorSNP.tf_id) & (TranscriptionFactorSNP.best_p_value >= {})'.format(-np.log10(0.05))
-            #     )
-            #
-            #     @aggregated('tf_aggregated_snps005', db.Column(db.Integer))
-            #     def aggregated_snps_count005(self):
-            #         return db.func.count(TranscriptionFactorSNP.tf_snp_id)
+            if int(release.version) >= 3:
+                tf_aggregated_snps005 = db.relationship(
+                    'TranscriptionFactorSNP',
+                    primaryjoin='(TranscriptionFactor.tf_id == TranscriptionFactorSNP.tf_id) & (TranscriptionFactorSNP.best_p_value >= {})'.format(-np.log10(0.05))
+                )
+
+                @aggregated('tf_aggregated_snps005', db.Column(db.Integer))
+                def aggregated_snps_count005(self):
+                    return db.func.count(TranscriptionFactorSNP.tf_snp_id)
 
             def __repr__(self):
                 return '<TranscriptionFactor #{0.tf_id}, {0.name}>'.format(self)
@@ -86,24 +77,15 @@ for release in Release.__subclasses__():
         def experiments_count(self):
             return db.func.count(Experiment.exp_id)
 
-        # if int(release.version) >= 3:
-        #     cl_aggregated_snps010 = db.relationship(
-        #         'CellLineSNP',
-        #         primaryjoin='(CellLine.cl_id == CellLineSNP.cl_id) & (CellLineSNP >= {})'.format(-np.log10(0.10))
-        #     )
-        #
-        #     @aggregated('cl_aggregated_snps010', db.Column(db.Integer))
-        #     def aggregated_snps_count010(self):
-        #         return db.func.count(CellLineSNP.cl_snp_id)
-        #
-        #     cl_aggregated_snps005 = db.relationship(
-        #         'CellLineSNP',
-        #         primaryjoin='(CellLine.cl_id == CellLineSNP.cl_id) & (CellLineSNP >= {})'.format(-np.log10(0.05))
-        #     )
-        #
-        #     @aggregated('cl_aggregated_snps005', db.Column(db.Integer))
-        #     def aggregated_snps_count005(self):
-        #         return db.func.count(CellLineSNP.cl_snp_id)
+        if int(release.version) >= 3:
+            cl_aggregated_snps005 = db.relationship(
+                'CellLineSNP',
+                primaryjoin='(CellLine.cl_id == CellLineSNP.cl_id) & (CellLineSNP.best_p_value >= {})'.format(-np.log10(0.05))
+            )
+
+            @aggregated('cl_aggregated_snps005', db.Column(db.Integer))
+            def aggregated_snps_count005(self):
+                return db.func.count(CellLineSNP.cl_snp_id)
 
         def __repr__(self):
             return '<CellLine #{0.cl_id}, {0.name}>'.format(self)
