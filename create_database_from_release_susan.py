@@ -55,7 +55,7 @@ BAD_GROUP = 0
 GENES = 0
 TARGET_GENES = 0
 PROMOTER_GENES = 0  # not needed at first time
-TARGET_GENE_SNP_COUNT = 1
+TARGET_GENE_SNP_COUNT = 0
 UPDATE_CONCORDANCE = 0  # Don't forget to change current_release in releases.py
 UPDATE_PHEN_COUNT = 0
 UPDATE_HAS_CONCORDANCE = 0
@@ -63,6 +63,7 @@ UPDATE_BEST_P_VALUE = 0
 PROMOTER_GENE_COUNT = 0
 TARGET_GENE_COUNT_010 = 0
 PROMOTER_GENE_COUNT_010 = 0
+SET_NONE_TO_ZERO = 1
 
 
 release_path = os.path.expanduser('~/DataChip/')
@@ -631,4 +632,20 @@ if __name__ == '__main__':
             gene.snps_count010 = 0
         session.commit()
         session.close()
+
+    if SET_NONE_TO_ZERO:
+        items_dict = {
+            Gene: ['snps_count', 'snps_count010', 'eqtl_snps_count', 'eqtl_snps_count010'],
+            SNP: ['has_clinvar_associations', 'has_phewas_associations', 'has_ebi_associations',
+                  'has_qtl_associations', 'has_grasp_associations', 'has_finemapping_associations',
+                  'has_concordance'],
+            TranscriptionFactor: ['tf_aggregated_snps', 'tf_aggregated_snps005', 'tf_aggregated_snps010'],
+            CellLine: ['cl_aggregated_snps', 'cl_aggregated_snps005', 'cl_aggregated_snps010']
+        }
+        for cls, lst in items_dict.items():
+            for field in lst:
+                print(cls.__name__, field)
+                for item in cls.query.filter(getattr(cls, field).is_(None)):
+                    setattr(item, field, 0)
+                session.commit()
 
