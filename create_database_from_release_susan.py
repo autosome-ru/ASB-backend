@@ -49,7 +49,7 @@ CL = 0
 PHEN = 0
 TF_DICT = 0
 CL_DICT = 0
-CONTEXT = 0
+CONTEXT = 1
 CONTROLS = 0
 BAD_GROUP = 0
 GENES = 0
@@ -67,7 +67,7 @@ SET_NONE_TO_ZERO = 0
 CHECK_NONE = 1
 
 
-release_path = os.path.expanduser('~/DataChip/')
+release_path = os.path.expanduser('~/DataChipRescaleW/')
 parameters_path = os.path.expanduser('~/Configs/')
 
 conv_bad = dict(zip(
