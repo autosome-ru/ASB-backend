@@ -3,6 +3,7 @@ import math
 from ASB_app import *
 from ASB_app import constants
 from ASB_app.models import *
+from ASB_app.utils.aggregates import update_motif_concordance, update_has_concordance, update_phenotype_associations, update_best_p_value
 import os
 import json
 import numpy as np
@@ -51,9 +52,14 @@ CL_DICT = 0
 CONTEXT = 0
 CONTROLS = 0
 BAD_GROUP = 0
-GENES = 1
+GENES = 0
 TARGET_GENES = 1
-PROMOTER_GENES = 1
+PROMOTER_GENES = 0  # not needed at first time
+TARGET_GENE_SNP_COUNT = 1
+UPDATE_CONCORDANCE = 1
+UPDATE_PHEN_COUNT = 1
+UPDATE_HAS_CONCORDANCE = 1
+UPDATE_BEST_P_VALUE = 1
 
 
 release_path = os.path.expanduser('~/DataChip/')
@@ -508,6 +514,7 @@ if __name__ == '__main__':
         session.commit()
 
     if TARGET_GENES:
+        print('Loading target genes')
         # table = pd.read_table(os.path.join(release_path, 'release_stats', 'phenotypes_stats.tsv'))
         table = pd.read_table(os.path.join(release_path, 'release_stats', 'phenotypes_stats.tsv'))
         print(len(table.index))
@@ -553,3 +560,28 @@ if __name__ == '__main__':
             ).all()
             genes.append(gene)
         session.commit()
+
+    if TARGET_GENE_SNP_COUNT:
+        print('Updating target snp count')
+        for i, gene in enumerate(Gene.query, 1):
+            if i % 1000 == 0:
+                print(i)
+            gene.eqtl_snps_count = len(gene.snps_by_target)
+        session.commit()
+
+    if UPDATE_CONCORDANCE:
+        print('Updating motif concordance')
+        update_motif_concordance()
+
+    if UPDATE_PHEN_COUNT:
+        print('Updating phenotype associations counts')
+        update_phenotype_associations()
+
+    if UPDATE_PHEN_COUNT:
+        print('Updating "has concordant snps"')
+        update_has_concordance()
+
+    if UPDATE_BEST_P_VALUE:
+        print('Updating best p-value')
+        update_best_p_value()
+
