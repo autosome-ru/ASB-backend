@@ -292,8 +292,8 @@ class ReleaseService:
         if int(self.release.version) >= 3:
             filters = (((cls.name.like(in_str),) if in_str else ()) +
                        ((not_(cls.name.in_(used_options)),) if used_options else ()) +
-                       (cls.aggregated_snps_count005,))
-            return cls.query.filter(*filters).order_by(cls.aggregated_snps_count005.desc()).limit(3).all()
+                       (cls.aggregated_snps_count010,))
+            return cls.query.filter(*filters).order_by(cls.aggregated_snps_count010.desc()).limit(3).all()
         else:
             filters = (((cls.name.like(in_str),) if in_str else ()) +
                        ((not_(cls.name.in_(used_options)),) if used_options else ()) +
@@ -327,8 +327,8 @@ class ReleaseService:
         if int(self.release.version) >= 3:
             return {
                 'transcription_factors_count': self.TranscriptionFactor.query.filter(
-                    self.TranscriptionFactor.aggregated_snps_count005 > 0).count(),
-                'cell_types_count': self.CellLine.query.filter(self.CellLine.aggregated_snps_count005 > 0).count(),
+                    self.TranscriptionFactor.aggregated_snps_count010 > 0).count(),
+                'cell_types_count': self.CellLine.query.filter(self.CellLine.aggregated_snps_count010 > 0).count(),
                 'snps_count': stats_dict['0.05']['possible_all_asbs_rs'],
                 'asbs_count': stats_dict['0.05']['possible_all_asbs']
             }

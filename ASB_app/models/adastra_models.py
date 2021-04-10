@@ -35,13 +35,13 @@ for release in Release.__subclasses__():
                 return db.func.count(Experiment.exp_id)
 
             if int(release.version) >= 3:
-                tf_aggregated_snps005 = db.relationship(
+                tf_aggregated_snps010 = db.relationship(
                     'TranscriptionFactorSNP',
-                    primaryjoin='(TranscriptionFactor.tf_id == TranscriptionFactorSNP.tf_id) & (TranscriptionFactorSNP.best_p_value >= {})'.format(-np.log10(0.05))
+                    primaryjoin='(TranscriptionFactor.tf_id == TranscriptionFactorSNP.tf_id) & (TranscriptionFactorSNP.best_p_value >= {})'.format(-np.log10(0.10))
                 )
 
-                @aggregated('tf_aggregated_snps005', db.Column(db.Integer))
-                def aggregated_snps_count005(self):
+                @aggregated('tf_aggregated_snps010', db.Column(db.Integer))
+                def aggregated_snps_count010(self):
                     return db.func.count(TranscriptionFactorSNP.tf_snp_id)
 
             def __repr__(self):
@@ -78,13 +78,13 @@ for release in Release.__subclasses__():
             return db.func.count(Experiment.exp_id)
 
         if int(release.version) >= 3:
-            cl_aggregated_snps005 = db.relationship(
+            cl_aggregated_snps010 = db.relationship(
                 'CellLineSNP',
-                primaryjoin='(CellLine.cl_id == CellLineSNP.cl_id) & (CellLineSNP.best_p_value >= {})'.format(-np.log10(0.05))
+                primaryjoin='(CellLine.cl_id == CellLineSNP.cl_id) & (CellLineSNP >= {})'.format(-np.log10(0.10))
             )
 
-            @aggregated('cl_aggregated_snps005', db.Column(db.Integer))
-            def aggregated_snps_count005(self):
+            @aggregated('cl_aggregated_snps010', db.Column(db.Integer))
+            def aggregated_snps_count010(self):
                 return db.func.count(CellLineSNP.cl_snp_id)
 
         def __repr__(self):
@@ -371,16 +371,13 @@ for release in Release.__subclasses__():
         start_pos = db.Column(db.Integer, nullable=False)
         end_pos = db.Column(db.Integer, nullable=False)
         orientation = db.Column(db.Boolean, nullable=False)
-        if int(release.version) >= 4:
+        if int(release.version) >= 3:
             snps_count = db.Column(db.Integer)
             snps_count010 = db.Column(db.Integer)
             eqtl_snps_count = db.Column(db.Integer)
             eqtl_snps_count010 = db.Column(db.Integer)
         else:
             snps_count = db.Column(db.Integer)
-            snps_count005 = db.Column(db.Integer)
-            eqtl_snps_count = db.Column(db.Integer)
-            eqtl_snps_count005 = db.Column(db.Integer)
 
         snps_by_target = db.relationship(
             'SNP',

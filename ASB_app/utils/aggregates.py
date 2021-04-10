@@ -269,7 +269,7 @@ def update_gene_snps_count():
 
         snps = gene.proximal_promoter_snps
         gene.snps_count = len(snps)
-        gene.snps_count005 = len([x for x in gene.proximal_promoter_snps if x.fdr_class in ('0.01', '0.05')])
+        # gene.snps_count005 = len([x for x in gene.proximal_promoter_snps if x.fdr_class in ('0.01', '0.05')])
         # gene.snps_count = SNP.query.filter(*filters).count()
         # gene.snps_count005 = SNP.query.filter(*filters, SNP.fdr_class.in_(('0.01', '0.05'))).count()
         # gene.eqtl_snps_count = SNP.query.join(Gene, SNP.target_genes).filter(Gene.gene_id == gene.gene_id).count()

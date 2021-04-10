@@ -16,16 +16,10 @@ class ReleaseSoos(Release):
     full_version = '1.6'
 
 
-class ReleaseDan(Release):
-    name = 'dan'
-    version = '3'
-    full_version = '3.0'
-
-
 class ReleaseSusan(Release):
     name = 'susan'
-    version = '4'
-    full_version = '4.0'
+    version = '3'
+    full_version = '3.5'
 
 
 def get_release_by_version(version):

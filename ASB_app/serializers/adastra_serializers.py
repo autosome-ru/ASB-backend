@@ -30,7 +30,7 @@ class ReleaseSerializers:
                 'name': fields.String,
                 'uniprot_ac': fields.String,
                 'aggregated_snps_count': fields.Integer(readonly=True),
-                'aggregated_snps_count005': fields.Integer(readonly=True),
+                'aggregated_snps_count010': fields.Integer(readonly=True),
                 'experiments_count': fields.Integer(readonly=True),
             })
 
@@ -38,7 +38,7 @@ class ReleaseSerializers:
                 'cl_id': fields.Integer(readonly=True),
                 'name': fields.String,
                 'aggregated_snps_count': fields.Integer(readonly=True),
-                'aggregated_snps_count005': fields.Integer(readonly=True),
+                'aggregated_snps_count010': fields.Integer(readonly=True),
                 'experiments_count': fields.Integer(readonly=True),
             })
         else:
@@ -67,9 +67,9 @@ class ReleaseSerializers:
                 'locus_start': fields.Integer,
                 'locus_end': fields.Integer,
                 'snps_count': fields.Integer,
-                'snps_count005': fields.Integer,
+                'snps_count010': fields.Integer,
                 'eqtl_snps_count': fields.Integer,
-                'eqtl_snps_count005': fields.Integer,
+                'eqtl_snps_count010': fields.Integer,
             })
         else:
             self.gene_model = api.model('Gene', {
