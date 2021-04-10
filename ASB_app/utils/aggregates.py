@@ -278,12 +278,13 @@ def update_gene_snps_count():
 
 
 def update_best_p_value():
-    for i, snp in enumerate(SNP.query, 1):
+    q = session.query(SNP, db.func.greatest(TranscriptionFactorSNP.best_p_value.max(), CellLineSNP.best_p_value.max()))\
+        .join(TranscriptionFactorSNP, SNP.tf_aggregated_snps)\
+        .join(CellLineSNP, SNP.cl_aggregated_snps)\
+        .group_by(SNP)
+    for i, (snp, best_p) in enumerate(q, 1):
         if i % 50000 == 1:
             print(i)
-        tf_snps = snp.tf_aggregated_snps
-        cl_snps = snp.cl_aggregated_snps
-        best_p = max(s.best_p_value for s in tf_snps + cl_snps)
         snp.best_p_value = best_p
         snp.fdr_class = get_fdr_class(best_p)
     session.commit()

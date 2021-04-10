@@ -55,11 +55,14 @@ BAD_GROUP = 0
 GENES = 0
 TARGET_GENES = 0
 PROMOTER_GENES = 0  # not needed at first time
-TARGET_GENE_SNP_COUNT = 1
-UPDATE_CONCORDANCE = 1
-UPDATE_PHEN_COUNT = 1
-UPDATE_HAS_CONCORDANCE = 1
+TARGET_GENE_SNP_COUNT = 0
+UPDATE_CONCORDANCE = 0  # Don't forget to change current_release in releases.py
+UPDATE_PHEN_COUNT = 0
+UPDATE_HAS_CONCORDANCE = 0
 UPDATE_BEST_P_VALUE = 1
+PROMOTER_GENE_COUNT = 1
+TARGET_GENE_COUNT_010 = 1
+PROMOTER_GENE_COUNT_010 = 1
 
 
 release_path = os.path.expanduser('~/DataChip/')
@@ -569,6 +572,10 @@ if __name__ == '__main__':
                 print(i)
             gene.eqtl_snps_count = count
         session.commit()
+        for gene in Gene.query.filter(Gene.eqtl_snps_count.is_(None)):
+            gene.eqtl_snps_count = 0
+        session.commit()
+        session.close()
 
     if UPDATE_CONCORDANCE:
         print('Updating motif concordance')
@@ -585,4 +592,43 @@ if __name__ == '__main__':
     if UPDATE_BEST_P_VALUE:
         print('Updating best p-value')
         update_best_p_value()
+
+    if TARGET_GENE_COUNT_010:
+        print('Updating target snp count 010')
+        q = session.query(Gene, db.func.count('*')).join(SNP, Gene.snps_by_target).filter(SNP.fdr_class.in_(['0.01', '0.05', '0.1'])).group_by(Gene)
+        for i, (gene, count) in enumerate(q, 1):
+            if i % 1000 == 0:
+                print(i)
+            gene.eqtl_snps_count010 = count
+        session.commit()
+        for gene in Gene.query.filter(Gene.eqtl_snps_count010.is_(None)):
+            gene.eqtl_snps_count010 = 0
+        session.commit()
+        session.close()
+
+    if PROMOTER_GENE_COUNT:
+        print('Updating promoter snp count')
+        q = session.query(Gene, db.func.count('*')).join(SNP, Gene.proximal_promoter_snps).group_by(Gene)
+        for i, (gene, count) in enumerate(q, 1):
+            if i % 1000 == 0:
+                print(i)
+            gene.snps_count = count
+        session.commit()
+        for gene in Gene.query.filter(Gene.snps_count.is_(None)):
+            gene.snps_count = 0
+        session.commit()
+        session.close()
+
+    if PROMOTER_GENE_COUNT_010:
+        print('Updating promoter snp count 010')
+        q = session.query(Gene, db.func.count('*')).join(SNP, Gene.proximal_promoter_snps).filter(SNP.fdr_class.in_(['0.01', '0.05', '0.1'])).group_by(Gene)
+        for i, (gene, count) in enumerate(q, 1):
+            if i % 1000 == 0:
+                print(i)
+            gene.snps_count010 = count
+        session.commit()
+        for gene in Gene.query.filter(Gene.snps_count010.is_(None)):
+            gene.snps_count010 = 0
+        session.commit()
+        session.close()
 
