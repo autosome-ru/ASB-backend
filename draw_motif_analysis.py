@@ -4,8 +4,7 @@ from math import lgamma
 import os
 
 from ASB_app import *
-from ASB_app.releases import ReleaseFord, ReleaseSoos, ReleaseDan
-current_release = ReleaseDan
+from ASB_app.releases import current_release
 
 session = current_release.session
 SNP = current_release.SNP

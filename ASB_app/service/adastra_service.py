@@ -329,8 +329,12 @@ class ReleaseService:
                 'transcription_factors_count': self.TranscriptionFactor.query.filter(
                     self.TranscriptionFactor.aggregated_snps_count010 > 0).count(),
                 'cell_types_count': self.CellLine.query.filter(self.CellLine.aggregated_snps_count010 > 0).count(),
-                'snps_count': stats_dict['0.05']['possible_all_asbs_rs'],
-                'asbs_count': stats_dict['0.05']['possible_all_asbs']
+                'snps_count': stats_dict['0.25']['possible_all_asbs_rs'],
+                'asbs_count': stats_dict['0.25']['possible_all_asbs'],
+                'snps_count010': stats_dict['0.1']['possible_all_asbs_rs'],
+                'asbs_count010': stats_dict['0.1']['possible_all_asbs'],
+                'snps_count005': stats_dict['0.05']['possible_all_asbs_rs'],
+                'asbs_count005': stats_dict['0.05']['possible_all_asbs'],
             }
         else:
             return {

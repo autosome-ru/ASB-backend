@@ -185,6 +185,10 @@ class ReleaseSerializers:
                 'cell_types_count': fields.Integer,
                 'snps_count': fields.Integer,
                 'asbs_count': fields.Integer,
+                'snps_count005': fields.Integer,
+                'asbs_count005': fields.Integer,
+                'snps_count010': fields.Integer,
+                'asbs_count010': fields.Integer,
             })
         else:
             self.frontpage_statistics_model = api.inherit('Front page statistics', {
