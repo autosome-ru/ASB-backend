@@ -655,7 +655,9 @@ if __name__ == '__main__':
         print('Performing NULL checks')
         items_dict = {
             Gene: ['snps_count', 'snps_count010', 'eqtl_snps_count', 'eqtl_snps_count010'],
-            SNP: ['best_p_value', 'fdr_class', 'context', 'snps_count', 'snps_count010', 'eqtl_snps_count', 'eqtl_snps_count010'],
+            SNP: ['best_p_value', 'fdr_class', 'context', 'has_clinvar_associations', 'has_phewas_associations',
+                  'has_ebi_associations', 'has_qtl_associations', 'has_grasp_associations',
+                  'has_finemapping_associations', 'has_concordance'],
             TranscriptionFactor: ['aggregated_snps_count', 'aggregated_snps_count005', 'aggregated_snps_count010'],
             CellLine: ['aggregated_snps_count', 'aggregated_snps_count005', 'aggregated_snps_count010']
         }

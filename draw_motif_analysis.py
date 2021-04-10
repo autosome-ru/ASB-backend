@@ -108,8 +108,8 @@ if __name__ == '__main__':
 
     letters = ['A', 'C', 'G', 'T']
 
-    unit_width = 300
-    unit_height = 600
+    unit_width = 30
+    unit_height = 60
 
     motif_gap = 0.1
     snp_gap = 0.1
@@ -127,7 +127,7 @@ if __name__ == '__main__':
     dna_h = 1/3*2/3*0.8
 
     concordance_indent = 1
-    concordance_scale = 3000/(3351.318*(unit_height/300))
+    concordance_scale = 10/(3351.318*1/2) * unit_width
     conc_self_width = 331.204
 
     visible_cut_tr = 0.05
@@ -209,18 +209,18 @@ if __name__ == '__main__':
             print(full_gap, text_h, indent)
             fig_x = (m + add_letters + add_letters + concordance_indent) * unit_width
             fig_y = unit_height * (1 + full_gap + text_h + indent + hill_sum_height + strands_h + hill_gap + 0.35)
-            fig = transform.SVGFigure("{}px".format(fig_x), "{}px".format(fig_y))
+            fig = transform.SVGFigure("{}".format(fig_x), "{}".format(fig_y))
             txt_gen = transform.TextElement(fig_x - 0.1 * unit_width, fig_y - 0.1 * unit_height,
-                                            'ADASTRA v{}'.format(current_release.full_version), size=str(p_value_text_h * unit_height) + 'px',
+                                            'ADASTRA v{}'.format(current_release.full_version), size=str(p_value_text_h * unit_height),
                                             anchor='end', color='#a8a8a8', font='PT Sans, Arial')
-            txt_snp = transform.TextElement(fig_x - 0.1 * unit_width, fig_y - (2 * p_value_text_h + 0.1) * unit_height,
-                                            'rs{}'.format(snp.rs_id), size=str(p_value_text_h * unit_height) + 'px',
+            txt_snp = transform.TextElement(fig_x - 0.1 * unit_width, fig_y - (2 * p_value_text_h + 0.15) * unit_height,
+                                            'rs{}'.format(snp.rs_id), size=str(p_value_text_h * unit_height),
                                             anchor='end', color='#a8a8a8', font='PT Sans, Arial')
-            txt_tf = transform.TextElement(fig_x - 0.1 * unit_width, fig_y - (p_value_text_h + 0.1) * unit_height,
-                                           tf.name, size=str(p_value_text_h * unit_height) + 'px',
+            txt_tf = transform.TextElement(fig_x - 0.1 * unit_width, fig_y - (p_value_text_h + 0.15) * unit_height,
+                                           tf.name, size=str(p_value_text_h * unit_height),
                                            anchor='end', color='#a8a8a8', font='PT Sans, Arial')
             txt_strand = transform.TextElement(0.1 * unit_width, fig_y - (0.1) * unit_height,
-                                           '({}) strand'.format('-' if draw_revcomp else '+'), size=str(p_value_text_h * unit_height) + 'px',
+                                           '({}) strand'.format('-' if draw_revcomp else '+'), size=str(p_value_text_h * unit_height),
                                            anchor='start', color='#a8a8a8', font='PT Sans, Arial')
             fig.append([txt_gen, txt_snp, txt_tf, txt_strand])
 
@@ -267,17 +267,17 @@ if __name__ == '__main__':
 
             text_x = pos_in_motif + 1 + concordance_indent
             letter_text = pos_in_motif + 1 - 0.05
-            txt_ref = transform.TextElement(text_x * unit_width, (1.24 + (motif_gap + indent)/2 + p_value_text_h/2) * unit_height, 'P-value: ' + get_scientific_text(motif_pref), size=str(p_value_text_h*unit_height) + 'px', color='#000000de', font='PT Sans, Arial')
-            motif_word_ref = transform.TextElement(text_x * unit_width, (1.24 + (motif_gap + indent)/2 - p_value_text_h/2) * unit_height, 'Motif', size=str(p_value_text_h*unit_height) + 'px', color='#000000de', font='PT Sans, Arial')
-            txt_alt = transform.TextElement(text_x * unit_width, (1 + motif_gap + indent*3/2 + text_h + p_value_text_h/2) * unit_height, 'P-value: ' + get_scientific_text(motif_palt), size=str(p_value_text_h*unit_height) + 'px', color='#000000de', font='PT Sans, Arial')
-            motif_word_alt = transform.TextElement(text_x * unit_width, (1 + motif_gap + indent*3/2 + text_h - p_value_text_h/2) * unit_height, 'Motif', size=str(p_value_text_h*unit_height) + 'px', color='#000000de', font='PT Sans, Arial')
+            txt_ref = transform.TextElement(text_x * unit_width, (1.24 + (motif_gap + indent)/2 + p_value_text_h/2) * unit_height, 'P-value: ' + get_scientific_text(motif_pref), size=str(p_value_text_h*unit_height), color='#000000de', font='PT Sans, Arial')
+            motif_word_ref = transform.TextElement(text_x * unit_width, (1.24 + (motif_gap + indent)/2 - p_value_text_h/2) * unit_height, 'Motif', size=str(p_value_text_h*unit_height), color='#000000de', font='PT Sans, Arial')
+            txt_alt = transform.TextElement(text_x * unit_width, (1 + motif_gap + indent*3/2 + text_h + p_value_text_h/2) * unit_height, 'P-value: ' + get_scientific_text(motif_palt), size=str(p_value_text_h*unit_height), color='#000000de', font='PT Sans, Arial')
+            motif_word_alt = transform.TextElement(text_x * unit_width, (1 + motif_gap + indent*3/2 + text_h - p_value_text_h/2) * unit_height, 'Motif', size=str(p_value_text_h*unit_height), color='#000000de', font='PT Sans, Arial')
             txt_ref_letter = transform.TextElement((letter_text) * unit_width,
                                             (1.24 + (motif_gap + indent)/2 - p_value_text_h/2) * unit_height,
                                             'Ref',
-                                            size=str(p_value_text_h * unit_height) + 'px', color='#000000de',
+                                            size=str(p_value_text_h * unit_height), color='#000000de',
                                             font='PT Sans, Arial', anchor='end')
             txt_alt_letter = transform.TextElement((letter_text) * unit_width, (1 + motif_gap + indent*3/2 + text_h + p_value_text_h/2) * unit_height, 'Alt',
-                                                   size=str(p_value_text_h * unit_height) + 'px', color='#000000de',
+                                                   size=str(p_value_text_h * unit_height), color='#000000de',
                                                    font='PT Sans, Arial', anchor='end')
 
             fig.append([txt_ref, txt_alt, motif_word_ref, motif_word_alt, txt_ref_letter, txt_alt_letter])
@@ -289,8 +289,8 @@ if __name__ == '__main__':
                 ef_text_y = 1 + full_gap + text_h + indent + hill_gap + ref_height + strands_h + alt_height*1/3 - p_value_text_h/2
                 fdr_text_y = 1 + full_gap + text_h + indent + hill_gap + ref_height + strands_h + alt_height*2/3 - p_value_text_h/2
 
-            txt_ef = transform.TextElement(((m-1)/2 + add_letters + 0.7 + concordance_indent) * unit_width, ef_text_y * unit_height, 'ASB Effect Size, log₂ : {:.2f}'.format(ef), size=str(p_value_text_h*unit_height) + 'px', anchor='middle', color='#000000de', font='PT Sans, Arial')
-            txt_fdr = transform.TextElement(((m-1)/2 + add_letters + 0.7 + concordance_indent) * unit_width, fdr_text_y * unit_height, 'ASB FDR: ' + get_scientific_text(fdr), size=str(p_value_text_h*unit_height) + 'px', anchor='middle', color='#000000de', font='PT Sans, Arial')
+            txt_ef = transform.TextElement(((m-1)/2 + add_letters + 0.7 + concordance_indent) * unit_width, ef_text_y * unit_height, 'ASB Effect Size, log₂ : {:.2f}'.format(ef), size=str(p_value_text_h*unit_height), anchor='middle', color='#000000de', font='PT Sans, Arial')
+            txt_fdr = transform.TextElement(((m-1)/2 + add_letters + 0.7 + concordance_indent) * unit_width, fdr_text_y * unit_height, 'ASB FDR: ' + get_scientific_text(fdr), size=str(p_value_text_h*unit_height), anchor='middle', color='#000000de', font='PT Sans, Arial')
             fig.append([txt_ef, txt_fdr])
 
             bracket_thick = 10
