@@ -47,8 +47,8 @@ TF = 0
 CL = 0
 PHEN = 0
 TF_DICT = 0
-CL_DICT = 1
-CONTEXT = 1
+CL_DICT = 0
+CONTEXT = 0
 CONTROLS = 1
 BAD_GROUP = 1
 GENES = 1
@@ -57,7 +57,7 @@ PROMOTER_GENES = 1
 
 
 release_path = os.path.expanduser('~/DataChip/')
-parameters_path = os.path.expanduser('~/RESULTS/Configs/')
+parameters_path = os.path.expanduser('~/Configs/')
 
 conv_bad = dict(zip(
     (1, 4 / 3, 3 / 2, 2, 5 / 2, 3, 4, 5, 6),
