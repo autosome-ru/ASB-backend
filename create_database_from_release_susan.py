@@ -563,7 +563,7 @@ if __name__ == '__main__':
 
     if TARGET_GENE_SNP_COUNT:
         print('Updating target snp count')
-        q = session.query(Gene, db.func.count((SNP.chromosome, SNP.position, SNP.alt))).join(SNP, Gene.snps_by_target).group_by(Gene)
+        q = session.query(Gene, db.func.count('*')).join(SNP, Gene.snps_by_target).group_by(Gene)
         for i, (gene, count) in enumerate(q, 1):
             if i % 1000 == 0:
                 print(i)
