@@ -53,7 +53,7 @@ CONTEXT = 0
 CONTROLS = 0
 BAD_GROUP = 0
 GENES = 0
-TARGET_GENES = 1
+TARGET_GENES = 0
 PROMOTER_GENES = 0  # not needed at first time
 TARGET_GENE_SNP_COUNT = 1
 UPDATE_CONCORDANCE = 1
@@ -563,10 +563,11 @@ if __name__ == '__main__':
 
     if TARGET_GENE_SNP_COUNT:
         print('Updating target snp count')
-        for i, gene in enumerate(Gene.query, 1):
+        q = session.query(Gene, SNP.count()).join(SNP, Gene.snps_by_target).group_by(Gene)
+        for i, (gene, count) in enumerate(q, 1):
             if i % 1000 == 0:
                 print(i)
-            gene.eqtl_snps_count = len(gene.snps_by_target)
+            gene.eqtl_snps_count = count
         session.commit()
 
     if UPDATE_CONCORDANCE:
