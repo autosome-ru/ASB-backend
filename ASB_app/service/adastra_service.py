@@ -268,7 +268,7 @@ class ReleaseService:
         for cls, condition in join_tuples:
             found_snps = found_snps.join(cls, condition, isouter=True)
         for column in additional_columns:
-            found_snps = found_snps.add_column(column)
+            found_snps = found_snps.add_column(self.release.db.func.coalesce(column))
         found_snps = found_snps.group_by(self.SNP)
 
         csv_writer.writerow(headers)
