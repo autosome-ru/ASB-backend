@@ -189,6 +189,9 @@ if __name__ == '__main__':
         TranscriptionFactor.tf_id == TranscriptionFactorSNP.tf_id
     ):
         for draw_revcomp in True, False:
+            # if os.path.isfile('D:\Sashok\svgs_{}/{}_{}_{}{}.svg.gz'.format(current_release.name, tf.name, snp.rs_id, snp.alt, '_revcomp' if draw_revcomp else '')):
+            #     continue
+
             pcm_filename = name_dict[tf.name]
 
             pcm_path = os.path.expanduser('~/pcm/{}'.format(pcm_filename))
