@@ -13,49 +13,47 @@ db_name_property_dict = {
     for x in ['clinvar', 'ebi', 'finemapping', 'grasp', 'phewas', 'QTL']
 }
 
-default_fdr_tr = lambda v: '0.1' if v >= 4 else '0.05'
+default_fdr_tr = lambda v: '0.1' if v >= 3 else '0.05'
 fdr_choices = ['0.01', '0.05', '0.1', '0.15', '0.25']
 fdr_classes = fdr_choices + ['1']
 
 stats_dict = {'0.01': {'possible_tf_asbs': 100178,
-  'possible_cl_asbs': 156005,
-  'possible_all_asbs': 256183,
-  'possible_tf_asbs_rs': 79713,
-  'possible_cl_asbs_rs': 115757,
-  'possible_all_asbs_rs': 114925},
- '0.05': {'possible_tf_asbs': 183756,
-  'possible_cl_asbs': 262013,
-  'possible_all_asbs': 445769,
-  'possible_tf_asbs_rs': 136045,
-  'possible_cl_asbs_rs': 180299,
-  'possible_all_asbs_rs': 169816},
- '0.1': {'possible_tf_asbs': 255812,
-  'possible_cl_asbs': 349490,
-  'possible_all_asbs': 605302,
-  'possible_tf_asbs_rs': 180149,
-  'possible_cl_asbs_rs': 229260,
-  'possible_all_asbs_rs': 204619},
- '0.15': {'possible_tf_asbs': 323556,
-  'possible_cl_asbs': 427750,
-  'possible_all_asbs': 751306,
-  'possible_tf_asbs_rs': 219099,
-  'possible_cl_asbs_rs': 270903,
-  'possible_all_asbs_rs': 228154},
- '0.25': {'possible_tf_asbs': 468555,
-  'possible_cl_asbs': 585750,
-  'possible_all_asbs': 1054305,
-  'possible_tf_asbs_rs': 297146,
-  'possible_cl_asbs_rs': 349733,
-  'possible_all_asbs_rs': 253630},
- '0.5': {'possible_tf_asbs': 468555,  # FIXME
-  'possible_cl_asbs': 585750,
-  'possible_all_asbs': 1054305,
-  'possible_tf_asbs_rs': 297146,
-  'possible_cl_asbs_rs': 349733,
-  'possible_all_asbs_rs': 253630}
-}
-
-
+                       'possible_cl_asbs': 156005,
+                       'possible_all_asbs': 256183,
+                       'possible_tf_asbs_rs': 79713,
+                       'possible_cl_asbs_rs': 115757,
+                       'possible_all_asbs_rs': 114925},
+              '0.05': {'possible_tf_asbs': 183756,
+                       'possible_cl_asbs': 262013,
+                       'possible_all_asbs': 445769,
+                       'possible_tf_asbs_rs': 136045,
+                       'possible_cl_asbs_rs': 180299,
+                       'possible_all_asbs_rs': 169816},
+              '0.1': {'possible_tf_asbs': 255812,
+                      'possible_cl_asbs': 349490,
+                      'possible_all_asbs': 605302,
+                      'possible_tf_asbs_rs': 180149,
+                      'possible_cl_asbs_rs': 229260,
+                      'possible_all_asbs_rs': 204619},
+              '0.15': {'possible_tf_asbs': 323556,
+                       'possible_cl_asbs': 427750,
+                       'possible_all_asbs': 751306,
+                       'possible_tf_asbs_rs': 219099,
+                       'possible_cl_asbs_rs': 270903,
+                       'possible_all_asbs_rs': 228154},
+              '0.25': {'possible_tf_asbs': 468555,
+                       'possible_cl_asbs': 585750,
+                       'possible_all_asbs': 1054305,
+                       'possible_tf_asbs_rs': 297146,
+                       'possible_cl_asbs_rs': 349733,
+                       'possible_all_asbs_rs': 253630},
+              '0.5': {'possible_tf_asbs': 468555,  # FIXME
+                      'possible_cl_asbs': 585750,
+                      'possible_all_asbs': 1054305,
+                      'possible_tf_asbs_rs': 297146,
+                      'possible_cl_asbs_rs': 349733,
+                      'possible_all_asbs_rs': 253630}
+              }
 
 # possible_tf_asbs = 390916
 # possible_cl_asbs = 569814

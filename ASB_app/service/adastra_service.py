@@ -8,7 +8,7 @@ import tempfile
 from flask import send_file
 import numpy as np
 
-from ASB_app.constants import stats_dict
+from ASB_app.constants import stats_dict, default_fdr_tr
 
 from math import ceil
 
@@ -114,6 +114,8 @@ class ReleaseService:
     def construct_advanced_filters(self, filters_object):
         filters = []
         if int(self.release.version) >= 3:
+            if not filters_object['fdr']:
+                filters_object['fdr'] = default_fdr_tr(int(self.release.version))
             if filters_object['transcription_factors']:
                 filters += [self.SNP.tf_aggregated_snps.any(
                     (self.TranscriptionFactorSNP.tf_id == getattr(self.TranscriptionFactor.query.filter(
@@ -213,24 +215,46 @@ class ReleaseService:
         query_args = [self.SNP]
         aliases = dict()
 
+        if int(self.release.version) >= 3:
+            if not filters_object['fdr']:
+                filters_object['fdr'] = default_fdr_tr(int(self.release.version))
+
         for what_for in ('TF', 'CL'):
             aggregation_class = {'TF': self.TranscriptionFactor, 'CL': self.CellLine}[what_for]
             aggregated_snp_class = {'TF': self.TranscriptionFactorSNP, 'CL': self.CellLineSNP}[what_for]
             id_field = {'TF': 'tf_id', 'CL': 'cl_id'}[what_for]
-            query_args.append(self.release.db.func.group_concat(aggregation_class.name.distinct()))
+            agr_snp_class_alias = aliased(aggregated_snp_class)
+            agr_class_alias = aliased(aggregation_class)
+            query_args.append(self.release.db.func.group_concat(agr_class_alias.name.distinct()))
             headers.append('{}-ASBs'.format({'TF': 'TF', 'CL': 'Cell type'}[what_for]))
-            join_tuples += [
-                (
-                    aggregated_snp_class,
-                    (aggregated_snp_class.chromosome == self.SNP.chromosome) &
-                    (aggregated_snp_class.position == self.SNP.position) &
-                    (aggregated_snp_class.alt == self.SNP.alt),
-                ),
-                (
-                    aggregation_class,
-                    getattr(aggregation_class, id_field) == getattr(aggregated_snp_class, id_field),
-                )
-            ]
+
+            if int(self.release.version) >= 3:
+                join_tuples += [
+                    (
+                        agr_snp_class_alias,
+                        (agr_snp_class_alias.chromosome == self.SNP.chromosome) &
+                        (agr_snp_class_alias.position == self.SNP.position) &
+                        (agr_snp_class_alias.alt == self.SNP.alt) &
+                        (agr_snp_class_alias.fdr_class.in_(get_corresponding_fdr_classes(filters_object['fdr']))),
+                    ),
+                    (
+                        agr_class_alias,
+                        getattr(agr_class_alias, id_field) == getattr(agr_snp_class_alias, id_field),
+                    )
+                ]
+            else:
+                join_tuples += [
+                    (
+                        agr_snp_class_alias,
+                        (agr_snp_class_alias.chromosome == self.SNP.chromosome) &
+                        (agr_snp_class_alias.position == self.SNP.position) &
+                        (agr_snp_class_alias.alt == self.SNP.alt),
+                    ),
+                    (
+                        agr_class_alias,
+                        getattr(agr_class_alias, id_field) == getattr(agr_snp_class_alias, id_field),
+                    )
+                ]
 
         for what_for in ('TF', 'CL'):
             filter_object_key = {'TF': 'transcription_factors', 'CL': 'cell_types'}[what_for]
@@ -261,14 +285,13 @@ class ReleaseService:
                         ('es_alt', '{}_Effect_Size_Alt'.format(name)),
                     ]:
                         headers.append(label)
-                        additional_columns.append(getattr(aggregated_snp_class, field).label(label))
+                        additional_columns.append(self.release.db.func.coalesce(getattr(aliases[name], field)).label(label))
 
         found_snps = self.release.session.query(*query_args)
         found_snps = found_snps.filter(*self.construct_advanced_filters(filters_object))
         for cls, condition in join_tuples:
             found_snps = found_snps.join(cls, condition, isouter=True)
-        for column in additional_columns:
-            found_snps = found_snps.add_column(self.release.db.func.coalesce(column))
+        found_snps = found_snps.add_columns(*additional_columns)
         found_snps = found_snps.group_by(self.SNP)
 
         csv_writer.writerow(headers)

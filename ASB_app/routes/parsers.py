@@ -19,7 +19,7 @@ for release in Release.__subclasses__():
 
     search_parser = pagination_parser.copy()
     if int(release.version) >= 3:
-        search_parser.add_argument('fdr', help='FDR threshold', default='0.05', choices=fdr_choices)
+        search_parser.add_argument('fdr', help='FDR threshold', choices=fdr_choices)
     search_parser.add_argument('cell_types', action='split', help='Comma-separated list of cell types, search SNPs ASB for every cell type scpecified')
     search_parser.add_argument('transcription_factors', action='split', help='Comma-separated list of cell types, search SNPs ASB for every cell type scpecified')
     search_parser.add_argument('chromosome', choices=chromosomes, help='Search only SNPs on the specified chromosome')
