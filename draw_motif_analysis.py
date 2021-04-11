@@ -127,7 +127,7 @@ if __name__ == '__main__':
     dna_h = 1/3*2/3*0.8
 
     concordance_indent = 1
-    concordance_scale = 10/(3351.318*1/2) * unit_width
+    concordance_scale = 10/(3351.318*2) * unit_width
     conc_self_width = 331.204
 
     visible_cut_tr = 0.05

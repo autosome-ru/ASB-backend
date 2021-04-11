@@ -49,7 +49,7 @@ CL = 0
 PHEN = 0
 TF_DICT = 0
 CL_DICT = 0
-CONTEXT = 1
+CONTEXT = 0
 CONTROLS = 0
 BAD_GROUP = 0
 GENES = 0
@@ -59,10 +59,10 @@ TARGET_GENE_SNP_COUNT = 0
 UPDATE_CONCORDANCE = 0  # Don't forget to change current_release in releases.py
 UPDATE_PHEN_COUNT = 0
 UPDATE_HAS_CONCORDANCE = 0
-UPDATE_BEST_P_VALUE = 1
+UPDATE_BEST_P_VALUE = 0
 PROMOTER_GENE_COUNT = 0
-TARGET_GENE_COUNT_010 = 1
-PROMOTER_GENE_COUNT_010 = 1
+TARGET_GENE_COUNT_010 = 0
+PROMOTER_GENE_COUNT_010 = 0
 SET_NONE_TO_ZERO = 0
 CHECK_NONE = 1
 
@@ -84,6 +84,7 @@ if __name__ == '__main__':
         cl_dict_reverse[value] = key
 
     if EXP:
+        print('Loading experiments')
         table = pd.read_table(parameters_path + 'master-chip.txt')
         counter = 1
         exps = []
@@ -121,6 +122,7 @@ if __name__ == '__main__':
         session.close()
 
     for param in ['TF'] * TF + ['CL'] * CL:
+        print('Loading {} ASBs'.format(param))
         pv_path = os.path.join(release_path, '{}_P-values/'.format(param))
         for file in sorted(os.listdir(pv_path)):
             with open(pv_path + file, 'r') as table:
@@ -234,6 +236,7 @@ if __name__ == '__main__':
             session.close()
 
     if PHEN:
+        print('Loading phenotypes')
         table = pd.read_table(os.path.join(release_path, 'release_stats', 'phenotypes_stats.tsv'))
         for index, row in table.iterrows():
             if (index + 1) % 1000 == 0:
@@ -257,6 +260,7 @@ if __name__ == '__main__':
     session.close()
 
     for param in ['TF'] * TF_DICT + ['CL'] * CL_DICT:
+        print('Loading {} experiment snps'.format(param))
         pv_path = release_path + '{}_DICTS/'.format(param)
         for file in sorted(os.listdir(pv_path)):
 
@@ -378,6 +382,7 @@ if __name__ == '__main__':
                 processed += chunk_size
 
     if CONTEXT:
+        print('Loading SNP context')
         used = set()
         with open(os.path.join(release_path, 'Sarus', 'all_tfs.fasta')) as file:
             line = file.readline()
@@ -395,6 +400,7 @@ if __name__ == '__main__':
         session.commit()
 
     if CONTROLS:
+        print('Loading control experiments')
         table = pd.read_table(parameters_path + 'master-chip.txt')
         exps = []
         cls = []
@@ -437,6 +443,7 @@ if __name__ == '__main__':
         session.close()
 
     if BAD_GROUP:
+        print('Loading BAD groups')
         with open(os.path.join(release_path, 'release_stats', 'badmaps_dict.json')) as f:
             cell_lines_dict = json.loads(f.readline())
         exps = []
@@ -468,6 +475,7 @@ if __name__ == '__main__':
         session.close()
 
     if GENES:
+        print('Loading genes')
         genes = []
         genes_ids = set()
         with open(os.path.expanduser('~/REFERENCE/gencode.v35.annotation.gtf')) as inp:
@@ -553,6 +561,7 @@ if __name__ == '__main__':
         session.commit()
 
     if PROMOTER_GENES:
+        print('Updating promoter snps')
         genes = []
         for index, gene in enumerate(Gene.query.filter(~((Gene.start_pos == 1) & (Gene.end_pos == 1)))):
             if (index + 1) % 1000 == 0:
