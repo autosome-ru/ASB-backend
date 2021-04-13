@@ -6,7 +6,7 @@ import numpy as np
 from ASB_app.models import CandidateSNP, CandidateRS, CandidateTFRS, CandidateCLRS
 from ASB_app.utils.statistics import get_fdr_class
 
-current_release = releases.ReleaseFord
+current_release = releases.ReleaseSusan
 session = current_release.session
 db = current_release.db
 
@@ -34,11 +34,11 @@ current_release.BADGroup, \
 current_release.Gene
 
 
-TF = 0
-CL = 0
-SNP = 0
-TF_SNP = 0
-CL_SNP = 0
+TF = 1
+CL = 1
+SNP_RS = 1
+TF_SNP = 1
+CL_SNP = 1
 
 
 release_path = os.path.expanduser('~/RESULTS/DataChIP/')
@@ -124,7 +124,7 @@ if __name__ == '__main__':
 
         session.close()
 
-    if SNP:
+    if SNP_RS:
         q = session.query(CandidateSNP.rs_id, db.func.max(CandidateSNP.best_p_value)).group_by(CandidateSNP.rs_id)
         snps = []
         for i, (rs_id, fdr) in enumerate(q, 1):
