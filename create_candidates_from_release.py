@@ -41,8 +41,8 @@ TF_SNP = 1
 CL_SNP = 1
 
 
-release_path = os.path.expanduser('~/RESULTS/DataChIP/')
-parameters_path = os.path.expanduser('~/RESULTS/Configs/')
+release_path = os.path.expanduser('~/DataChIP/')
+parameters_path = os.path.expanduser('~/Configs/')
 
 conv_bad = dict(zip(
     (1, 4 / 3, 3 / 2, 2, 5 / 2, 3, 4, 5, 6),
