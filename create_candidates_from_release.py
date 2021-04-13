@@ -41,7 +41,7 @@ TF_SNP = 1
 CL_SNP = 1
 
 
-release_path = os.path.expanduser('~/DataChIP/')
+release_path = os.path.expanduser('~/DataChipRescaleW/')
 parameters_path = os.path.expanduser('~/Configs/')
 
 conv_bad = dict(zip(
