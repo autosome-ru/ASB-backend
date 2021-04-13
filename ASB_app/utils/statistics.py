@@ -1,5 +1,5 @@
 from ASB_app import releases
-from ASB_app.constants import fdr_classes
+from ASB_app.constants import fdr_classes, es_classes
 from ASB_app.models import CandidateSNP
 import numpy as np
 
@@ -82,19 +82,32 @@ def get_possible_all_candidates(fdr_low, mode='all'):
 
 
 def get_fdr_class(logp):
-    trs = {tr: -np.log10(float(tr)) for tr in fdr_classes}
-    for fdr in trs:
-        tr = trs[fdr]
-        if logp >= tr:
+    for fdr in fdr_classes:
+        if logp >= -np.log10(float(fdr)):
             return fdr
 
 
+def get_es_class(effect_size):
+    for es in es_classes[:-1]:
+        if effect_size >= float(es):
+            return es
+    return es_classes[-1]
+
+
 def get_corresponding_fdr_classes(fdr_class, low=False):
-    index = dict(zip(fdr_classes, range(len(fdr_classes))))[fdr_class]
+    index = fdr_classes.index(fdr_class)
     if low:
         return fdr_classes[index + 1:]
     else:
         return fdr_classes[:index + 1]
+
+
+def get_corresponding_es_classes(es_class, low=False):
+    index = es_classes.index(es_class)
+    if low:
+        return es_classes[index + 1:]
+    else:
+        return es_classes[:index + 1]
 
 
 def get_stats_dict(fdrs):

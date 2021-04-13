@@ -3,15 +3,14 @@ import math
 from ASB_app import *
 from ASB_app import constants
 from ASB_app.models import *
-from ASB_app.utils.aggregates import update_motif_concordance, update_has_concordance, update_phenotype_associations, update_best_p_value
+from ASB_app.utils.aggregates import update_motif_concordance, update_has_concordance, update_phenotype_associations, \
+    update_best_p_value, update_best_es
 import os
 import json
 import numpy as np
 import pandas as pd
 
-from ASB_app.utils.statistics import get_fdr_class
-
-from sqlalchemy.sql import case
+from ASB_app.utils.statistics import get_fdr_class, get_es_class
 
 current_release = releases.ReleaseSusan
 session = current_release.session
@@ -60,6 +59,7 @@ UPDATE_CONCORDANCE = 0  # Don't forget to change current_release in releases.py
 UPDATE_PHEN_COUNT = 0
 UPDATE_HAS_CONCORDANCE = 0
 UPDATE_BEST_P_VALUE = 0
+UPDATE_BEST_ES = 0
 PROMOTER_GENE_COUNT = 0
 TARGET_GENE_COUNT_010 = 0
 PROMOTER_GENE_COUNT_010 = 0
@@ -181,6 +181,9 @@ if __name__ == '__main__':
                     if min_pv > tr:
                         continue
 
+                    max_es = max(x for x in (row['es_mean_ref'],
+                                             row['es_mean_alt']) if x is not None)
+
                     for field in int_fields:
                         if row[field] == '' or row[field] == '.':
                             row[field] = None
@@ -209,7 +212,9 @@ if __name__ == '__main__':
                         'log_p_value_ref': -np.log10(row['fdrp_bh_ref']),
                         'log_p_value_alt': -np.log10(row['fdrp_bh_alt']),
                         'best_p_value': -np.log10(min_pv),
+                        'best_es': max_es,
                         'fdr_class': get_fdr_class(-np.log10(min_pv)),
+                        'es_class': get_es_class(max_es),
                         'es_ref': row['es_mean_ref'],
                         'es_alt': row['es_mean_alt'],
                         'is_asb': min_pv <= 0.1,
@@ -603,6 +608,10 @@ if __name__ == '__main__':
     if UPDATE_BEST_P_VALUE:
         print('Updating best p-value')
         update_best_p_value()
+
+    if UPDATE_BEST_ES:
+        print('Updating best effect_size')
+        update_best_es()
 
     if TARGET_GENE_COUNT_010:
         print('Updating target snp count 010')

@@ -1,14 +1,14 @@
 from ASB_app import logger
 from sqlalchemy_utils.aggregates import manager
-from sqlalchemy import update
+from sqlalchemy import update, case
 
 import numpy as np
 
-from ASB_app.constants import db_name_property_dict, fdr_classes, fdr_choices
+from ASB_app.constants import db_name_property_dict, fdr_classes, fdr_choices, es_choices, es_classes
 
 from ASB_app.releases import current_release
 from ASB_app.models import CandidateSNP, CandidateRS
-from ASB_app.utils.statistics import get_fdr_class
+from ASB_app.utils.statistics import get_fdr_class, get_es_class
 
 session = current_release.session
 db = current_release.db
@@ -221,17 +221,44 @@ def update_snp_best_p_value():
 
 def update_fdr_class(model):
     table = model.__table__
-    for fdr in fdr_choices[::-1]:
-        print(fdr)
-        session.execute(update(table).where(table.c.best_p_value >= -np.log10(float(fdr))).values(fdr_class=fdr))
-        session.commit()
-        session.close()
+    session.execute(
+        update(table).values(
+            fdr_class=case(
+                *[(table.c.best_p_value >= -np.log10(float(fdr)), fdr)
+                  for fdr in fdr_choices[::-1]],
+                else_=fdr_classes[-1]
+            )
+        )
+    )
+    session.commit()
+    session.close()
+
+
+def update_es_class(model):
+    table = model.__table__
+    session.execute(
+        update(table).values(
+            es_class=case(
+                *[(table.c.best_es >= float(es), es)
+                  for es in es_choices[::-1]],
+                else_=es_classes[-1]
+            )
+        )
+    )
+    session.commit()
+    session.close()
 
 
 def update_all_fdr_class():
     for model in SNP, TranscriptionFactorSNP, CellLineSNP, CandidateSNP:
         print(model)
         update_fdr_class(model)
+
+
+def update_all_es_class():
+    for model in SNP, TranscriptionFactorSNP, CellLineSNP, CandidateSNP:
+        print(model)
+        update_es_class(model)
 
 
 def migrate_genes():
@@ -288,6 +315,20 @@ def update_best_p_value():
             print(i)
         snp.best_p_value = best_p
         snp.fdr_class = get_fdr_class(best_p)
+    session.commit()
+
+
+def update_best_es():
+    q = session.query(SNP, db.func.greatest(db.func.coalesce(db.func.max(TranscriptionFactorSNP.best_es), -1000),
+                                            db.func.coalesce(db.func.max(CellLineSNP.best_es), -1000)))\
+        .join(TranscriptionFactorSNP, SNP.tf_aggregated_snps, isouter=True)\
+        .join(CellLineSNP, SNP.cl_aggregated_snps, isouter=True)\
+        .group_by(SNP)
+    for i, (snp, best_es) in enumerate(q, 1):
+        if i % 50000 == 1:
+            print(i)
+        snp.best_es = None if best_es == -1000 else best_es
+        snp.es_class = get_es_class(best_es)
     session.commit()
 
 

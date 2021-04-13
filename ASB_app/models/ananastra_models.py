@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from ASB_app.constants import nucleotides, chromosomes, fdr_classes
+from ASB_app.constants import nucleotides, chromosomes, fdr_classes, es_classes
 from ASB_app.releases import current_release
 
 db = current_release.db
@@ -17,6 +17,7 @@ class Ticket(db.Model):
     meta_info = db.Column(db.JSON, default={})
     user_id = db.Column(db.String(36))
     fdr = db.Column(db.Enum(*fdr_classes))
+    es = db.Column(db.Enum(*es_classes))
 
     def __repr__(self):
         return '<AnanastraTicket {0.ticket_id}, created {0.date_created}, {0.status}>'.format(self)
@@ -45,9 +46,11 @@ class CandidateSNP(GenomePolymorphismLocation):
     ag_id = db.Column(db.Integer)
     best_p_value = db.Column(db.Float, index=True)
     fdr_class = db.Column(db.Enum(*fdr_classes), index=True)
+    best_es = db.Column(db.Float, index=True)
+    es_class = db.Column(db.Enum(*es_classes), index=True)
 
     def __repr__(self):
-        return '<CandidateSNP rs{0.rs_id}, {0.alt}, {0.ag_level}, {0.ag_id}, {0.fdr_class}>'.format(self)
+        return '<CandidateSNP rs{0.rs_id}, {0.alt}, {0.ag_level}, {0.ag_id}, {0.fdr_class}, {0.es_class}>'.format(self)
 
 
 class CandidateRS(db.Model):
@@ -60,9 +63,11 @@ class CandidateRS(db.Model):
     rs_id = db.Column(db.Integer, nullable=False)
     best_p_value = db.Column(db.Float, index=True)
     fdr_class = db.Column(db.Enum(*fdr_classes), index=True)
+    best_es = db.Column(db.Float, index=True)
+    es_class = db.Column(db.Enum(*es_classes), index=True)
 
     def __repr__(self):
-        return '<CandidateRS rs{0.rs_id}, {0.fdr_class}>'.format(self)
+        return '<CandidateRS rs{0.rs_id}, {0.fdr_class}, {0.es_class}>'.format(self)
 
 
 class CandidateTFRS(db.Model):
@@ -75,9 +80,11 @@ class CandidateTFRS(db.Model):
     rs_id = db.Column(db.Integer, nullable=False)
     best_p_value = db.Column(db.Float, index=True)
     fdr_class = db.Column(db.Enum(*fdr_classes), index=True)
+    best_es = db.Column(db.Float, index=True)
+    es_class = db.Column(db.Enum(*es_classes), index=True)
 
     def __repr__(self):
-        return '<CandidateRS rs{0.rs_id}, {0.fdr_class}>'.format(self)
+        return '<CandidateTFRS rs{0.rs_id}, {0.fdr_class}, {0.es_class}>'.format(self)
 
 
 class CandidateCLRS(db.Model):
@@ -90,6 +97,8 @@ class CandidateCLRS(db.Model):
     rs_id = db.Column(db.Integer, nullable=False)
     best_p_value = db.Column(db.Float, index=True)
     fdr_class = db.Column(db.Enum(*fdr_classes), index=True)
+    best_es = db.Column(db.Float, index=True)
+    es_class = db.Column(db.Enum(*es_classes), index=True)
 
     def __repr__(self):
-        return '<CandidateRS rs{0.rs_id}, {0.fdr_class}>'.format(self)
+        return '<CandidateCLRS rs{0.rs_id}, {0.fdr_class}, {0.es_class}>'.format(self)

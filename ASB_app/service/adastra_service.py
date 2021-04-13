@@ -6,13 +6,12 @@ from sqlalchemy import not_, or_
 import csv
 import tempfile
 from flask import send_file
-import numpy as np
 
-from ASB_app.constants import stats_dict, default_fdr_tr
+from ASB_app.constants import stats_dict, default_fdr_tr, default_es_tr
 
 from math import ceil
 
-from ASB_app.utils.statistics import get_corresponding_fdr_classes
+from ASB_app.utils.statistics import get_corresponding_fdr_classes, get_corresponding_es_classes
 
 
 class ReleaseService:
@@ -28,6 +27,12 @@ class ReleaseService:
     def get_filters_by_fdr(self, fdr):
         if int(self.release.version) >= 3:
             return (self.SNP.fdr_class.in_(get_corresponding_fdr_classes(fdr)),)
+        else:
+            return tuple()
+
+    def get_filters_by_es(self, es):
+        if int(self.release.version) >= 3:
+            return (self.SNP.es_class.in_(get_corresponding_es_classes(es)),)
         else:
             return tuple()
 
@@ -109,13 +114,16 @@ class ReleaseService:
                                                                                      gene.end_pos + 5000)
 
     def get_filters_by_eqtl_gene(self, gene):
-        return (self.SNP.target_genes.any(self.Gene.gene_id == gene.gene_id), )
+        return (self.SNP.target_genes.any(self.Gene.gene_id == gene.gene_id),)
 
     def construct_advanced_filters(self, filters_object):
         filters = []
         if int(self.release.version) >= 3:
             if not filters_object['fdr']:
                 filters_object['fdr'] = default_fdr_tr(int(self.release.version))
+            if not filters_object['es']:
+                filters_object['es'] = default_es_tr(int(self.release.version))
+            # TODO add es filters for tf and cl. Also motif conc x2
             if filters_object['transcription_factors']:
                 filters += [self.SNP.tf_aggregated_snps.any(
                     (self.TranscriptionFactorSNP.tf_id == getattr(self.TranscriptionFactor.query.filter(
@@ -133,7 +141,8 @@ class ReleaseService:
                     for cl_name in filters_object['cell_types']]
 
             if not filters_object['transcription_factors'] and not filters_object['cell_types']:
-                filters += self.get_filters_by_fdr(filters_object['fdr'])
+                filters += self.get_filters_by_fdr(filters_object['fdr']) + \
+                           self.get_filters_by_es(filters_object['es'])
 
             if filters_object['motif_concordance']:
                 search_null = False
@@ -147,13 +156,15 @@ class ReleaseService:
                          (self.TranscriptionFactorSNP.motif_concordance.is_(None) if search_null else False)) &
                         self.TranscriptionFactorSNP.transcription_factor.has(
                             self.TranscriptionFactor.name.in_(filters_object['transcription_factors'])
-                        ) & (self.TranscriptionFactorSNP.fdr_class.in_(get_corresponding_fdr_classes(filters_object['fdr'])))
+                        ) & (self.TranscriptionFactorSNP.fdr_class.in_(
+                            get_corresponding_fdr_classes(filters_object['fdr'])))
                     )]
                 else:
                     filters += [self.SNP.tf_aggregated_snps.any(
                         (self.TranscriptionFactorSNP.motif_concordance.in_(filters_object['motif_concordance']) |
                          (self.TranscriptionFactorSNP.motif_concordance.is_(None) if search_null else False)) &
-                        (self.TranscriptionFactorSNP.fdr_class.in_(get_corresponding_fdr_classes(filters_object['fdr'])))
+                        (self.TranscriptionFactorSNP.fdr_class.in_(
+                            get_corresponding_fdr_classes(filters_object['fdr'])))
                     ) | (~self.SNP.tf_aggregated_snps.any() if search_null else False)]
         else:
             if filters_object['transcription_factors']:
@@ -218,6 +229,8 @@ class ReleaseService:
         if int(self.release.version) >= 3:
             if not filters_object['fdr']:
                 filters_object['fdr'] = default_fdr_tr(int(self.release.version))
+            if not filters_object['es']:
+                filters_object['es'] = default_es_tr(int(self.release.version))
 
         for what_for in ('TF', 'CL'):
             aggregation_class = {'TF': self.TranscriptionFactor, 'CL': self.CellLine}[what_for]
@@ -236,6 +249,7 @@ class ReleaseService:
                         (agr_snp_class_alias.position == self.SNP.position) &
                         (agr_snp_class_alias.alt == self.SNP.alt) &
                         (agr_snp_class_alias.fdr_class.in_(get_corresponding_fdr_classes(filters_object['fdr']))),
+                        (agr_snp_class_alias.es_class.in_(get_corresponding_es_classes(filters_object['es']))),
                     ),
                     (
                         agr_class_alias,
@@ -285,7 +299,8 @@ class ReleaseService:
                         ('es_alt', '{}_Effect_Size_Alt'.format(name)),
                     ]:
                         headers.append(label)
-                        additional_columns.append(self.release.db.func.coalesce(getattr(aliases[name], field)).label(label))
+                        additional_columns.append(
+                            self.release.db.func.coalesce(getattr(aliases[name], field)).label(label))
 
         found_snps = self.release.session.query(*query_args)
         found_snps = found_snps.filter(*self.construct_advanced_filters(filters_object))
@@ -333,14 +348,15 @@ class ReleaseService:
             return gene.start_pos, gene.end_pos
 
     def get_hints_for_gene_name(self, in_str):
-        filters = (self.Gene.gene_name.like(in_str), self.Gene.gene_name != self.Gene.gene_id) if in_str else (self.Gene.gene_name != self.Gene.gene_id, )
+        filters = (self.Gene.gene_name.like(in_str), self.Gene.gene_name != self.Gene.gene_id) if in_str else (
+        self.Gene.gene_name != self.Gene.gene_id,)
         genes = self.Gene.query.filter(*filters).order_by(self.Gene.snps_count.desc()).limit(3).all()
         for g in genes:
             g.locus_start, g.locus_end = self.get_gene_locus(g)
         return genes
 
     def get_hints_for_eqtl_gene_name(self, in_str):
-        filters = (self.Gene.gene_name.like(in_str), ) if in_str else ()
+        filters = (self.Gene.gene_name.like(in_str),) if in_str else ()
         genes = self.Gene.query.filter(*filters).order_by(self.Gene.eqtl_snps_count.desc()).limit(3).all()
         for g in genes:
             g.locus_start, g.locus_end = self.get_gene_locus(g)

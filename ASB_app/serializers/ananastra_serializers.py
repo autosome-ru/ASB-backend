@@ -75,6 +75,7 @@ ticket_model = api.model('ANANASTRA ticket', {
     'expiration_date': fields.DateTime,
     'status': fields.String(enum=('Created', 'Processing', 'Processed', 'Failed')),
     'fdr': fields.String,
+    'es': fields.String,
     'meta_info': fields.Nested(meta_info_model),
 })
 
@@ -88,4 +89,5 @@ ticket_model_short = api.model('ANANASTRA ticket (short)', {
     'processing_started_at': fields.String,
     'position_in_queue': fields.Integer,
     'fdr': fields.String,
+    'es': fields.String
 })

@@ -16,7 +16,7 @@ from ASB_app.models import Ticket
 
 from ASB_app.releases import current_release
 
-from ASB_app.routes import file_parser, pagination_parser, result_param_parser, fdr_parser
+from ASB_app.routes import file_parser, pagination_parser, result_param_parser, thresholds_parser
 
 api = current_release.api
 
@@ -26,7 +26,8 @@ ananastra_nsp = api.namespace('ANANASTRA web-service', path='/ananastra', descri
 commit_parser = file_parser.copy()
 commit_parser.add_argument('user_id')
 if int(current_release.version) >= 3:
-    commit_parser.add_argument('fdr', help='FDR threshold. (0..0.25]', default='0.05')
+    commit_parser.add_argument('fdr', help='FDR threshold.', default='0.05')
+    # commit_parser.add_argument('es', help='Effect size threshold.', default='0.6')
 
 
 @ananastra_nsp.route('/commit')
@@ -51,12 +52,14 @@ class CommitFile(Resource):
 class ProcessTicket(Resource):
     @api.response(202, 'Ticket accepted for processing')
     @api.response(404, 'Ticket not found')
-    @api.expect(fdr_parser)
+    @api.expect(thresholds_parser)
     def post(self, ticket_id):
         """
         Submits a ticket for processing
         """
-        fdr = fdr_parser.parse_args()['fdr']
+        fdr = thresholds_parser.parse_args()['fdr']
+        # FIXME
+        # es = thresholds_parser.parse_args()['es']
         ananastra_service.update_ticket_status(ticket_id, 'Processing')
         process_snp_file.submit_stored(ticket_id, ticket_id, fdr)
         return {'message': 'success'}, 202

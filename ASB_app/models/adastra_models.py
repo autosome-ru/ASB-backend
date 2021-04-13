@@ -1,7 +1,7 @@
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy_utils.aggregates import aggregated
 
-from ASB_app.constants import chromosomes, nucleotides, bads, fdr_classes
+from ASB_app.constants import chromosomes, nucleotides, bads, fdr_classes, es_classes
 
 from ASB_app.releases import Release
 from .placeholders import abstract_models, abstract_models_dnase
@@ -37,7 +37,8 @@ for release in Release.__subclasses__():
             if int(release.version) >= 3:
                 tf_aggregated_snps005 = db.relationship(
                     'TranscriptionFactorSNP',
-                    primaryjoin='(TranscriptionFactor.tf_id == TranscriptionFactorSNP.tf_id) & (TranscriptionFactorSNP.best_p_value >= {})'.format(-np.log10(0.05))
+                    primaryjoin='(TranscriptionFactor.tf_id == TranscriptionFactorSNP.tf_id) & (TranscriptionFactorSNP.best_p_value >= {})'.format(
+                        -np.log10(0.05))
                 )
 
                 @aggregated('tf_aggregated_snps005', db.Column(db.Integer))
@@ -46,7 +47,8 @@ for release in Release.__subclasses__():
 
                 tf_aggregated_snps010 = db.relationship(
                     'TranscriptionFactorSNP',
-                    primaryjoin='(TranscriptionFactor.tf_id == TranscriptionFactorSNP.tf_id) & (TranscriptionFactorSNP.best_p_value >= {})'.format(-np.log10(0.1))
+                    primaryjoin='(TranscriptionFactor.tf_id == TranscriptionFactorSNP.tf_id) & (TranscriptionFactorSNP.best_p_value >= {})'.format(
+                        -np.log10(0.1))
                 )
 
                 @aggregated('tf_aggregated_snps010', db.Column(db.Integer))
@@ -89,7 +91,8 @@ for release in Release.__subclasses__():
         if int(release.version) >= 3:
             cl_aggregated_snps005 = db.relationship(
                 'CellLineSNP',
-                primaryjoin='(CellLine.cl_id == CellLineSNP.cl_id) & (CellLineSNP.best_p_value >= {})'.format(-np.log10(0.05))
+                primaryjoin='(CellLine.cl_id == CellLineSNP.cl_id) & (CellLineSNP.best_p_value >= {})'.format(
+                    -np.log10(0.05))
             )
 
             @aggregated('cl_aggregated_snps005', db.Column(db.Integer))
@@ -98,7 +101,8 @@ for release in Release.__subclasses__():
 
             cl_aggregated_snps010 = db.relationship(
                 'CellLineSNP',
-                primaryjoin='(CellLine.cl_id == CellLineSNP.cl_id) & (CellLineSNP.best_p_value >= {})'.format(-np.log10(0.1))
+                primaryjoin='(CellLine.cl_id == CellLineSNP.cl_id) & (CellLineSNP.best_p_value >= {})'.format(
+                    -np.log10(0.1))
             )
 
             @aggregated('cl_aggregated_snps010', db.Column(db.Integer))
@@ -241,6 +245,8 @@ for release in Release.__subclasses__():
         if int(release.version) >= 3:
             best_p_value = db.Column(db.Float, index=True)
             fdr_class = db.Column(db.Enum(*fdr_classes), index=True)
+            best_es = db.Column(db.Float, index=True)
+            es_class = db.Column(db.Enum(*es_classes), index=True)
 
         context = db.Column(db.String(51))
 
@@ -265,6 +271,8 @@ for release in Release.__subclasses__():
         if int(release.version) >= 3:
             best_p_value = db.Column(db.Float)
             fdr_class = db.Column(db.Enum(*fdr_classes))
+            best_es = db.Column(db.Float)
+            es_class = db.Column(db.Enum(*es_classes))
 
         else:
             @hybrid_property
@@ -289,6 +297,8 @@ for release in Release.__subclasses__():
                                   db.Index('motif_concordance_index', 'motif_concordance'),
                                   db.Index('ix_tf_snps_best_p_value', 'best_p_value'),
                                   db.Index('ix_tf_snps_fdr_class', 'fdr_class'),
+                                  db.Index('ix_tf_snps_best_es', 'best_es'),
+                                  db.Index('ix_tf_snps_es_class', 'es_class'),
                                   )
             else:
                 __table_args__ = (db.ForeignKeyConstraint(['chromosome', 'position', 'alt'],
@@ -306,7 +316,8 @@ for release in Release.__subclasses__():
             motif_log_2_fc = db.Column(db.Float)
             motif_orientation = db.Column(db.Boolean)
             motif_position = db.Column(db.Integer)
-            motif_concordance = db.Column(db.Enum('Concordant', 'Discordant', 'Weak Concordant', 'Weak Discordant', 'No Hit'), nullable=True)
+            motif_concordance = db.Column(
+                db.Enum('Concordant', 'Discordant', 'Weak Concordant', 'Weak Discordant', 'No Hit'), nullable=True)
 
             snp = db.relationship('SNP', back_populates='tf_aggregated_snps')
             transcription_factor = db.relationship('TranscriptionFactor', backref='tf_aggregated_snps')
@@ -326,6 +337,8 @@ for release in Release.__subclasses__():
                               db.Index('cl_id_index', 'cl_id'),
                               db.Index('ix_cl_snps_best_p_value', 'best_p_value'),
                               db.Index('ix_cl_snps_fdr_class', 'fdr_class'),
+                              db.Index('ix_cl_snps_best_es', 'best_es'),
+                              db.Index('ix_cl_snps_es_class', 'es_class'),
                               )
         else:
             __table_args__ = (db.ForeignKeyConstraint(['chromosome', 'position', 'alt'],
@@ -423,7 +436,7 @@ for release in Release.__subclasses__():
 
         pair_id = db.Column(db.Integer, primary_key=True)
         gene_id = db.Column(db.String(30), db.ForeignKey('genes.gene_id'),
-                                 nullable=False)
+                            nullable=False)
 
 
     class ProximalPromoterSNPCorrespondence(GenomePolymorphismLocation):
@@ -439,7 +452,7 @@ for release in Release.__subclasses__():
 
         pair_id = db.Column(db.Integer, primary_key=True)
         gene_id = db.Column(db.String(30), db.ForeignKey('genes.gene_id'),
-                                 nullable=False)
+                            nullable=False)
 
 
     if release.name != 'dnase':
