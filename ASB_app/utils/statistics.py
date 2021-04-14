@@ -88,9 +88,10 @@ def get_fdr_class(logp):
 
 
 def get_es_class(effect_size):
-    for es in es_classes[:-1]:
-        if effect_size >= float(es):
-            return es
+    if effect_size is not None:
+        for es in es_classes[:-1]:
+            if effect_size >= float(es):
+                return es
     return es_classes[-1]
 
 
