@@ -19,6 +19,8 @@ class ReleaseSerializers:
         self.aggregated_snp_model = api.model('Aggregated SNP (no genome info) ', {
             'log_p_value_ref': fields.Float,
             'log_p_value_alt': fields.Float,
+            'es_ref': fields.Float,
+            'es_alt': fields.Float,
             'is_asb': fields.Boolean,
             'peak_calls': fields.Integer(min=0),
             'peak_callers': fields.Integer(min=0),
@@ -146,8 +148,6 @@ class ReleaseSerializers:
         })
 
         self.aggregated_snp_model_full = api.inherit('Aggregated SNP (with exp snps)', self.aggregated_snp_model, {
-            'es_ref': fields.Float,
-            'es_alt': fields.Float,
             'mean_bad': fields.Float,
             'exp_snps': fields.List(fields.Nested(self.exp_snp_model))
         })
