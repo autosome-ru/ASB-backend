@@ -226,7 +226,7 @@ def update_fdr_class(model):
         update(table).values(
             fdr_class=case(
                 [(table.c.best_p_value >= -np.log10(float(fdr)), fdr)
-                 for fdr in fdr_choices[::-1]],
+                 for fdr in fdr_choices],
                 else_=fdr_classes[-1]
             )
         )
@@ -241,7 +241,7 @@ def update_es_class(model):
         update(table).values(
             es_class=case(
                 [(table.c.best_es >= float(es), es)
-                 for es in es_choices[::-1]],
+                 for es in es_choices],
                 else_=es_classes[-1]
             )
         )
