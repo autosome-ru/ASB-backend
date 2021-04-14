@@ -1,4 +1,5 @@
 from flask import render_template
+from sqlalchemy import desc
 
 from ASB_app.constants import default_fdr_tr
 from ASB_app.service import ReleaseService
@@ -246,7 +247,7 @@ for release in Release.__subclasses__():
                 Get the list of transcription factors available in the database
                 """
                 filters = (self.BaseEntity.aggregated_snps_count > 0, )
-                result = self.paginate(pagination_parser.parse_args(), extra_filters=filters)
+                result = self.paginate(pagination_parser.parse_args(), extra_filters=filters, default_order_clauses=(desc(self.BaseEntity.aggregated_snps_count), ))
                 total = self.items_count(extra_filters=filters)
                 return {'results': result, 'total': total}
 
@@ -264,7 +265,7 @@ for release in Release.__subclasses__():
             Get the list of cell types available in the database
             """
             filters = (self.BaseEntity.aggregated_snps_count > 0,)
-            result = self.paginate(pagination_parser.parse_args(), extra_filters=filters)
+            result = self.paginate(pagination_parser.parse_args(), extra_filters=filters, default_order_clauses=(desc(self.BaseEntity.aggregated_snps_count), ))
             total = self.items_count(extra_filters=filters)
             return {'results': result, 'total': total}
 

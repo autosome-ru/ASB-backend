@@ -165,7 +165,7 @@ class PaginationMixin(FilterParser):
 
         return order_clauses, additional_columns, additional_join_tuples
 
-    def paginate(self, args, extra_filters=()):
+    def paginate(self, args, extra_filters=(), default_order_clauses=()):
         """
         Returns list of self.BaseEntity objects taking into account the parameters passed in args.
         :param args: dictionary with the following keys:
@@ -177,6 +177,8 @@ class PaginationMixin(FilterParser):
                      order_by - string specifying order of objects in the selection. See `parse_order_clauses` method.
         :param extra_filters: list of additional filters in sqlalchemy format, like 'User.id == 4'.
                               Use this parameter to restrict access to objects without changing filtering string.
+        :param default_order_clauses: list of additional order by clauses in sqlalchemy format, like 'User.id'.
+                              Use this parameter to apply sorting by default.
         :return: list of BaseEntity objects.
         """
         self._check_entity_type()
@@ -200,7 +202,10 @@ class PaginationMixin(FilterParser):
         for column in additional_columns:
             query = query.add_column(column)
 
-        query = query.order_by(*order_clauses)
+        if order_clauses:
+            query = query.order_by(*order_clauses)
+        else:
+            query = query.order_by(*default_order_clauses)
 
         if size:
             start = offset + size * (page - 1)
