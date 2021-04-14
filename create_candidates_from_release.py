@@ -4,7 +4,7 @@ import json
 import numpy as np
 
 from ASB_app.models import CandidateSNP, CandidateRS, CandidateTFRS, CandidateCLRS
-from ASB_app.utils.statistics import get_fdr_class
+from ASB_app.utils.statistics import get_fdr_class, get_es_class
 
 current_release = releases.ReleaseSusan
 session = current_release.session
@@ -106,6 +106,10 @@ if __name__ == '__main__':
 
                     row['ID'] = int(row['ID'][row['ID'].rfind('rs') + 2:])
 
+                    min_pv = -np.log10(min(row['fdrp_bh_ref'], row['fdrp_bh_alt']))
+                    max_es = max(x for x in (row['es_mean_ref'],
+                                             row['es_mean_alt']) if x is not None)
+
                     mutation = CandidateSNP(
                         rs_id=row['ID'],
                         chromosome=row['#chr'],
@@ -114,7 +118,10 @@ if __name__ == '__main__':
                         alt=row['alt'],
                         ag_level=param,
                         ag_id=ag_id,
-                        best_p_value=-np.log10(min(row['fdrp_bh_ref'], row['fdrp_bh_alt']))
+                        best_p_value=min_pv,
+                        fdr_class=get_fdr_class(min_pv),
+                        best_es=max_es,
+                        es_class=get_es_class(max_es),
                     )
 
                     snps.append(mutation)
@@ -125,9 +132,9 @@ if __name__ == '__main__':
         session.close()
 
     if SNP_RS:
-        q = session.query(CandidateSNP.rs_id, db.func.max(CandidateSNP.best_p_value)).group_by(CandidateSNP.rs_id)
+        q = session.query(CandidateSNP.rs_id, db.func.max(CandidateSNP.best_p_value), db.func.max(CandidateSNP.best_es)).group_by(CandidateSNP.rs_id)
         snps = []
-        for i, (rs_id, fdr) in enumerate(q, 1):
+        for i, (rs_id, fdr, es) in enumerate(q, 1):
             if i == 1:
                 print('start')
             if i % 100000 == 0:
@@ -135,17 +142,19 @@ if __name__ == '__main__':
             snp = CandidateRS(
                 rs_id=rs_id,
                 best_p_value=fdr,
-                fdr_class=get_fdr_class(fdr)
+                fdr_class=get_fdr_class(fdr),
+                best_es=es,
+                es_class=get_es_class(es),
             )
             snps.append(snp)
         session.add_all(snps)
         session.commit()
 
     for param in ['TF'] * TF_SNP + ['CL'] * CL_SNP:
-        q = session.query(CandidateSNP.rs_id, db.func.max(CandidateSNP.best_p_value)).filter(CandidateSNP.ag_level==param).group_by(CandidateSNP.rs_id)
+        q = session.query(CandidateSNP.rs_id, db.func.max(CandidateSNP.best_p_value), db.func.max(CandidateSNP.best_es)).filter(CandidateSNP.ag_level==param).group_by(CandidateSNP.rs_id)
         snps = []
         SNPClass = {'TF': CandidateTFRS, 'CL': CandidateCLRS}[param]
-        for i, (rs_id, fdr) in enumerate(q, 1):
+        for i, (rs_id, fdr, es) in enumerate(q, 1):
             if i == 1:
                 print('start {}'.format(param))
             if i % 100000 == 0:
@@ -153,7 +162,9 @@ if __name__ == '__main__':
             snp = SNPClass(
                 rs_id=rs_id,
                 best_p_value=fdr,
-                fdr_class=get_fdr_class(fdr)
+                fdr_class=get_fdr_class(fdr),
+                best_es=es,
+                es_class=get_es_class(es),
             )
             snps.append(snp)
         session.add_all(snps)
