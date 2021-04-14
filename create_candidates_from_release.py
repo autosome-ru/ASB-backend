@@ -97,7 +97,7 @@ if __name__ == '__main__':
                         else:
                             row[field] = int(row[field])
 
-                    float_fields = ['fdrp_bh_ref', 'fdrp_bh_alt']
+                    float_fields = ['fdrp_bh_ref', 'fdrp_bh_alt', 'es_mean_ref', 'es_mean_alt']
                     for field in float_fields:
                         if row[field] == '' or row[field] == '.':
                             row[field] = None
