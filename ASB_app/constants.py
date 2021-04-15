@@ -50,18 +50,12 @@ stats_dict = {'0.01': {'possible_tf_asbs': 100178,
                        'possible_tf_asbs_rs': 297146,
                        'possible_cl_asbs_rs': 349733,
                        'possible_all_asbs_rs': 393246},
-              '0.5': {'possible_tf_asbs': 468555,  # FIXME
-                      'possible_cl_asbs': 585750,
-                      'possible_all_asbs': 1054305,
-                      'possible_tf_asbs_rs': 297146,
-                      'possible_cl_asbs_rs': 349733,
-                      'possible_all_asbs_rs': 253630}
               }
 
 # possible_tf_asbs = 390916
 # possible_cl_asbs = 569814
 # possible_all_asbs = 960730
-total_tf_candidates = 14630545  # FIXME
+total_tf_candidates = 14630545
 total_cl_candidates = 9791542
 total_all_candidates = 24422087
 
