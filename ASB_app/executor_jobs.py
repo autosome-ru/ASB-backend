@@ -89,7 +89,8 @@ def get_tf_query(rs_ids, fdr):
         SNP,
         TranscriptionFactorSNP.snp
     ).filter(
-        SNP.rs_id.in_(rs_ids)
+        SNP.rs_id.in_(rs_ids),
+        TranscriptionFactorSNP.fdr_class.in_(get_corresponding_fdr_classes(fdr))
     ).join(
         TranscriptionFactor,
         TranscriptionFactorSNP.transcription_factor
@@ -185,7 +186,8 @@ def get_cl_query(rs_ids, fdr):
         SNP,
         CellLineSNP.snp
     ).filter(
-        SNP.rs_id.in_(rs_ids)
+        SNP.rs_id.in_(rs_ids),
+        CellLineSNP.fdr_class.in_(get_corresponding_fdr_classes(fdr))
     ).join(
         CellLine,
         CellLineSNP.cell_line

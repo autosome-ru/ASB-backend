@@ -15,7 +15,6 @@ db = current_release.db
 
 chunk_size = 10000
 
-
 if current_release.name != 'dnase':
     TranscriptionFactorSNP, CellLineSNP, TranscriptionFactor, CellLine, Phenotype, SNP, \
     PhenotypeSNPCorrespondence, Experiment, Gene = \
@@ -40,7 +39,8 @@ class TsvDialect:
     quoting = 0
 
 
-def update_aggregated_fields(mappers=(CellLineSNP) if current_release.name == 'dnase' else (TranscriptionFactorSNP, CellLineSNP)):
+def update_aggregated_fields(
+        mappers=(CellLineSNP) if current_release.name == 'dnase' else (TranscriptionFactorSNP, CellLineSNP)):
     """
     Updates all columns with @aggregated decorator, depending on mappers
     :param mappers: list of db.Model subclasses
@@ -199,7 +199,8 @@ def update_has_concordance():
 
 
 def update_snp_best_p_value():
-    q = session.query(SNP, db.func.max(TranscriptionFactorSNP.best_p_value), db.func.max(CellLineSNP.best_p_value)).join(
+    q = session.query(SNP, db.func.max(TranscriptionFactorSNP.best_p_value),
+                      db.func.max(CellLineSNP.best_p_value)).join(
         TranscriptionFactorSNP,
         SNP.tf_aggregated_snps,
         isouter=True,
@@ -224,8 +225,8 @@ def update_fdr_class(model):
     session.execute(
         update(table).values(
             fdr_class=case(
-                *[(table.c.best_p_value >= -np.log10(float(fdr)), fdr)
-                  for fdr in fdr_choices[::-1]],
+                [(table.c.best_p_value >= -np.log10(float(fdr)), fdr)
+                 for fdr in fdr_choices],
                 else_=fdr_classes[-1]
             )
         )
@@ -239,8 +240,8 @@ def update_es_class(model):
     session.execute(
         update(table).values(
             es_class=case(
-                *[(table.c.best_es >= float(es), es)
-                  for es in es_choices[::-1]],
+                [(table.c.best_es >= float(es), es)
+                 for es in es_choices],
                 else_=es_classes[-1]
             )
         )
@@ -306,9 +307,9 @@ def update_gene_snps_count():
 
 def update_best_p_value():
     q = session.query(SNP, db.func.greatest(db.func.coalesce(db.func.max(TranscriptionFactorSNP.best_p_value), 0),
-                                            db.func.coalesce(db.func.max(CellLineSNP.best_p_value), 0)))\
-        .join(TranscriptionFactorSNP, SNP.tf_aggregated_snps, isouter=True)\
-        .join(CellLineSNP, SNP.cl_aggregated_snps, isouter=True)\
+                                            db.func.coalesce(db.func.max(CellLineSNP.best_p_value), 0))) \
+        .join(TranscriptionFactorSNP, SNP.tf_aggregated_snps, isouter=True) \
+        .join(CellLineSNP, SNP.cl_aggregated_snps, isouter=True) \
         .group_by(SNP)
     for i, (snp, best_p) in enumerate(q, 1):
         if i % 50000 == 1:
@@ -320,9 +321,9 @@ def update_best_p_value():
 
 def update_best_es():
     q = session.query(SNP, db.func.greatest(db.func.coalesce(db.func.max(TranscriptionFactorSNP.best_es), -1000),
-                                            db.func.coalesce(db.func.max(CellLineSNP.best_es), -1000)))\
-        .join(TranscriptionFactorSNP, SNP.tf_aggregated_snps, isouter=True)\
-        .join(CellLineSNP, SNP.cl_aggregated_snps, isouter=True)\
+                                            db.func.coalesce(db.func.max(CellLineSNP.best_es), -1000))) \
+        .join(TranscriptionFactorSNP, SNP.tf_aggregated_snps, isouter=True) \
+        .join(CellLineSNP, SNP.cl_aggregated_snps, isouter=True) \
         .group_by(SNP)
     for i, (snp, best_es) in enumerate(q, 1):
         if i % 50000 == 1:

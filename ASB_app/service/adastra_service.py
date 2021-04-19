@@ -123,13 +123,13 @@ class ReleaseService:
                 filters_object['fdr'] = default_fdr_tr(int(self.release.version))
             if not filters_object['es']:
                 filters_object['es'] = default_es_tr(int(self.release.version))
-            # TODO add es filters for tf and cl. Also motif conc x2
             if filters_object['transcription_factors']:
                 filters += [self.SNP.tf_aggregated_snps.any(
                     (self.TranscriptionFactorSNP.tf_id == getattr(self.TranscriptionFactor.query.filter(
                         self.TranscriptionFactor.name == tf_name
                     ).one_or_none(), 'tf_id', None)) &
-                    (self.TranscriptionFactorSNP.fdr_class.in_(get_corresponding_fdr_classes(filters_object['fdr']))))
+                    (self.TranscriptionFactorSNP.fdr_class.in_(get_corresponding_fdr_classes(filters_object['fdr']))) &
+                    (self.TranscriptionFactorSNP.es_class.in_(get_corresponding_es_classes(filters_object['es']))))
                     for tf_name in filters_object['transcription_factors']]
 
             if filters_object['cell_types']:
@@ -137,7 +137,8 @@ class ReleaseService:
                     (self.CellLineSNP.cl_id == getattr(self.CellLine.query.filter(
                         self.CellLine.name == cl_name
                     ).one_or_none(), 'cl_id', None)) &
-                    (self.CellLineSNP.fdr_class.in_(get_corresponding_fdr_classes(filters_object['fdr']))))
+                    (self.CellLineSNP.fdr_class.in_(get_corresponding_fdr_classes(filters_object['fdr']))) &
+                    (self.CellLineSNP.es_class.in_(get_corresponding_es_classes(filters_object['es']))))
                     for cl_name in filters_object['cell_types']]
 
             if not filters_object['transcription_factors'] and not filters_object['cell_types']:
@@ -158,13 +159,17 @@ class ReleaseService:
                             self.TranscriptionFactor.name.in_(filters_object['transcription_factors'])
                         ) & (self.TranscriptionFactorSNP.fdr_class.in_(
                             get_corresponding_fdr_classes(filters_object['fdr'])))
+                        & (self.TranscriptionFactorSNP.es_class.in_(
+                            get_corresponding_es_classes(filters_object['es'])))
                     )]
                 else:
                     filters += [self.SNP.tf_aggregated_snps.any(
                         (self.TranscriptionFactorSNP.motif_concordance.in_(filters_object['motif_concordance']) |
                          (self.TranscriptionFactorSNP.motif_concordance.is_(None) if search_null else False)) &
                         (self.TranscriptionFactorSNP.fdr_class.in_(
-                            get_corresponding_fdr_classes(filters_object['fdr'])))
+                            get_corresponding_fdr_classes(filters_object['fdr']))) &
+                        (self.TranscriptionFactorSNP.es_class.in_(
+                            get_corresponding_es_classes(filters_object['es'])))
                     ) | (~self.SNP.tf_aggregated_snps.any() if search_null else False)]
         else:
             if filters_object['transcription_factors']:
@@ -248,7 +253,7 @@ class ReleaseService:
                         (agr_snp_class_alias.chromosome == self.SNP.chromosome) &
                         (agr_snp_class_alias.position == self.SNP.position) &
                         (agr_snp_class_alias.alt == self.SNP.alt) &
-                        (agr_snp_class_alias.fdr_class.in_(get_corresponding_fdr_classes(filters_object['fdr']))),
+                        (agr_snp_class_alias.fdr_class.in_(get_corresponding_fdr_classes(filters_object['fdr']))) &
                         (agr_snp_class_alias.es_class.in_(get_corresponding_es_classes(filters_object['es']))),
                     ),
                     (
