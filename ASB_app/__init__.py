@@ -1,6 +1,7 @@
 from flask import Flask, Blueprint
 from flask_migrate import Migrate
 from flask_restplus import Api
+
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import MetaData
 from flask_apscheduler import APScheduler
@@ -24,10 +25,14 @@ naming_convention = {
     "pk": "pk_%(table_name)s"
 }
 
-
 for release in Release.__subclasses__():
     blueprint = Blueprint('api_{}'.format(release.name), __name__, url_prefix='/api/v{}'.format(release.version))
-    new_api = Api(blueprint, version=release.full_version, title='ADASTRA API', description='ADASTRA API (release {})'.format(release.name))
+    new_api = Api(blueprint,
+                  version=release.full_version,
+                  title='ADASTRA - API',
+                  description='ADASTRA API (release {})'.format(release.name.capitalize()),
+                  )
+
     setattr(release, 'api', new_api)
     app.register_blueprint(blueprint)
     new_db = SQLAlchemy(app, metadata=MetaData(naming_convention=naming_convention))
@@ -37,7 +42,6 @@ for release in Release.__subclasses__():
 
 scheduler = APScheduler(app=app)
 executor = Executor(app)
-
 
 # @app.after_request
 # def apply_caching(response):
