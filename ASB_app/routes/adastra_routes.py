@@ -150,7 +150,7 @@ for release in Release.__subclasses__():
     if int(release.version) >= 3:
         @search_nsp.route('/snps/eqtl_gene_id/<string:gene_id>')
         @set_release_service(release_service)
-        class SearchSNPByGeneIdCollection(Resource, PaginationMixin):
+        class SearchEQTLSNPByGeneIdCollection(Resource, PaginationMixin):
             BaseEntity = release_service.SNP
             used_release = release
 
@@ -174,7 +174,7 @@ for release in Release.__subclasses__():
 
         @search_nsp.route('/snps/eqtl_gene_name/<string:gene_name>')
         @set_release_service(release_service)
-        class SearchSNPByGeneNameCollection(Resource, PaginationMixin):
+        class SearchEQTLSNPByGeneNameCollection(Resource, PaginationMixin):
             BaseEntity = release_service.SNP
             used_release = release
 
