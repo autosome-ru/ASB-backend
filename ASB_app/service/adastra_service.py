@@ -103,7 +103,8 @@ class ReleaseService:
         return self.Gene.query.filter_by(gene_name=gene_name).one_or_none()
 
     def get_gene_by_id(self, gene_id):
-        return self.Gene.query.get(gene_id)
+        return self.Gene.query.filter((self.Gene.gene_id == gene_id) | (self.Gene.gene_id.like('{}.%'.format(gene_id)))
+                                      ).one_or_none()
 
     def get_filters_by_gene(self, gene):
         if gene.orientation:

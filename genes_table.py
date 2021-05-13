@@ -3,10 +3,10 @@ import sys
 
 from ASB_app import *
 
-from ASB_app.releases import ReleaseFord
+from ASB_app.releases import ReleaseSusan
 import numpy as np
 
-release = ReleaseFord
+release = ReleaseSusan
 Gene = release.Gene
 SNP = release.SNP
 TFSNP = release.TranscriptionFactorSNP
