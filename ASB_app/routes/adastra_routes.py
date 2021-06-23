@@ -233,6 +233,22 @@ for release in Release.__subclasses__():
                 api.abort(400)
 
 
+    if int(release.version) >= 3:
+        @search_nsp.route('/snps/advanced/tsv_targets')
+        @set_release_service(release_service)
+        class AdvancedSearchSNPCSV(Resource):
+            @api.expect(search_parser)
+            def get(self):
+                """
+                Get all SNPs with advanced filters short info in tsv file
+                annotated with eQTL targets
+                """
+                all_args = search_parser.parse_args()
+                try:
+                    return self.release_service.get_snps_by_advanced_filters_tsv_with_targets(all_args)
+                except ParsingError:
+                    api.abort(400)
+
     if release.name != 'dnase':
         @browse_nsp.route('/tf')
         @set_release_service(release_service)

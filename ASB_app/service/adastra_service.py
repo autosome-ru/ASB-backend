@@ -331,6 +331,122 @@ class ReleaseService:
             as_attachment=True
         )
 
+    def get_snps_by_advanced_filters_tsv_with_targets(self, filters_object):
+        file = tempfile.NamedTemporaryFile('wt', suffix='.tsv')
+        csv_writer = csv.writer(file, dialect=TsvDialect)
+
+        headers = ['Chromosome', 'Position', 'Ref', 'Alt', 'rsID']
+        names = dict(zip(headers, ['chromosome', 'position', 'ref', 'alt', 'rs_id']))
+
+        join_tuples = []
+        additional_columns = []
+        query_args = [self.SNP]
+        aliases = dict()
+
+        if int(self.release.version) >= 3:
+            if not filters_object['fdr']:
+                filters_object['fdr'] = default_fdr_tr(int(self.release.version))
+            if not filters_object['es']:
+                filters_object['es'] = default_es_tr(int(self.release.version))
+
+        for what_for in ('TF', 'CL'):
+            aggregation_class = {'TF': self.TranscriptionFactor, 'CL': self.CellLine}[what_for]
+            aggregated_snp_class = {'TF': self.TranscriptionFactorSNP, 'CL': self.CellLineSNP}[what_for]
+            id_field = {'TF': 'tf_id', 'CL': 'cl_id'}[what_for]
+            agr_snp_class_alias = aliased(aggregated_snp_class)
+            agr_class_alias = aliased(aggregation_class)
+            query_args.append(self.release.db.func.group_concat(agr_class_alias.name.distinct()))
+            headers.append('{}-ASBs'.format({'TF': 'TF', 'CL': 'Cell type'}[what_for]))
+
+            if int(self.release.version) >= 3:
+                join_tuples += [
+                    (
+                        agr_snp_class_alias,
+                        (agr_snp_class_alias.chromosome == self.SNP.chromosome) &
+                        (agr_snp_class_alias.position == self.SNP.position) &
+                        (agr_snp_class_alias.alt == self.SNP.alt) &
+                        (agr_snp_class_alias.fdr_class.in_(get_corresponding_fdr_classes(filters_object['fdr']))) &
+                        (agr_snp_class_alias.es_class.in_(get_corresponding_es_classes(filters_object['es']))),
+                    ),
+                    (
+                        agr_class_alias,
+                        getattr(agr_class_alias, id_field) == getattr(agr_snp_class_alias, id_field),
+                    )
+                ]
+            else:
+                join_tuples += [
+                    (
+                        agr_snp_class_alias,
+                        (agr_snp_class_alias.chromosome == self.SNP.chromosome) &
+                        (agr_snp_class_alias.position == self.SNP.position) &
+                        (agr_snp_class_alias.alt == self.SNP.alt),
+                    ),
+                    (
+                        agr_class_alias,
+                        getattr(agr_class_alias, id_field) == getattr(agr_snp_class_alias, id_field),
+                    )
+                ]
+
+        for what_for in ('TF', 'CL'):
+            filter_object_key = {'TF': 'transcription_factors', 'CL': 'cell_types'}[what_for]
+            aggregation_class = {'TF': self.TranscriptionFactor, 'CL': self.CellLine}[what_for]
+            aggregated_snp_class = {'TF': self.TranscriptionFactorSNP, 'CL': self.CellLineSNP}[what_for]
+            id_field = {'TF': 'tf_id', 'CL': 'cl_id'}[what_for]
+            if filters_object[filter_object_key]:
+                for name in filters_object[filter_object_key]:
+                    aliases[name] = aliased(aggregated_snp_class)
+                    aggregation_entity = aggregation_class.query.filter_by(name=name).one_or_none()
+                    if not aggregation_entity:
+                        continue
+                    aggregation_id = getattr(aggregation_entity, id_field)
+                    join_tuples.append(
+                        (aliases[name],
+                         (getattr(
+                             aliases[name],
+                             {'TF': 'tf_id', 'CL': 'cl_id'}[what_for]
+                         ) == aggregation_id) &
+                         (aliases[name].chromosome == self.SNP.chromosome) &
+                         (aliases[name].position == self.SNP.position) &
+                         (aliases[name].alt == self.SNP.alt))
+                    )
+                    for field, label in [
+                        ('log_p_value_ref', '{}_FDR_Ref'.format(name)),
+                        ('log_p_value_alt', '{}_FDR_Alt'.format(name)),
+                        ('es_ref', '{}_Effect_Size_Ref'.format(name)),
+                        ('es_alt', '{}_Effect_Size_Alt'.format(name)),
+                    ]:
+                        headers.append(label)
+                        additional_columns.append(
+                            self.release.db.func.coalesce(getattr(aliases[name], field)).label(label))
+
+        Target = aliased(self.Gene)
+        join_tuples.append((Target, self.SNP.target_genes))
+        additional_columns.append(self.release.db.func.group_concat(Target.gene_name.distinct()).label('targets'))
+        headers.append('Targets')
+
+        found_snps = self.release.session.query(*query_args)
+        found_snps = found_snps.filter(*self.construct_advanced_filters(filters_object))
+        for cls, condition in join_tuples:
+            found_snps = found_snps.join(cls, condition, isouter=True)
+        found_snps = found_snps.add_columns(*additional_columns)
+        found_snps = found_snps.group_by(self.SNP)
+
+        csv_writer.writerow(headers)
+        for tup in found_snps:
+            snp = tup[0]
+            columns = tup[1:]
+            csv_writer.writerow(
+                [getattr(snp, names[header]) if names[header] != 'rs_id' else 'rs' + str(getattr(snp, names[header]))
+                 for header in headers[:len(names.keys())]] + list(columns))
+
+        file.flush()
+        return send_file(
+            file.name,
+            cache_timeout=0,
+            mimetype="text/tsv",
+            as_attachment=True
+        )
+
     def get_hints(self, what_for, in_str, used_options):
         cls = {'TF': self.TranscriptionFactor, 'CL': self.CellLine}[what_for]
         if int(self.release.version) >= 3:
