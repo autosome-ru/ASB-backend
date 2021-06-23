@@ -240,8 +240,7 @@ for release in Release.__subclasses__():
             @api.expect(search_parser)
             def get(self):
                 """
-                Get all SNPs with advanced filters short info in tsv file
-                annotated with eQTL targets
+                Get all SNPs with advanced filters short info in tsv file annotated with eQTL targets
                 """
                 all_args = search_parser.parse_args()
                 try:
