@@ -236,7 +236,7 @@ for release in Release.__subclasses__():
     if int(release.version) >= 3:
         @search_nsp.route('/snps/advanced/tsv_targets')
         @set_release_service(release_service)
-        class AdvancedSearchSNPCSVTargets(Resource):
+        class AdvancedSearchTargets(Resource):
             @api.expect(search_parser)
             def get(self):
                 """
