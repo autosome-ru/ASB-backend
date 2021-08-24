@@ -12,7 +12,7 @@ import pandas as pd
 
 from ASB_app.utils.statistics import get_fdr_class, get_es_class
 
-current_release = releases.ReleaseSusan
+current_release = releases.ReleaseZanthar
 session = current_release.session
 
 TranscriptionFactor, \
