@@ -22,6 +22,12 @@ class ReleaseSusan(Release):
     full_version = '3.5'
 
 
+class ReleaseZanthar(Release):
+    name = 'zanthar'
+    version = '4'
+    full_version = '4.0'
+
+
 def get_release_by_version(version):
     for release in Release.__subclasses__():
         if release.version == version:
@@ -29,4 +35,4 @@ def get_release_by_version(version):
     raise ReleaseNotFound('No release: v{}'.format(version))
 
 
-current_release = ReleaseSusan
+current_release = ReleaseZanthar

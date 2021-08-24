@@ -33,7 +33,7 @@ class GenomePolymorphismLocation(db.Model):
 
 class CandidateSNP(GenomePolymorphismLocation):
     __tablename__ = 'candidate_snps'
-    __bind_key__ = 'candidates'
+    __bind_key__ = 'candidates_susan'
     __table_args__ = (
         db.PrimaryKeyConstraint('chromosome', 'position', 'alt', 'ag_level', 'ag_id'),
         db.Index('rs_index', 'rs_id'),
@@ -55,7 +55,7 @@ class CandidateSNP(GenomePolymorphismLocation):
 
 class CandidateRS(db.Model):
     __tablename__ = 'candidate_rs_snps'
-    __bind_key__ = 'candidates'
+    __bind_key__ = 'candidates_susan'
     __table_args__ = (
         db.PrimaryKeyConstraint('rs_id'),
     )
@@ -72,7 +72,7 @@ class CandidateRS(db.Model):
 
 class CandidateTFRS(db.Model):
     __tablename__ = 'candidate_tf_rs_snps'
-    __bind_key__ = 'candidates'
+    __bind_key__ = 'candidates_susan'
     __table_args__ = (
         db.PrimaryKeyConstraint('rs_id'),
     )
@@ -89,7 +89,7 @@ class CandidateTFRS(db.Model):
 
 class CandidateCLRS(db.Model):
     __tablename__ = 'candidate_cl_rs_snps'
-    __bind_key__ = 'candidates'
+    __bind_key__ = 'candidates_susan'
     __table_args__ = (
         db.PrimaryKeyConstraint('rs_id'),
     )
