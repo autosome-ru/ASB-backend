@@ -42,9 +42,9 @@ current_release.Gene
 
 tr = 0.25
 
-EXP = 1
-TF = 1
-CL = 1
+EXP = 0
+TF = 0
+CL = 0
 PHEN = 1
 TF_DICT = 1
 CL_DICT = 1
