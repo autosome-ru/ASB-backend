@@ -42,9 +42,9 @@ current_release.Gene
 
 tr = 0.25
 
-EXP = 0
-TF = 0
-CL = 0
+EXP = 1
+TF = 1
+CL = 1
 PHEN = 1
 TF_DICT = 1
 CL_DICT = 1
@@ -67,7 +67,7 @@ SET_NONE_TO_ZERO = 1
 CHECK_NONE = 1
 
 
-release_path = os.path.expanduser('~/DataChipZantharINTR/')
+release_path = os.path.expanduser('~/DataChipZantharFixed/')
 parameters_path = os.path.expanduser('~/Configs/')
 
 conv_bad = dict(zip(
@@ -76,7 +76,7 @@ conv_bad = dict(zip(
 ))
 
 if __name__ == '__main__':
-    with open(os.path.join(release_path, 'release_stats', 'convert_cl_names.json')) as file:
+    with open(os.path.join(release_path, 'release_stats', 'convert_cell_lines.json')) as file:
         cl_dict = json.loads(file.readline())
 
     cl_dict_reverse = {}
