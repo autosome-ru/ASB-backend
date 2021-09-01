@@ -50,7 +50,7 @@ conv_bad = dict(zip(
 ))
 
 if __name__ == '__main__':
-    with open(os.path.join(release_path, 'release_stats', 'convert_cl_names.json')) as file:
+    with open(os.path.join(release_path, 'release_stats', 'convert_cell_lines.json')) as file:
         cl_dict = json.loads(file.readline())
 
     cl_dict_reverse = {}
