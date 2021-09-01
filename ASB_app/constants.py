@@ -13,7 +13,7 @@ db_name_property_dict = {
     for x in ['clinvar', 'ebi', 'finemapping', 'grasp', 'phewas', 'QTL']
 }
 
-default_fdr_tr = lambda v: '0.1' if v >= 3 else '0.05'
+default_fdr_tr = lambda v: '0.1' if v == 3 else '0.05'
 default_es_tr = lambda v: 'all' if v >= 3 else 'all'
 fdr_choices = ['0.01', '0.05', '0.1', '0.15', '0.25']
 es_choices = ['2', '1', '0']
