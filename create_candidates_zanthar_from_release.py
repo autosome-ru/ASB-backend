@@ -106,7 +106,8 @@ if __name__ == '__main__':
 
                     row['ID'] = int(row['ID'][row['ID'].rfind('rs') + 2:])
 
-                    min_pv = -np.log10(min(row['fdrp_bh_ref'], row['fdrp_bh_alt']))
+                    min_pv = -np.log10(min(row['fdrp_bh_ref'], row['fdrp_bh_alt'])) \
+                        if (row['fdrp_bh_ref'] != 0 and row['fdrp_bh_alt'] != 0) else 310
                     max_es = max([x for x in (row['es_mean_ref'],
                                              row['es_mean_alt']) if x is not None], default=None)
 
