@@ -2,6 +2,7 @@ from svgutils import transform
 import numpy as np
 from math import lgamma
 import os
+from tqdm import tqdm
 
 from ASB_app import *
 from ASB_app.releases import current_release
@@ -178,7 +179,7 @@ if __name__ == '__main__':
         'g': 'c',
     }
 
-    for tf_snp, snp, tf in session.query(TranscriptionFactorSNP, SNP, TranscriptionFactor).filter(TranscriptionFactorSNP.motif_concordance.isnot(None) &
+    for tf_snp, snp, tf in tqdm(session.query(TranscriptionFactorSNP, SNP, TranscriptionFactor).filter(TranscriptionFactorSNP.motif_concordance.isnot(None) &
                                                                                                   (TranscriptionFactorSNP.motif_concordance != 'No Hit')).join(
         SNP,
         (SNP.chromosome == TranscriptionFactorSNP.chromosome) &
@@ -187,7 +188,7 @@ if __name__ == '__main__':
     ).join(
         TranscriptionFactor,
         TranscriptionFactor.tf_id == TranscriptionFactorSNP.tf_id
-    ):
+    ), total=71445):
         for draw_revcomp in True, False:
             # if os.path.isfile('D:\Sashok\svgs_{}/{}_{}_{}{}.svg.gz'.format(current_release.name, tf.name, snp.rs_id, snp.alt, '_revcomp' if draw_revcomp else '')):
             #     continue
@@ -197,7 +198,7 @@ if __name__ == '__main__':
             pcm_path = os.path.expanduser('~/pcm/{}'.format(pcm_filename))
 
             context = ' ' * 20 + (''.join([get_revcomp[x] for x in snp.context[::-1]]) if draw_revcomp else snp.context) + ' ' * 20
-            print(context)
+            # print(context)
             alt = get_revcomp[snp.alt] if draw_revcomp else snp.alt
             pos_in_motif = tf_snp.motif_position
             motif_pref = 1/np.power(10, tf_snp.motif_log_p_ref)
@@ -209,7 +210,7 @@ if __name__ == '__main__':
             fdr = 1/np.power(10, tf_snp.log_p_value_ref) if asb_is_ref else 1/np.power(10, tf_snp.log_p_value_alt)
 
             m, heights = get_heights(pcm_path, mode='KDIC')
-            print(full_gap, text_h, indent)
+            # print(full_gap, text_h, indent)
             fig_x = (m + add_letters + add_letters + concordance_indent) * unit_width
             fig_y = unit_height * (1 + full_gap + text_h + indent + hill_sum_height + strands_h + hill_gap + 0.35)
             fig = transform.SVGFigure("{}".format(fig_x), "{}".format(fig_y))
@@ -238,7 +239,7 @@ if __name__ == '__main__':
 
             hill_width = m
 
-            print(motif_context, pos_in_motif)
+            # print(motif_context, pos_in_motif)
 
             place_letter_on_svg(fig, os.path.expanduser('~/letters/rect.svg'), (pos_in_motif + concordance_indent) * unit_width, 0, (1 + full_gap + text_h/2 + snp_gap/2 + snp_text_h) * unit_height, unit_width)
 
