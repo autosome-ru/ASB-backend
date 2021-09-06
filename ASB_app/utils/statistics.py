@@ -1,6 +1,8 @@
+import json
+
 from ASB_app import releases
-from ASB_app.constants import fdr_classes, es_classes
-from ASB_app.models import CandidateSNP
+from ASB_app.constants import fdr_classes, es_classes, fdr_choices, ananastra_stats_file
+from ASB_app.models import CandidateSNP, CandidateRS, CandidateCLRS, CandidateTFRS
 import numpy as np
 
 current_release = releases.current_release
@@ -114,7 +116,7 @@ def get_corresponding_es_classes(es_class, low=False):
 def get_stats_dict(fdrs):
     stats_dict = {}
     for fdr_class in fdrs:
-        print(fdr_class)
+        print('Collecting statistics for: {}'.format(fdr_class))
         fdr = -np.log10(float(fdr_class))
         possible_tf_asbs_lsit = get_possible_tf_asbs(fdr)
         print('tf_asb')
@@ -131,3 +133,29 @@ def get_stats_dict(fdrs):
             'possible_all_asbs_rs': len(set(x.rs_id for x in possible_all_asbs_list)),
         }
     return stats_dict
+
+
+def collect_ananastra_stats(fdrs=fdr_choices):
+    print('Collecting candidate SNPs statistics ...')
+    tf_candidats = CandidateSNP.query.filter(
+        CandidateSNP.ag_level == 'TF',
+    ).count()
+    cl_candidates = CandidateSNP.query.filter(
+        CandidateSNP.ag_level == 'CL',
+    ).count()
+    candidates_rs = CandidateRS.query.count()
+    try:
+        assert CandidateCLRS.query.count() == candidates_rs
+        assert CandidateTFRS.query.count() == candidates_rs
+    except AssertionError:
+        print(CandidateCLRS.query.count(), CandidateTFRS.query.count(), candidates_rs)
+    with open(ananastra_stats_file, 'w') as f:
+        json.dump({
+            'stats_dict': get_stats_dict(fdrs),
+            'total_tf_candidates': tf_candidats,
+            'total_cl_candidates': cl_candidates,
+            'total_all_candidates': tf_candidats + cl_candidates,
+            'total_tf_candidates_rs': candidates_rs,
+            'total_cl_candidates_rs': candidates_rs,
+            'total_all_candidates_rs': candidates_rs,
+        }, f, indent=2)
