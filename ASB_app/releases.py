@@ -35,4 +35,4 @@ def get_release_by_version(version):
     raise ReleaseNotFound('No release: v{}'.format(version))
 
 
-current_release = ReleaseZanthar
+current_release = ReleaseSusan
