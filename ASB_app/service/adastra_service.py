@@ -471,7 +471,7 @@ class ReleaseService:
 
     def get_hints_for_gene_name(self, in_str):
         filters = (self.Gene.gene_name.like(in_str), self.Gene.gene_name != self.Gene.gene_id) if in_str else (
-        self.Gene.gene_name != self.Gene.gene_id,)
+            self.Gene.gene_name != self.Gene.gene_id,)
         genes = self.Gene.query.filter(*filters).order_by(self.Gene.snps_count.desc()).limit(3).all()
         for g in genes:
             g.locus_start, g.locus_end = self.get_gene_locus(g)
@@ -486,16 +486,69 @@ class ReleaseService:
 
     def get_overall_statistics(self):
         if int(self.release.version) >= 3:
+            if int(self.release.version) == 4:
+                stats_dict_to_use = {
+                    "stats_dict": {
+                        "0.01": {
+                            "possible_tf_asbs": 193258,
+                            "possible_cl_asbs": 276190,
+                            "possible_all_asbs": 469448,
+                            "possible_tf_asbs_rs": 139695,
+                            "possible_cl_asbs_rs": 184172,
+                            "possible_all_asbs_rs": 202784
+                        },
+                        "0.05": {
+                            "possible_tf_asbs": 382814,
+                            "possible_cl_asbs": 490946,
+                            "possible_all_asbs": 873760,
+                            "possible_tf_asbs_rs": 249858,
+                            "possible_cl_asbs_rs": 297846,
+                            "possible_all_asbs_rs": 332284
+                        },
+                        "0.1": {
+                            "possible_tf_asbs": 588512,
+                            "possible_cl_asbs": 700865,
+                            "possible_all_asbs": 1289377,
+                            "possible_tf_asbs_rs": 357317,
+                            "possible_cl_asbs_rs": 400193,
+                            "possible_all_asbs_rs": 453570
+                        },
+                        "0.15": {
+                            "possible_tf_asbs": 825138,
+                            "possible_cl_asbs": 916554,
+                            "possible_all_asbs": 1741692,
+                            "possible_tf_asbs_rs": 474298,
+                            "possible_cl_asbs_rs": 499883,
+                            "possible_all_asbs_rs": 577836
+                        },
+                        "0.25": {
+                            "possible_tf_asbs": 1505493,
+                            "possible_cl_asbs": 1460014,
+                            "possible_all_asbs": 2965507,
+                            "possible_tf_asbs_rs": 807539,
+                            "possible_cl_asbs_rs": 760630,
+                            "possible_all_asbs_rs": 920815
+                        }
+                    },
+                    "total_tf_candidates": 14607073,
+                    "total_cl_candidates": 9773424,
+                    "total_all_candidates": 24380497,
+                    "total_tf_candidates_rs": 3689162,
+                    "total_cl_candidates_rs": 3689162,
+                    "total_all_candidates_rs": 3689162
+                }
+            else:
+                stats_dict_to_use = stats_dict
             return {
                 'transcription_factors_count': self.TranscriptionFactor.query.filter(
                     self.TranscriptionFactor.aggregated_snps_count > 0).count(),
                 'cell_types_count': self.CellLine.query.filter(self.CellLine.aggregated_snps_count > 0).count(),
-                'snps_count': stats_dict['0.25']['possible_all_asbs_rs'],
-                'asbs_count': stats_dict['0.25']['possible_all_asbs'],
-                'snps_count010': stats_dict['0.1']['possible_all_asbs_rs'],
-                'asbs_count010': stats_dict['0.1']['possible_all_asbs'],
-                'snps_count005': stats_dict['0.05']['possible_all_asbs_rs'],
-                'asbs_count005': stats_dict['0.05']['possible_all_asbs'],
+                'snps_count': stats_dict_to_use['0.25']['possible_all_asbs_rs'],
+                'asbs_count': stats_dict_to_use['0.25']['possible_all_asbs'],
+                'snps_count010': stats_dict_to_use['0.1']['possible_all_asbs_rs'],
+                'asbs_count010': stats_dict_to_use['0.1']['possible_all_asbs'],
+                'snps_count005': stats_dict_to_use['0.05']['possible_all_asbs_rs'],
+                'asbs_count005': stats_dict_to_use['0.05']['possible_all_asbs'],
             }
         else:
             return {
