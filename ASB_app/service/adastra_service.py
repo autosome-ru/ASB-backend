@@ -488,54 +488,46 @@ class ReleaseService:
         if int(self.release.version) >= 3:
             if int(self.release.version) == 4:
                 stats_dict_to_use = {
-                    "stats_dict": {
-                        "0.01": {
-                            "possible_tf_asbs": 193258,
-                            "possible_cl_asbs": 276190,
-                            "possible_all_asbs": 469448,
-                            "possible_tf_asbs_rs": 139695,
-                            "possible_cl_asbs_rs": 184172,
-                            "possible_all_asbs_rs": 202784
-                        },
-                        "0.05": {
-                            "possible_tf_asbs": 382814,
-                            "possible_cl_asbs": 490946,
-                            "possible_all_asbs": 873760,
-                            "possible_tf_asbs_rs": 249858,
-                            "possible_cl_asbs_rs": 297846,
-                            "possible_all_asbs_rs": 332284
-                        },
-                        "0.1": {
-                            "possible_tf_asbs": 588512,
-                            "possible_cl_asbs": 700865,
-                            "possible_all_asbs": 1289377,
-                            "possible_tf_asbs_rs": 357317,
-                            "possible_cl_asbs_rs": 400193,
-                            "possible_all_asbs_rs": 453570
-                        },
-                        "0.15": {
-                            "possible_tf_asbs": 825138,
-                            "possible_cl_asbs": 916554,
-                            "possible_all_asbs": 1741692,
-                            "possible_tf_asbs_rs": 474298,
-                            "possible_cl_asbs_rs": 499883,
-                            "possible_all_asbs_rs": 577836
-                        },
-                        "0.25": {
-                            "possible_tf_asbs": 1505493,
-                            "possible_cl_asbs": 1460014,
-                            "possible_all_asbs": 2965507,
-                            "possible_tf_asbs_rs": 807539,
-                            "possible_cl_asbs_rs": 760630,
-                            "possible_all_asbs_rs": 920815
-                        }
+                    "0.01": {
+                        "possible_tf_asbs": 193258,
+                        "possible_cl_asbs": 276190,
+                        "possible_all_asbs": 469448,
+                        "possible_tf_asbs_rs": 139695,
+                        "possible_cl_asbs_rs": 184172,
+                        "possible_all_asbs_rs": 202784
                     },
-                    "total_tf_candidates": 14607073,
-                    "total_cl_candidates": 9773424,
-                    "total_all_candidates": 24380497,
-                    "total_tf_candidates_rs": 3689162,
-                    "total_cl_candidates_rs": 3689162,
-                    "total_all_candidates_rs": 3689162
+                    "0.05": {
+                        "possible_tf_asbs": 382814,
+                        "possible_cl_asbs": 490946,
+                        "possible_all_asbs": 873760,
+                        "possible_tf_asbs_rs": 249858,
+                        "possible_cl_asbs_rs": 297846,
+                        "possible_all_asbs_rs": 332284
+                    },
+                    "0.1": {
+                        "possible_tf_asbs": 588512,
+                        "possible_cl_asbs": 700865,
+                        "possible_all_asbs": 1289377,
+                        "possible_tf_asbs_rs": 357317,
+                        "possible_cl_asbs_rs": 400193,
+                        "possible_all_asbs_rs": 453570
+                    },
+                    "0.15": {
+                        "possible_tf_asbs": 825138,
+                        "possible_cl_asbs": 916554,
+                        "possible_all_asbs": 1741692,
+                        "possible_tf_asbs_rs": 474298,
+                        "possible_cl_asbs_rs": 499883,
+                        "possible_all_asbs_rs": 577836
+                    },
+                    "0.25": {
+                        "possible_tf_asbs": 1505493,
+                        "possible_cl_asbs": 1460014,
+                        "possible_all_asbs": 2965507,
+                        "possible_tf_asbs_rs": 807539,
+                        "possible_cl_asbs_rs": 760630,
+                        "possible_all_asbs_rs": 920815
+                    },
                 }
             else:
                 stats_dict_to_use = stats_dict
