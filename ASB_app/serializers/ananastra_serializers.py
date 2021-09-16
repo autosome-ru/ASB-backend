@@ -66,6 +66,8 @@ meta_info_model = api.model('Ticket meta info', {
     'cl_asb_counts_top': fields.List(fields.Nested(asb_count_model)),
     'tf_asb_data': fields.List(fields.Nested(asb_data_model)),
     'cl_asb_data': fields.List(fields.Nested(asb_data_model)),
+    'chr_asb_data': fields.List(fields.Nested(asb_data_model)),
+    'chr_log10_p_value_rs': fields.Float,
     'concordant_asbs': fields.List(fields.Nested(concordant_asb_model)),
 })
 

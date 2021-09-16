@@ -12,7 +12,7 @@ from ASB_app.utils.statistics import get_stats_dict, get_corresponding_fdr_class
 from sqlalchemy.orm import aliased
 import numpy as np
 import pandas as pd
-from scipy.stats import fisher_exact
+from scipy.stats import fisher_exact, distributions
 from statsmodels.stats.multitest import multipletests
 
 from ASB_app.models import CandidateSNP, CandidateRS, CandidateTFRS, CandidateCLRS
@@ -40,6 +40,21 @@ class ConvError(ValueError):
 
 class TooBigError(ValueError):
     pass
+
+
+def logit_combine_p_values(pvalues):
+    pvalues = np.array([pvalue for pvalue in pvalues if 1 > pvalue > 0])
+    if len(pvalues) == 0:
+        return 1
+    elif len(pvalues) == 1:
+        return pvalues[0]
+
+    statistic = -np.sum(np.log(pvalues)) + np.sum(np.log1p(-pvalues))
+    k = len(pvalues)
+    nu = np.int_(5 * k + 4)
+    approx_factor = np.sqrt(np.int_(3) * nu / (np.int_(k) * np.square(np.pi) * (nu - np.int_(2))))
+    pval = distributions.t.sf(statistic * approx_factor, nu)
+    return pval
 
 
 def convert_rs_to_int(rs_str):
@@ -492,7 +507,7 @@ def marshal_logp(p):
     return str(-np.log10(p))
 
 
-def marshall_data(asb_data):
+def marshal_data(asb_data):
     return [{k: marshal_inf(v) if k in ('log10_p_value', 'log10_fdr', 'odds') else v for (k, v) in elem.items()} for elem in asb_data]
 
 
@@ -723,6 +738,7 @@ def process_snp_file(ticket_id, fdr_class, annotate_tf=True, annotate_cl=True, b
         cl_negatives_list = [x for query in divide_query(lambda x: get_candidates_by_level(x, fdr_class_neg, level='CL'), rs_ids) for x in query]
         cl_negatives = len(cl_negatives_list)
         cl_negatives_rs = sum(query for query in divide_query(lambda x: get_candidates_by_level(x, fdr_class_neg, level='CL', rs=True, mode='count'), rs_ids))
+        all_negatives_list = [x for query in divide_query(lambda x: get_all_candidates(x, fdr_class_neg, rs=False, mode='all'), rs_ids) for x in query]
         all_negatives = tf_negatives + cl_negatives
         all_negatives_rs = sum(query for query in divide_query(lambda x: get_all_candidates(x, fdr_class_neg, rs=True, mode='count'), rs_ids))
 
@@ -776,16 +792,16 @@ def process_snp_file(ticket_id, fdr_class, annotate_tf=True, annotate_cl=True, b
             tf_id = TranscriptionFactor.query.filter_by(name=tf).one().tf_id
             asbs = tf_asb_counts[tf]['count']
             asbs_rs = len(set(x.snp.rs_id for x in tf_asbs_list if x.tf_id == tf_id))
-            candidates = len([cand for cand in tf_negatives_list if cand.ag_id == tf_id])
-            candidates_rs = len(set(cand.rs_id for cand in tf_negatives_list if cand.ag_id == tf_id))
-            odds, p = fisher_exact(((asbs_rs, candidates_rs), (possible_tf_asbs_rs, possible_tf_negatives_rs)), alternative='greater')
+            negatives = len([cand for cand in tf_negatives_list if cand.ag_id == tf_id])
+            negatives_rs = len(set(cand.rs_id for cand in tf_negatives_list if cand.ag_id == tf_id))
+            odds, p = fisher_exact(((asbs_rs, negatives_rs), (possible_tf_asbs_rs, possible_tf_negatives_rs)), alternative='greater')
             tf_p_list.append(p)
             tf_asb_data.append({
                 'name': tf,
                 'asbs': asbs,
                 'asbs_rs': asbs_rs,
-                'candidates': candidates,
-                'candidates_rs': candidates_rs,
+                'candidates': negatives + asbs,
+                'candidates_rs': negatives_rs + asbs_rs,
                 'odds': odds,
                 'log10_p_value': -np.log10(p),
                 'log10_fdr': 0,
@@ -806,16 +822,16 @@ def process_snp_file(ticket_id, fdr_class, annotate_tf=True, annotate_cl=True, b
             cl_id = CellLine.query.filter_by(name=cl).one().cl_id
             asbs = cl_asb_counts[cl]['count']
             asbs_rs = len(set(x.snp.rs_id for x in cl_asbs_list if x.cl_id == cl_id))
-            candidates = len([cand for cand in cl_negatives_list if cand.ag_id == cl_id])
-            candidates_rs = len(set(cand.rs_id for cand in cl_negatives_list if cand.ag_id == cl_id))
-            odds, p = fisher_exact(((asbs_rs, candidates_rs), (possible_cl_asbs_rs, possible_cl_negatives_rs)), alternative='greater')
+            negatives = len([cand for cand in cl_negatives_list if cand.ag_id == cl_id])
+            negatives_rs = len(set(cand.rs_id for cand in cl_negatives_list if cand.ag_id == cl_id))
+            odds, p = fisher_exact(((asbs_rs, negatives_rs), (possible_cl_asbs_rs, possible_cl_negatives_rs)), alternative='greater')
             cl_p_list.append(p)
             cl_asb_data.append({
                 'name': cl,
                 'asbs': asbs,
                 'asbs_rs': asbs_rs,
-                'candidates': candidates,
-                'candidates_rs': candidates_rs,
+                'candidates': negatives + asbs,
+                'candidates_rs': negatives_rs + asbs_rs,
                 'odds': odds,
                 'log10_p_value': -np.log10(p),
                 'log10_fdr': 0,
@@ -828,10 +844,42 @@ def process_snp_file(ticket_id, fdr_class, annotate_tf=True, annotate_cl=True, b
             sig['log10_fdr'] = np.nan if np.isnan(logfdr) else -np.log10(logfdr)
 
         logger.info('Ticket {}: cl tests done'.format(ticket_id))
+        update_ticket_status(ticket, 'Testing the enrichment of ASBs of individual chromosomes')
+
+        chr_p_list = []
+        chr_asb_data = []
+        for chromosome in list(set(x.chromosome for x in all_asbs_list)):
+            asbs = len([x for x in all_asbs_list if x.chromosome == chromosome])
+            asbs_rs = len(set(x.rs_id for x in all_asbs_list if x.chromosome == chromosome))
+            negatives = len([cand for cand in all_negatives_list if cand.chromosome == chromosome])
+            negatives_rs = len(set(cand.rs_id for cand in all_negatives_list if cand.chromosome == chromosome))
+            odds, p = fisher_exact(((asbs_rs, negatives_rs), (possible_all_asbs_rs, possible_all_negatives_rs)), alternative='greater')
+            chr_p_list.append(p)
+            chr_asb_data.append({
+                'name': chromosome,
+                'asbs': asbs,
+                'asbs_rs': asbs_rs,
+                'candidates': negatives + asbs,
+                'candidates_rs': negatives_rs + asbs_rs,
+                'odds': odds,
+                'log10_p_value': -np.log10(p),
+                'log10_fdr': 0,
+            })
+        if len(chr_p_list) == 0:
+            chr_fdr = []
+        else:
+            _, chr_fdr, _, _ = multipletests(chr_p_list, alpha=0.05, method='fdr_bh')
+        for sig, logfdr in zip(chr_asb_data, chr_fdr):
+            sig['log10_fdr'] = np.nan if np.isnan(logfdr) else -np.log10(logfdr)
+
+        chr_p_rs = logit_combine_p_values(chr_p_list)
+
+        logger.info('Ticket {}: chromosome tests done'.format(ticket_id))
         update_ticket_status(ticket, 'Finalizing the report')
 
         tf_asb_data = sorted(tf_asb_data, key=lambda x: (x['log10_fdr'], x['log10_p_value'], x['odds']), reverse=True)
         cl_asb_data = sorted(cl_asb_data, key=lambda x: (x['log10_fdr'], x['log10_p_value'], x['odds']), reverse=True)
+        chr_asb_data = sorted(chr_asb_data, key=lambda x: (x['log10_fdr'], x['log10_p_value'], x['odds']), reverse=True)
 
         ticket.status = 'Processed'
         meta_info = dict(ticket.meta_info)
@@ -870,8 +918,10 @@ def process_snp_file(ticket_id, fdr_class, annotate_tf=True, annotate_cl=True, b
             'tf_asb_counts_top': modify_counts(tf_asb_data, tf_sum_counts, top=True),
             'cl_asb_counts': modify_counts(cl_asb_data, top=False),
             'cl_asb_counts_top': modify_counts(cl_asb_data, cl_sum_counts, top=True),
-            'tf_asb_data': marshall_data(tf_asb_data),
-            'cl_asb_data': marshall_data(cl_asb_data),
+            'tf_asb_data': marshal_data(tf_asb_data),
+            'cl_asb_data': marshal_data(cl_asb_data),
+            'chr_asb_data': marshal_data(chr_asb_data),
+            'chr_log10_p_value_rs': marshal_logp(chr_p_rs),
             'concordant_asbs': conc_asbs,
         })
 
@@ -886,8 +936,6 @@ def process_snp_file(ticket_id, fdr_class, annotate_tf=True, annotate_cl=True, b
 
     ticket.meta_info = meta_info
     logger.info('Ticket {}: ticket info changed'.format(ticket_id))
-    # with open('baalchip.json', 'w') as f:
-    #     f.write(str(meta_info))
     session.commit()
 
     logger.info('Ticket {}: session commited'.format(ticket_id))
