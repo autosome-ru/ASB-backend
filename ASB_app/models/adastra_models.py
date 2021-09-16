@@ -24,6 +24,8 @@ for release in Release.__subclasses__():
             tf_id = db.Column(db.Integer, primary_key=True)
             name = db.Column(db.String(50), nullable=False)
             uniprot_ac = db.Column(db.String(60), index=True)
+            if int(release.version) >= 4:
+                gene_name = db.Column(db.String(50), index=True)
             motif_legnth = db.Column(db.Integer)
 
             @aggregated('tf_aggregated_snps', db.Column(db.Integer))
