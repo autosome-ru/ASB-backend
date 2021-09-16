@@ -14,6 +14,23 @@ asb_data_model = api.model('ASB data entity', {
     'log10_fdr': fields.String,
 })
 
+
+chr_asb_data_model = api.clone('ASB data by chromosome entity', asb_data_model, {
+    'tf_asbs': fields.Integer,
+    'tf_candidates': fields.Integer,
+    'tf_asbs_rs': fields.Integer,
+    'tf_candidates_rs': fields.Integer,
+    'tf_odds': fields.String,
+    'tf_log10_p_value': fields.String,
+
+    'cl_asbs': fields.Integer,
+    'cl_candidates': fields.Integer,
+    'cl_asbs_rs': fields.Integer,
+    'cl_candidates_rs': fields.Integer,
+    'cl_odds': fields.String,
+    'cl_log10_p_value': fields.String,
+})
+
 asb_count_model = api.model('ASB count entity', {
     'name': fields.String,
     'count': fields.Integer,
@@ -66,8 +83,10 @@ meta_info_model = api.model('Ticket meta info', {
     'cl_asb_counts_top': fields.List(fields.Nested(asb_count_model)),
     'tf_asb_data': fields.List(fields.Nested(asb_data_model)),
     'cl_asb_data': fields.List(fields.Nested(asb_data_model)),
-    'chr_asb_data': fields.List(fields.Nested(asb_data_model)),
+    'chr_asb_data': fields.List(fields.Nested(chr_asb_data_model)),
     'chr_log10_p_value_rs': fields.String,
+    'chr_tf_log10_p_value_rs': fields.String,
+    'chr_cl_log10_p_value_rs': fields.String,
     'concordant_asbs': fields.List(fields.Nested(concordant_asb_model)),
 })
 

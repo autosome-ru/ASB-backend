@@ -508,7 +508,36 @@ def marshal_logp(p):
 
 
 def marshal_data(asb_data):
-    return [{k: marshal_inf(v) if k in ('log10_p_value', 'log10_fdr', 'odds') else v for (k, v) in elem.items()} for elem in asb_data]
+    return [{k: marshal_inf(v) if k in ('log10_p_value', 'log10_fdr', 'odds') else v for (k, v) in elem.items()} for
+            elem in asb_data]
+
+
+def marshal_chr_data(asb_data):
+    return [{k: marshal_inf(v) if k in ('log10_p_value', 'log10_fdr', 'odds',
+                                        'tf_log10_p_value', 'tf_log10_fdr', 'tf_odds',
+                                        'cl_log10_p_value', 'cl_log10_fdr', 'cl_odds') else v for (k, v) in elem.items()} for
+            elem in asb_data]
+
+
+def get_asb_counts_by_chromosome(asbs_list, negatives_list, chromosome, ag_snp=False):
+    asbs = len([x for x in asbs_list if x.chromosome == chromosome])
+    if ag_snp:
+        asbs_rs = len(set(x.snp.rs_id for x in asbs_list if x.chromosome == chromosome))
+    else:
+        asbs_rs = len(set(x.rs_id for x in asbs_list if x.chromosome == chromosome))
+    negatives = len([cand for cand in negatives_list if cand.chromosome == chromosome])
+    negatives_rs = len(set(cand.rs_id for cand in negatives_list if cand.chromosome == chromosome))
+    return {
+               'asbs': asbs,
+               'asbs_rs': asbs_rs,
+               'negatives': negatives,
+               'negatives_rs': negatives_rs,
+    }
+
+
+def get_p_and_odds_by_chromosome(counts_data, possible_asbs_rs, possible_negatives_rs):
+    return fisher_exact(((counts_data['asbs_rs'], counts_data['negatives_rs']), (possible_asbs_rs, possible_negatives_rs)),
+                           alternative='greater')
 
 
 @executor.job
@@ -844,26 +873,49 @@ def process_snp_file(ticket_id, fdr_class, annotate_tf=True, annotate_cl=True, b
             sig['log10_fdr'] = np.nan if np.isnan(logfdr) else -np.log10(logfdr)
 
         logger.info('Ticket {}: cl tests done'.format(ticket_id))
-        update_ticket_status(ticket, 'Testing the enrichment of ASBs of individual chromosomes')
+        update_ticket_status(ticket, 'Testing the enrichment of ASBs at individual chromosomes')
 
         chr_p_list = []
+        chr_tf_p_list = []
+        chr_cl_p_list = []
         chr_asb_data = []
-        for chromosome in list(set(x.chromosome for x in all_asbs_list)):
-            asbs = len([x for x in all_asbs_list if x.chromosome == chromosome])
-            asbs_rs = len(set(x.rs_id for x in all_asbs_list if x.chromosome == chromosome))
-            negatives = len([cand for cand in all_negatives_list if cand.chromosome == chromosome])
-            negatives_rs = len(set(cand.rs_id for cand in all_negatives_list if cand.chromosome == chromosome))
-            odds, p = fisher_exact(((asbs_rs, negatives_rs), (possible_all_asbs_rs, possible_all_negatives_rs)), alternative='greater')
+        for chromosome in list(set(x.chromosome for x in all_asbs_list) | set(x.chromosome for x in all_negatives_list)):
+            counts = get_asb_counts_by_chromosome(all_asbs_list, all_negatives_list, chromosome)
+            odds, p = get_p_and_odds_by_chromosome(counts, possible_all_asbs_rs, possible_all_negatives_rs)
             chr_p_list.append(p)
+
+            tf_counts = get_asb_counts_by_chromosome(tf_asbs_list, tf_negatives_list, chromosome, ag_snp=True)
+            tf_odds, tf_p = get_p_and_odds_by_chromosome(tf_counts, possible_tf_asbs_rs, possible_tf_negatives_rs)
+            chr_tf_p_list.append(tf_p)
+
+            cl_counts = get_asb_counts_by_chromosome(cl_asbs_list, cl_negatives_list, chromosome, ag_snp=True)
+            cl_odds, cl_p = get_p_and_odds_by_chromosome(cl_counts, possible_cl_asbs_rs, possible_cl_negatives_rs)
+            chr_cl_p_list.append(cl_p)
+
             chr_asb_data.append({
                 'name': chromosome,
-                'asbs': asbs,
-                'asbs_rs': asbs_rs,
-                'candidates': negatives + asbs,
-                'candidates_rs': negatives_rs + asbs_rs,
+
+                'asbs': counts['asbs'],
+                'asbs_rs': counts['asbs_rs'],
+                'candidates': counts['negatives'] + counts['asbs'],
+                'candidates_rs': counts['negatives_rs'] + counts['asbs_rs'],
                 'odds': odds,
                 'log10_p_value': -np.log10(p),
                 'log10_fdr': 0,
+
+                'tf_asbs': tf_counts['asbs'],
+                'tf_asbs_rs': tf_counts['asbs_rs'],
+                'tf_candidates': tf_counts['negatives'] + tf_counts['asbs'],
+                'tf_candidates_rs': tf_counts['negatives_rs'] + tf_counts['asbs_rs'],
+                'tf_odds': tf_odds,
+                'tf_log10_p_value': -np.log10(tf_p),
+
+                'cl_asbs': cl_counts['asbs'],
+                'cl_asbs_rs': cl_counts['asbs_rs'],
+                'cl_candidates': cl_counts['negatives'] + cl_counts['asbs'],
+                'cl_candidates_rs': cl_counts['negatives_rs'] + cl_counts['asbs_rs'],
+                'cl_odds': cl_odds,
+                'cl_log10_p_value': -np.log10(cl_p),
             })
         if len(chr_p_list) == 0:
             chr_fdr = []
@@ -873,6 +925,8 @@ def process_snp_file(ticket_id, fdr_class, annotate_tf=True, annotate_cl=True, b
             sig['log10_fdr'] = np.nan if np.isnan(logfdr) else -np.log10(logfdr)
 
         chr_p_rs = logit_combine_p_values(chr_p_list)
+        chr_tf_p_rs = logit_combine_p_values(chr_tf_p_list)
+        chr_cl_p_rs = logit_combine_p_values(chr_cl_p_list)
 
         logger.info('Ticket {}: chromosome tests done'.format(ticket_id))
         update_ticket_status(ticket, 'Finalizing the report')
@@ -920,8 +974,10 @@ def process_snp_file(ticket_id, fdr_class, annotate_tf=True, annotate_cl=True, b
             'cl_asb_counts_top': modify_counts(cl_asb_data, cl_sum_counts, top=True),
             'tf_asb_data': marshal_data(tf_asb_data),
             'cl_asb_data': marshal_data(cl_asb_data),
-            'chr_asb_data': marshal_data(chr_asb_data),
+            'chr_asb_data': marshal_chr_data(chr_asb_data),
             'chr_log10_p_value_rs': marshal_logp(chr_p_rs),
+            'chr_tf_log10_p_value_rs': marshal_logp(chr_tf_p_rs),
+            'chr_cl_log10_p_value_rs': marshal_logp(chr_cl_p_rs),
             'concordant_asbs': conc_asbs,
         })
 
