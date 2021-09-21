@@ -42,7 +42,6 @@ TF_SNP = 0
 CL_SNP = 0
 HASH = 1
 
-
 release_path = os.path.expanduser('~/DataChipZantharFixed/')
 parameters_path = os.path.expanduser('~/Configs/')
 
@@ -52,12 +51,12 @@ conv_bad = dict(zip(
 ))
 
 if __name__ == '__main__':
-    # with open(os.path.join(release_path, 'release_stats', 'convert_cell_lines.json')) as file:
-    #     cl_dict = json.loads(file.readline())
-    #
-    # cl_dict_reverse = {}
-    # for key, value in cl_dict.items():
-    #     cl_dict_reverse[value] = key
+    with open(os.path.join(release_path, 'release_stats', 'convert_cell_lines.json')) as file:
+        cl_dict = json.loads(file.readline())
+
+    cl_dict_reverse = {}
+    for key, value in cl_dict.items():
+        cl_dict_reverse[value] = key
 
     for param in ['TF'] * TF + ['CL'] * CL:
         pv_path = release_path + '{}_P-values/'.format(param)
