@@ -178,11 +178,11 @@ if __name__ == '__main__':
             print(table_cls)
             if table_cls == CandidateSNP:
                 for item in CandidateSNP.query:
-                    item.hash = chromosomes.index(item.chromosome) * 10 ** 9 + item.position
+                    item.position_hash = chromosomes.index(item.chromosome) * 10 ** 9 + item.position
             else:
-                for item, snp in session.query(table_cls, SNP).join(
-                        SNP, table_cls.rs_id == SNP.rs_id
+                for item, snp in session.query(table_cls, CandidateSNP).join(
+                        CandidateSNP, table_cls.rs_id == CandidateSNP.rs_id
                 ):
-                    item.hash = chromosomes.index(snp.chromosome) * 10 ** 9 + snp.position
+                    item.position_hash = chromosomes.index(snp.chromosome) * 10 ** 9 + snp.position
             session.commit()
             session.close()
