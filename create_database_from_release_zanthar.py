@@ -601,7 +601,7 @@ if __name__ == '__main__':
         print('Updating phenotype associations counts')
         update_phenotype_associations()
 
-    if UPDATE_PHEN_COUNT:
+    if UPDATE_HAS_CONCORDANCE:
         print('Updating "has concordant snps"')
         update_has_concordance()
 
