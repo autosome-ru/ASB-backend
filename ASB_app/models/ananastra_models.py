@@ -48,6 +48,7 @@ class CandidateSNP(GenomePolymorphismLocation):
     fdr_class = db.Column(db.Enum(*fdr_classes), index=True)
     best_es = db.Column(db.Float, index=True)
     es_class = db.Column(db.Enum(*es_classes), index=True)
+    position_hash = db.Column(db.Integer, index=True, unique=True)
 
     def __repr__(self):
         return '<CandidateSNP rs{0.rs_id}, {0.alt}, {0.ag_level}, {0.ag_id}, {0.fdr_class}, {0.es_class}>'.format(self)
@@ -65,6 +66,7 @@ class CandidateRS(db.Model):
     fdr_class = db.Column(db.Enum(*fdr_classes), index=True)
     best_es = db.Column(db.Float, index=True)
     es_class = db.Column(db.Enum(*es_classes), index=True)
+    position_hash = db.Column(db.Integer, index=True, unique=True)
 
     def __repr__(self):
         return '<CandidateRS rs{0.rs_id}, {0.fdr_class}, {0.es_class}>'.format(self)
@@ -82,6 +84,7 @@ class CandidateTFRS(db.Model):
     fdr_class = db.Column(db.Enum(*fdr_classes), index=True)
     best_es = db.Column(db.Float, index=True)
     es_class = db.Column(db.Enum(*es_classes), index=True)
+    position_hash = db.Column(db.Integer, index=True, unique=True)
 
     def __repr__(self):
         return '<CandidateTFRS rs{0.rs_id}, {0.fdr_class}, {0.es_class}>'.format(self)
@@ -99,6 +102,7 @@ class CandidateCLRS(db.Model):
     fdr_class = db.Column(db.Enum(*fdr_classes), index=True)
     best_es = db.Column(db.Float, index=True)
     es_class = db.Column(db.Enum(*es_classes), index=True)
+    position_hash = db.Column(db.Integer, index=True, unique=True)
 
     def __repr__(self):
         return '<CandidateCLRS rs{0.rs_id}, {0.fdr_class}, {0.es_class}>'.format(self)

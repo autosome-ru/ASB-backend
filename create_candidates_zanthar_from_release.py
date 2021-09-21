@@ -3,6 +3,7 @@ import os
 import json
 import numpy as np
 
+from ASB_app.constants import chromosomes
 from ASB_app.models import CandidateSNP, CandidateRS, CandidateTFRS, CandidateCLRS
 from ASB_app.utils.statistics import get_fdr_class, get_es_class
 
@@ -34,11 +35,12 @@ current_release.BADGroup, \
 current_release.Gene
 
 
-TF = 1
-CL = 1
-SNP_RS = 1
-TF_SNP = 1
-CL_SNP = 1
+TF = 0
+CL = 0
+SNP_RS = 0
+TF_SNP = 0
+CL_SNP = 0
+HASH = 1
 
 
 release_path = os.path.expanduser('~/DataChipZantharFixed/')
@@ -50,12 +52,12 @@ conv_bad = dict(zip(
 ))
 
 if __name__ == '__main__':
-    with open(os.path.join(release_path, 'release_stats', 'convert_cell_lines.json')) as file:
-        cl_dict = json.loads(file.readline())
-
-    cl_dict_reverse = {}
-    for key, value in cl_dict.items():
-        cl_dict_reverse[value] = key
+    # with open(os.path.join(release_path, 'release_stats', 'convert_cell_lines.json')) as file:
+    #     cl_dict = json.loads(file.readline())
+    #
+    # cl_dict_reverse = {}
+    # for key, value in cl_dict.items():
+    #     cl_dict_reverse[value] = key
 
     for param in ['TF'] * TF + ['CL'] * CL:
         pv_path = release_path + '{}_P-values/'.format(param)
@@ -170,3 +172,17 @@ if __name__ == '__main__':
             snps.append(snp)
         session.add_all(snps)
         session.commit()
+
+    if HASH:
+        for table_cls in CandidateSNP, CandidateRS, CandidateTFRS, CandidateCLRS:
+            print(table_cls)
+            if table_cls == CandidateSNP:
+                for item in CandidateSNP.query:
+                    item.hash = chromosomes.index(item.chromosome) * 10 ** 9 + item.position
+            else:
+                for item, snp in session.query(table_cls, SNP).join(
+                        SNP, table_cls.rs_id == SNP.rs_id
+                ):
+                    item.hash = chromosomes.index(snp.chromosome) * 10 ** 9 + snp.position
+            session.commit()
+            session.close()
