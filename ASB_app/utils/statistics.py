@@ -156,10 +156,11 @@ def get_stats_dict(fdrs, level='ALL'):
                     CandidateSNP.ag_level == level,
                     CandidateSNP.ag_id == ag_id,
                 ).count(),
-                'total_{}_candidates_rs'.format(level.lower()): CandidateSNP.query.filter(
+                'total_{}_candidates_rs'.format(level.lower()): current_release.session.query(
+                    CandidateSNP.rs_id.distinct()).filter(
                     CandidateSNP.ag_level == level,
                     CandidateSNP.ag_id == ag_id,
-                ).group_by(CandidateSNP.rs_id).count()
+                ).count()
             }
         ret_val[ag_id] = stats_dict
     if level == 'ALL':
