@@ -7,6 +7,7 @@ from flask import request
 from flask_restplus import Resource
 
 from ASB_app import executor
+from ASB_app.constants import fdr_choices, background_choices
 from ASB_app.executor_jobs import process_snp_file
 from ASB_app.serializers import ticket_model, ticket_model_short
 from ASB_app.service import ananastra_service, FileNotProcessed
@@ -25,9 +26,6 @@ ananastra_nsp = api.namespace('ANANASTRA web-service', path='/ananastra', descri
 
 commit_parser = file_parser.copy()
 commit_parser.add_argument('user_id')
-if int(current_release.version) >= 3:
-    commit_parser.add_argument('fdr', help='FDR threshold.', default='0.05')
-    # commit_parser.add_argument('es', help='Effect size threshold.', default='0.6')
 
 
 @ananastra_nsp.route('/commit')
@@ -57,11 +55,9 @@ class ProcessTicket(Resource):
         """
         Submits a ticket for processing
         """
-        fdr = thresholds_parser.parse_args()['fdr']
-        # FIXME
-        # es = thresholds_parser.parse_args()['es']
+        args = thresholds_parser.parse_args()
         ananastra_service.update_ticket_status(ticket_id, 'Processing')
-        process_snp_file.submit_stored(ticket_id, ticket_id, fdr)
+        process_snp_file.submit_stored(ticket_id, ticket_id, fdr_class=args['fdr'], background=args['background'])
         return {'message': 'success'}, 202
 
 

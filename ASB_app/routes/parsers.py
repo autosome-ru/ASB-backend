@@ -1,5 +1,5 @@
 from flask_restplus import inputs
-from ASB_app.constants import chromosomes, fdr_choices, es_choices
+from ASB_app.constants import chromosomes, fdr_choices, es_choices, background_choices
 from werkzeug.datastructures import FileStorage
 
 from ASB_app.releases import Release, current_release
@@ -44,4 +44,5 @@ result_param_parser.add_argument('limit', type=inputs.positive, default=0)
 
 thresholds_parser = current_release.api.parser()
 thresholds_parser.add_argument('fdr', help='FDR threshold', default='0.05', choices=fdr_choices)
+thresholds_parser.add_argument('background', help='Background comparison SNP set', default='WG', choices=background_choices)
 # thresholds_parser.add_argument('es', help='Effect size threshold', default='0.6', choices=es_choices)

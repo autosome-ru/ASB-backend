@@ -4,7 +4,7 @@ import json
 import numpy as np
 
 from ASB_app.constants import chromosomes
-from ASB_app.models import CandidateSNP, CandidateRS, CandidateTFRS, CandidateCLRS
+from ASB_app.models import CandidateSNP, CandidateRS, CandidateTFRS, CandidateCLRS, PositionHash, LDIslandsInfo
 from ASB_app.utils.statistics import get_fdr_class, get_es_class
 
 current_release = releases.ReleaseZanthar
@@ -40,7 +40,8 @@ CL = 0
 SNP_RS = 0
 TF_SNP = 0
 CL_SNP = 0
-HASH = 1
+HASH = 0
+LD = 0
 
 release_path = os.path.expanduser('~/DataChipZantharFixed/')
 parameters_path = os.path.expanduser('~/Configs/')
@@ -173,15 +174,57 @@ if __name__ == '__main__':
         session.commit()
 
     if HASH:
-        for table_cls in CandidateSNP, CandidateRS, CandidateTFRS, CandidateCLRS:
-            print(table_cls)
-            if table_cls == CandidateSNP:
-                for item in CandidateSNP.query:
-                    item.position_hash = chromosomes.index(item.chromosome) * 10 ** 9 + item.position
+        phs = []
+        rs_ids = set()
+        for cand in CandidateSNP.query:
+            if CandidateSNP.rs_id in rs_ids:
+                continue
             else:
-                for item, snp in session.query(table_cls, CandidateSNP).join(
-                        CandidateSNP, table_cls.rs_id == CandidateSNP.rs_id
-                ):
-                    item.position_hash = chromosomes.index(snp.chromosome) * 10 ** 9 + snp.position
+                phs.append(
+                    PositionHash(
+                        rs_id=cand.rs_id,
+                        position_hash=chromosomes.index(cand.chromosome) * 10 ** 9 + cand.position
+                    )
+                )
+                rs_ids.add(CandidateSNP.rs_id)
+        session.add_all(phs)
+        session.commit()
+        session.close()
+
+    if LD:
+        lds = []
+        for cand in CandidateRS.query:
+            lds.append(
+                LDIslandsInfo(
+                    rs_id=cand.rs_id,
+                )
+            )
+        session.add_all(lds)
+        session.commit()
+        session.close()
+
+        print('created')
+
+        adastra_rs = set(*zip(*session.query(CandidateRS.rs_id)))
+        for file, column in zip(('asn_rs.tsv', 'afr_rs.tsv', 'eur_rs.tsv'), ('ld_asn', 'ld_afr', 'ld_eur')):
+            print(column)
+            island_num = {}
+            num = 0
+            num_rs = {}
+            with open(os.path.join('D:\Sashok\Desktop\ANANASTRA', file)) as f:
+                for line in f:
+                    line = line.strip('\n').split('\t')
+                    rs = int(line[0][2:])
+                    if rs not in adastra_rs:
+                        continue
+                    island = (line[1], line[2], line[3])
+                    if island not in island_num:
+                        print(island)
+                        island_num[island] = num
+                        num += 1
+                    num_rs.setdefault(num, set()).add(rs)
+            for num, rs_set in num_rs.items():
+                print(num)
+                session.execute(db.update(LDIslandsInfo).where(LDIslandsInfo.rs_id.in_(rs_set)).values(**{column: num}))
             session.commit()
             session.close()

@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from ASB_app.constants import nucleotides, chromosomes, fdr_classes, es_classes
+from ASB_app.constants import nucleotides, chromosomes, fdr_classes, es_classes, background_choices
 from ASB_app.releases import current_release
 
 db = current_release.db
@@ -18,6 +18,7 @@ class Ticket(db.Model):
     user_id = db.Column(db.String(36))
     fdr = db.Column(db.Enum(*fdr_classes))
     es = db.Column(db.Enum(*es_classes))
+    background = db.Column(db.Enum(*background_choices))
 
     def __repr__(self):
         return '<AnanastraTicket {0.ticket_id}, created {0.date_created}, {0.status}>'.format(self)
@@ -48,7 +49,6 @@ class CandidateSNP(GenomePolymorphismLocation):
     fdr_class = db.Column(db.Enum(*fdr_classes), index=True)
     best_es = db.Column(db.Float, index=True)
     es_class = db.Column(db.Enum(*es_classes), index=True)
-    position_hash = db.Column(db.Integer, index=True, unique=True)
 
     def __repr__(self):
         return '<CandidateSNP rs{0.rs_id}, {0.alt}, {0.ag_level}, {0.ag_id}, {0.fdr_class}, {0.es_class}>'.format(self)
@@ -66,7 +66,6 @@ class CandidateRS(db.Model):
     fdr_class = db.Column(db.Enum(*fdr_classes), index=True)
     best_es = db.Column(db.Float, index=True)
     es_class = db.Column(db.Enum(*es_classes), index=True)
-    position_hash = db.Column(db.Integer, index=True, unique=True)
 
     def __repr__(self):
         return '<CandidateRS rs{0.rs_id}, {0.fdr_class}, {0.es_class}>'.format(self)
@@ -84,7 +83,6 @@ class CandidateTFRS(db.Model):
     fdr_class = db.Column(db.Enum(*fdr_classes), index=True)
     best_es = db.Column(db.Float, index=True)
     es_class = db.Column(db.Enum(*es_classes), index=True)
-    position_hash = db.Column(db.Integer, index=True, unique=True)
 
     def __repr__(self):
         return '<CandidateTFRS rs{0.rs_id}, {0.fdr_class}, {0.es_class}>'.format(self)
@@ -102,7 +100,24 @@ class CandidateCLRS(db.Model):
     fdr_class = db.Column(db.Enum(*fdr_classes), index=True)
     best_es = db.Column(db.Float, index=True)
     es_class = db.Column(db.Enum(*es_classes), index=True)
-    position_hash = db.Column(db.Integer, index=True, unique=True)
 
     def __repr__(self):
         return '<CandidateCLRS rs{0.rs_id}, {0.fdr_class}, {0.es_class}>'.format(self)
+
+
+class PositionHash(db.Model):
+    __tablename__ = 'position_hash'
+    __bind_key__ = 'candidates_zanthar'
+
+    rs_id = db.Column(db.Integer, primary_key=True)
+    position_hash = db.Column(db.BigInteger, index=True, unique=True)
+
+
+class LDIslandsInfo(db.Model):
+    __tablename__ = 'ld_islands'
+    __bind_key__ = 'candidates_zanthar'
+
+    rs_id = db.Column(db.Integer, primary_key=True)
+    ld_eur = db.Column(db.SmallInteger, index=True)
+    ld_asn = db.Column(db.SmallInteger, index=True)
+    ld_afr = db.Column(db.SmallInteger, index=True)
