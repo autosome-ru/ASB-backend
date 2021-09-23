@@ -134,14 +134,19 @@ def get_stats_dict(fdrs, level='ALL'):
                 CandidateSNP.ag_level == 'CL',
                 *add_filters
             ).count()
-            candidates_rs = CandidateRS.query.filter(*add_filters).count()
-            try:
-                assert CandidateCLRS.query.filter(*add_filters).count() == candidates_rs
-                assert CandidateTFRS.query.filter(*add_filters).count() == candidates_rs
-            except AssertionError:
-                print(CandidateCLRS.query.filter(*add_filters).count(),
-                      CandidateTFRS.query.filter(*add_filters).count(),
-                      candidates_rs)
+            if level == 'CHR':
+                candidates_rs = current_release.session.query(CandidateSNP.rs_id)\
+                    .filter(*add_filters)\
+                    .group_by(CandidateSNP.rs_id).count()
+            else:
+                candidates_rs = CandidateRS.query.count()
+                try:
+                    assert CandidateCLRS.query.count() == candidates_rs
+                    assert CandidateTFRS.query.count() == candidates_rs
+                except AssertionError:
+                    print(CandidateCLRS.query.filter(*add_filters).count(),
+                          CandidateTFRS.query.filter(*add_filters).count(),
+                          candidates_rs)
             stats_dict['1'] = {
                 'total_tf_candidates': tf_candidates,
                 'total_cl_candidates': cl_candidates,
