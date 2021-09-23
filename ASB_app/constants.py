@@ -29,7 +29,8 @@ background_choices = ('WG', 'LOCAL', 'LD-ASN', 'LD-EUR', 'LD-AFR')
 
 
 def read_ananastra_constants():
-    if not os.path.isfile(ananastra_stats_file):
+    # if not os.path.isfile(ananastra_stats_file):
+    if True:
         print('No ananastra statistics file!')
         return {
             'stats_dict': {},
