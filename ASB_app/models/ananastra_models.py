@@ -39,6 +39,7 @@ class CandidateSNP(GenomePolymorphismLocation):
         db.PrimaryKeyConstraint('chromosome', 'position', 'alt', 'ag_level', 'ag_id'),
         db.Index('rs_index', 'rs_id'),
         db.Index('ag_level_index', 'ag_level'),
+        db.Index('ix_candidate_snps_chromosome', 'chromosome'),
     )
 
     ref = db.Column(db.Enum(*nucleotides), nullable=False)
