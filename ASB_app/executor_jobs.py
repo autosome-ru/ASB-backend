@@ -866,8 +866,8 @@ def process_snp_file(ticket_id, fdr_class='0.05', annotate_tf=True, annotate_cl=
                 asbs_rs = len(set(x.snp.rs_id for x in asbs_list if getattr(x, id_attr) == ag_id))
                 negatives = len([cand for cand in negatives_list if cand.ag_id == ag_id])
                 negatives_rs = len(set(cand.rs_id for cand in negatives_list if cand.ag_id == ag_id))
-                expected_asbs_rs = ag_stats_dict[ag_id][fdr_class]['expected_{}_asbs_rs'.format(level.lower())] - asbs_rs
-                expected_negatives_rs = ag_stats_dict[ag_id]['1']['total_{}_candidates_rs'.format(level.lower())] - ag_stats_dict[ag_id][fdr_class_neg]['expected_{}_asbs_rs'.format(level.lower())] - negatives_rs
+                expected_asbs_rs = ag_stats_dict[str(ag_id)][fdr_class]['expected_{}_asbs_rs'.format(level.lower())] - asbs_rs
+                expected_negatives_rs = ag_stats_dict[str(ag_id)]['1']['total_{}_candidates_rs'.format(level.lower())] - ag_stats_dict[str(ag_id)][fdr_class_neg]['expected_{}_asbs_rs'.format(level.lower())] - negatives_rs
                 odds, p = fisher_exact(((asbs_rs, negatives_rs), (expected_asbs_rs, expected_negatives_rs)), alternative='greater')
                 p_list.append(p)
                 asb_data.append({
