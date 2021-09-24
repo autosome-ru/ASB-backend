@@ -110,16 +110,19 @@ def get_stats_dict(fdrs, level='ALL'):
             print('Collecting statistics for: {}'.format(fdr_class))
             if level in ('ALL', 'CHR', 'TF'):
                 expected_tf_asbs_list = get_expected_asbs(fdr_class, ag_id=ag_id, level='TF', mode='all')
-                stats_dict['expected_tf_asbs'] = len(expected_tf_asbs_list)
-                stats_dict['expected_tf_asbs_rs'] = len(set(x.snp.rs_id for x in expected_tf_asbs_list))
+                stats_dict[fdr_class]['expected_tf_asbs'] = len(expected_tf_asbs_list)
+                stats_dict[fdr_class]['expected_tf_asbs_rs'] = len(set(x.snp.rs_id for x in expected_tf_asbs_list))
             if level in ('ALL', 'CHR', 'CL'):
                 expected_cl_asbs_list = get_expected_asbs(fdr_class, ag_id=ag_id, level='CL', mode='all')
-                stats_dict['expected_cl_asbs'] = len(expected_cl_asbs_list)
-                stats_dict['expected_cl_asbs_rs'] = len(set(x.snp.rs_id for x in expected_cl_asbs_list))
+                stats_dict[fdr_class]['expected_cl_asbs'] = len(expected_cl_asbs_list)
+                stats_dict[fdr_class]['expected_cl_asbs_rs'] = len(set(x.snp.rs_id for x in expected_cl_asbs_list))
             if level in ('ALL', 'CHR'):
-                expected_all_asbs_list = get_expected_asbs(fdr_class, level='ALL', mode='all')
-                stats_dict['expected_all_asbs'] = len(expected_tf_asbs_list) + len(expected_cl_asbs_list),
-                stats_dict['expected_all_asbs_rs'] = len(set(x.rs_id for x in expected_all_asbs_list))
+                expected_all_asbs_list = get_expected_asbs(fdr_class, ag_id=ag_id, level='ALL', mode='all')
+                assert isinstance(len(expected_tf_asbs_list), int)
+                assert isinstance(len(expected_cl_asbs_list), int)
+                stats_dict[fdr_class]['expected_all_asbs'] = len(expected_tf_asbs_list) + len(expected_cl_asbs_list)
+                assert isinstance(stats_dict[fdr_class]['expected_all_asbs'], int)
+                stats_dict[fdr_class]['expected_all_asbs_rs'] = len(set(x.rs_id for x in expected_all_asbs_list))
         print('Collecting statistics for candidate data')
         if level in ('ALL', 'CHR'):
             if level == 'CHR':
