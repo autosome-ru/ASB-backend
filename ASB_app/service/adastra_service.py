@@ -486,49 +486,38 @@ class ReleaseService:
 
     def get_overall_statistics(self):
         if int(self.release.version) >= 3:
-            if int(self.release.version) == 4:
-                stats_dict_to_use = {
-                    "0.01": {
-                        "expected_tf_asbs": 193258,
-                        "expected_cl_asbs": 276190,
-                        "expected_all_asbs": 469448,
-                        "expected_tf_asbs_rs": 139695,
-                        "expected_cl_asbs_rs": 184172,
-                        "expected_all_asbs_rs": 202784
-                    },
-                    "0.05": {
-                        "expected_tf_asbs": 382814,
-                        "expected_cl_asbs": 490946,
-                        "expected_all_asbs": 873760,
-                        "expected_tf_asbs_rs": 249858,
-                        "expected_cl_asbs_rs": 297846,
-                        "expected_all_asbs_rs": 332284
-                    },
-                    "0.1": {
-                        "expected_tf_asbs": 588512,
-                        "expected_cl_asbs": 700865,
-                        "expected_all_asbs": 1289377,
-                        "expected_tf_asbs_rs": 357317,
-                        "expected_cl_asbs_rs": 400193,
-                        "expected_all_asbs_rs": 453570
-                    },
-                    "0.15": {
-                        "expected_tf_asbs": 825138,
-                        "expected_cl_asbs": 916554,
-                        "expected_all_asbs": 1741692,
-                        "expected_tf_asbs_rs": 474298,
-                        "expected_cl_asbs_rs": 499883,
-                        "expected_all_asbs_rs": 577836
-                    },
-                    "0.25": {
-                        "expected_tf_asbs": 1505493,
-                        "expected_cl_asbs": 1460014,
-                        "expected_all_asbs": 2965507,
-                        "expected_tf_asbs_rs": 807539,
-                        "expected_cl_asbs_rs": 760630,
-                        "expected_all_asbs_rs": 920815
-                    },
-                }
+            if int(self.release.version) == 3:
+                stats_dict_to_use = {'0.01': {'expected_tf_asbs': 100178,
+                                              'expected_cl_asbs': 156005,
+                                              'expected_all_asbs': 256183,
+                                              'expected_tf_asbs_rs': 79713,
+                                              'expected_cl_asbs_rs': 115757,
+                                              'expected_all_asbs_rs': 114925},
+                                     '0.05': {'expected_tf_asbs': 183756,
+                                              'expected_cl_asbs': 262013,
+                                              'expected_all_asbs': 445769,
+                                              'expected_tf_asbs_rs': 136045,
+                                              'expected_cl_asbs_rs': 180299,
+                                              'expected_all_asbs_rs': 169816},
+                                     '0.1': {'expected_tf_asbs': 255812,
+                                             'expected_cl_asbs': 349490,
+                                             'expected_all_asbs': 605302,
+                                             'expected_tf_asbs_rs': 180149,
+                                             'expected_cl_asbs_rs': 229260,
+                                             'expected_all_asbs_rs': 204619},
+                                     '0.15': {'expected_tf_asbs': 323556,
+                                              'expected_cl_asbs': 427750,
+                                              'expected_all_asbs': 751306,
+                                              'expected_tf_asbs_rs': 219099,
+                                              'expected_cl_asbs_rs': 270903,
+                                              'expected_all_asbs_rs': 228154},
+                                     '0.25': {'expected_tf_asbs': 468555,
+                                              'expected_cl_asbs': 585750,
+                                              'expected_all_asbs': 1054305,
+                                              'expected_tf_asbs_rs': 297146,
+                                              'expected_cl_asbs_rs': 349733,
+                                              'expected_all_asbs_rs': 253630},
+                                     }
             else:
                 stats_dict_to_use = stats_dict
             return {

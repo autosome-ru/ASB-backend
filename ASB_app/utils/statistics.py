@@ -170,7 +170,6 @@ def get_stats_dict(fdrs, level='ALL'):
 
 def collect_ananastra_stats(fdrs=fdr_choices, level=None):
     if level is None:
-        print('I am dumb')
         with open(ananastra_stats_file, 'w') as f:
             json.dump({
                 'chr_stats_dict': get_stats_dict(fdrs, level='CHR'),
@@ -179,5 +178,5 @@ def collect_ananastra_stats(fdrs=fdr_choices, level=None):
                 'stats_dict': get_stats_dict(fdrs),
             }, f, indent=2)
     else:
-        with open(ananastra_stats_file.replace('ananstra_constants', 'ananstra_constants_{}'.format(level)), 'w') as f:
+        with open(ananastra_stats_file.replace('ananastra_constants', 'ananastra_constants_{}'.format(level)), 'w') as f:
             json.dump(get_stats_dict(fdrs, level=level), f, indent=2)
