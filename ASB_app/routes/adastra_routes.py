@@ -9,7 +9,7 @@ from flask_restplus import Resource
 from sqlalchemy.orm.exc import NoResultFound
 
 from ASB_app.utils import PaginationMixin
-from ASB_app.routes import search_parser, csv_columns_parser, used_hints_parser, pagination_parser
+from ASB_app.routes import search_parser, csv_columns_parser, used_hints_parser, pagination_parser, search_parser_tsv
 
 from ASB_app.releases import Release, get_release_by_version
 
@@ -221,12 +221,12 @@ for release in Release.__subclasses__():
     @search_nsp.route('/snps/advanced/tsv')
     @set_release_service(release_service)
     class AdvancedSearchSNPCSV(Resource):
-        @api.expect(search_parser)
+        @api.expect(search_parser_tsv)
         def get(self):
             """
             Get all SNPs with advanced filters short info in tsv file
             """
-            all_args = search_parser.parse_args()
+            all_args = search_parser_tsv.parse_args()
             try:
                 return self.release_service.get_snps_by_advanced_filters_tsv(all_args)
             except ParsingError:

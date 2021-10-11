@@ -29,6 +29,9 @@ for release in Release.__subclasses__():
     search_parser.add_argument('phenotype_databases', action='split', help='Comma-separated list of databases, possible choices {grasp, ebi, clinvar, phewas, finemapping, QTL}, earch SNPs that have phenotype associations in all specified databases')
     search_parser.add_argument('motif_concordance', action='split', help='Comma-separated list of motif concordance values, possible choices {Concordant. Discordant, Weak Concordant, Weak Discordant}, if no TF specified will search SNPs with any TF having any of the specified concordance valuese, else only SNPs ASB for the specified TFs and any of the specified concordance values for these TFs')
 
+    search_parser_tsv = search_parser.copy()
+    search_parser_tsv.replace_argument('size', type=inputs.natural, help='Items per page', default=0)
+
     used_hints_parser = api.parser()
     used_hints_parser.add_argument('options', action='split')
     used_hints_parser.add_argument('search')
