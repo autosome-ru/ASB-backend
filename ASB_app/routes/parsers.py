@@ -12,7 +12,7 @@ for release in Release.__subclasses__():
 
     pagination_parser = api.parser()
     pagination_parser.add_argument('page', type=inputs.positive, help='Page number', default=1)
-    pagination_parser.add_argument('size', type=int, choices=range(1, 1001), metavar="[1-1000]", help='Items per page, ≤1000')
+    pagination_parser.add_argument('size', type=inputs.int_range(1, 1000), help='Items per page, ≤1000')
     pagination_parser.add_argument('offset', type=inputs.natural, help='Skip first N items', default=0)
     pagination_parser.add_argument('filter', help='Comma-separated filters: field1 EQ "value1", field2 GE "value2"')
     pagination_parser.add_argument('order_by', help='ORDER BY criterion: "field1", "-field2"')
