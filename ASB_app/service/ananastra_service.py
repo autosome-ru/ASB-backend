@@ -106,9 +106,10 @@ def get_result(ticket_id, param, limit, format):
             for number, line in enumerate(out):
                 if limit != 0 and number == limit + 1:
                     break
-                if number == 0:
-                    csv_writer.writerow([x.lower() for x in line.strip('\n').split('\t')])
-                    continue
+                if param != 'not_found':
+                    if number == 0:
+                        csv_writer.writerow([x.lower() for x in line.strip('\n').split('\t')])
+                        continue
                 csv_writer.writerow(line.strip('\n').split('\t'))
         file.flush()
         return send_file(

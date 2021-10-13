@@ -125,6 +125,8 @@ class ProcessingResult(Resource):
         limit = args['limit']
         try:
             if format == 'json':
+                if result_param in ('all', 'not_found'):
+                    return {'message': 'JSON format is not available for specified options'}, 403
                 return ananastra_service.get_result(ticket_id, result_param, limit, format), 200
             else:
                 return ananastra_service.get_result(ticket_id, result_param, limit, format)
