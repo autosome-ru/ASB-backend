@@ -82,6 +82,8 @@ meta_info_for_chromosomes = api.model('Ticket meta info by chromosome', {
 meta_info_model = api.model('Ticket meta info', {
     'processing_time': fields.String,
     'all_rs': fields.Integer,
+    'submitted_snps_count': fields.Integer,
+    'unique_submitted_snps_count': fields.Integer,
     'undefined_rs': fields.Integer,
     'tf': fields.Nested(meta_info_for_aggregation_level),
     'cl': fields.Nested(meta_info_for_aggregation_level),

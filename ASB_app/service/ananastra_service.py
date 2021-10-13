@@ -1,5 +1,6 @@
 import csv
 import os
+import shutil
 import tempfile
 from datetime import datetime, timedelta
 import pandas as pd
@@ -23,14 +24,10 @@ def get_ticket(ticket_id):
     return Ticket.query.get_or_404(ticket_id)
 
 
-def create_processed_path(ticket_id, *subdirs):
+def create_processed_path(ticket_id):
     ticket_dir = get_path_by_ticket_id(ticket_id, path_type='dir', ext='')
     if not os.path.isdir(ticket_dir):
         os.mkdir(ticket_dir)
-    for subdir in subdirs:
-        path = os.path.join(ticket_dir, subdir)
-        if not os.path.isdir(path):
-            os.mkdir(path)
 
 
 def get_tickets_dir(suffix=''):
@@ -39,19 +36,12 @@ def get_tickets_dir(suffix=''):
 
 def get_path_by_ticket_id(ticket_id, path_type='input', ext='.tsv'):
     if path_type == 'dir':
-        ext = ''
-    return os.path.join(
-        get_tickets_dir(),
-        *{
-            'input': ['accepted'],
-            'dir': ['processed'],
-            'tf': ['processed', '{}'.format(ticket_id), 'tf'],
-            'cl': ['processed', '{}'.format(ticket_id), 'cl'],
-            'tf_sum': ['processed', '{}'.format(ticket_id), 'tf_sum'],
-            'cl_sum': ['processed', '{}'.format(ticket_id), 'cl_sum'],
-        }[path_type],
-        '{}{}'.format(ticket_id, ext)
-    )
+        return get_tickets_dir(ticket_id)
+    else:
+        return os.path.join(
+            get_tickets_dir('accepted' if path_type == 'input' else get_tickets_dir(ticket_id)),
+            '{}{}{}'.format(ticket_id, '' if path_type == 'input' else '.' + path_type, ext)
+        )
 
 
 def create_ticket(ticket_id, user_id):
@@ -78,18 +68,9 @@ def delete_ticket(ticket_id):
     ticket = get_ticket(ticket_id)
     if ticket.status == 'Processing':
         return False
-    input_file = get_path_by_ticket_id(ticket_id)
-    if os.path.isfile(input_file):
-        os.remove(input_file)
     ticket_dir = get_path_by_ticket_id(ticket_id, path_type='dir')
     if os.path.isdir(ticket_dir):
-        for path_type in ('tf', 'cl', 'tf_sum', 'cl_sum'):
-            report = get_path_by_ticket_id(ticket_id, path_type=path_type)
-            if os.path.isfile(report):
-                os.remove(report)
-        for dir in os.listdir(ticket_dir):
-            os.rmdir(os.path.join(ticket_dir, dir))
-        os.rmdir(ticket_dir)
+        shutil.rmtree(ticket_dir)
     session.delete(ticket)
     session.commit()
     return True
@@ -143,18 +124,9 @@ def delete_all_tickets():
         ticket_id = ticket.ticket_id
         if ticket.status == 'Processing':
             continue
-        input_file = get_path_by_ticket_id(ticket_id)
-        if os.path.isfile(input_file):
-            os.remove(input_file)
         ticket_dir = get_path_by_ticket_id(ticket_id, path_type='dir')
         if os.path.isdir(ticket_dir):
-            for path_type in ('tf', 'cl', 'tf_sum', 'cl_sum'):
-                report = get_path_by_ticket_id(ticket_id, path_type=path_type)
-                if os.path.isfile(report):
-                    os.remove(report)
-            for dir in os.listdir(ticket_dir):
-                os.rmdir(os.path.join(ticket_dir, dir))
-            os.rmdir(ticket_dir)
+            shutil.rmtree(ticket_dir)
         session.delete(ticket)
         session.commit()
 

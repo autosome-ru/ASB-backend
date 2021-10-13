@@ -39,7 +39,8 @@ class CommitFile(Resource):
         if 'file' not in request.files:
             api.abort(400, 'No files')
         else:
-            fd, filename = tempfile.mkstemp(prefix=current_release.name + '_', suffix='.tsv', dir=get_tickets_dir('accepted'))
+            fd, filename = tempfile.mkstemp(prefix=current_release.name + '_', suffix='.tsv',
+                                            dir=get_tickets_dir('accepted'))
             request.files['file'].save(filename)
             os.close(fd)
             ticket_id = get_ticket_id_from_path(filename)
