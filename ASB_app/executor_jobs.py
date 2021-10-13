@@ -57,6 +57,8 @@ def logit_combine_p_values(pvalues):
 
 
 def convert_rs_to_int(rs_str):
+    if pd.isna(rs_str):
+        raise ConvError(rs_str)
     rs_str = rs_str.strip()
     if not re.match(r'^rs\d+$', rs_str):
         raise ConvError(rs_str)
@@ -119,7 +121,8 @@ def get_tf_query(rs_ids, fdr):
         TranscriptionFactorSNP.exp_snps,
         isouter=True
     ).filter(
-        ((ExpSNP.p_value_ref - ExpSNP.p_value_alt) * (TranscriptionFactorSNP.log_p_value_alt - TranscriptionFactorSNP.log_p_value_ref) > 0) |
+        ((ExpSNP.p_value_ref - ExpSNP.p_value_alt) * (
+                    TranscriptionFactorSNP.log_p_value_alt - TranscriptionFactorSNP.log_p_value_ref) > 0) |
         (ExpSNP.p_value_ref == None)
     ).join(
         Experiment,
@@ -289,7 +292,8 @@ def get_asbs_by_level(rs_ids=None, fdr='0.05', level='TF', mode='all'):
         return q.all()
 
 
-def get_candidates_by_level(rs_ids=None, fdr='0.05', intervals=None, lds=None, ld_type='ld_eur', level='TF', alternative='less', mode='all', rs=False):
+def get_candidates_by_level(rs_ids=None, fdr='0.05', intervals=None, lds=None, ld_type='ld_eur', level='TF',
+                            alternative='less', mode='all', rs=False):
     if rs:
         if level == 'TF':
             SNPClass = CandidateTFRS
@@ -393,13 +397,15 @@ def modify_counts(asb_data, counts=None, top=False):
         for count in counts:
             data = data_by_name[count['name']]
             tuples.append((count, data))
-        counts_list, _ = (list(a) for a in zip(*sorted(tuples, key=lambda x: (x[0]['count'], x[1]['odds']), reverse=True)))
+        counts_list, _ = (list(a) for a in
+                          zip(*sorted(tuples, key=lambda x: (x[0]['count'], x[1]['odds']), reverse=True)))
         if len(counts_list) > 7:
             counts_list = counts_list[:6] + [{'name': 'Other', 'count': sum(x['count'] for x in counts_list[6:])}]
     else:
         counts_list = sorted(asb_data, key=lambda x: (x['asbs'], x['odds']), reverse=True)
         if len(counts_list) > 7:
-            counts_list = [{'name': x['name'], 'count': x['asbs']} for x in counts_list[:6]] + [{'name': 'Other', 'count': sum(x['asbs'] for x in counts_list[6:])}]
+            counts_list = [{'name': x['name'], 'count': x['asbs']} for x in counts_list[:6]] + [
+                {'name': 'Other', 'count': sum(x['asbs'] for x in counts_list[6:])}]
         else:
             counts_list = [{'name': x['name'], 'count': x['asbs']} for x in counts_list]
     return counts_list
@@ -419,30 +425,41 @@ def update_ticket_status(ticket, status):
 
 def get_rs_ids_by_chr_pos_query(chromosome, tuples, candidates=False):
     if candidates:
-        return CandidateSNP.query.filter(CandidateSNP.chromosome == chromosome, tuple_(CandidateSNP.position, CandidateSNP.ref, CandidateSNP.alt).in_(tuples)).all()
+        return CandidateSNP.query.filter(CandidateSNP.chromosome == chromosome,
+                                         tuple_(CandidateSNP.position, CandidateSNP.ref, CandidateSNP.alt).in_(
+                                             tuples)).all()
     else:
         return SNP.query.filter(SNP.chromosome == chromosome, tuple_(SNP.position, SNP.ref, SNP.alt).in_(tuples)).all()
 
 
 def get_rs_ids_from_vcf(data):
+    if len(data.columns) < 5:
+        raise ConvError('number of columns in a VCF file.')
+    len_items = len(data.index)
     snps = []
-    for chr in data[0].unique():
-        print(chr)
-        if chr not in chromosomes:
-            if 'chr' + str(chr) in chromosomes:
-                chr = 'chr' + chr
+    all_snps = data[[0, 1, 3, 4]].unique()
+    for chromosome in data[0].unique():
+        print(chromosome)
+        if chromosome not in chromosomes:
+            if 'chr' + str(chromosome) in chromosomes:
+                chromosome = 'chr' + chromosome
             else:
                 continue
                 # raise ConvError('chromosome: {}'.format(chr))
         try:
-            tuples = [(int(position), ref.upper(), alt.upper()) for index, (position, ref, alt) in data.loc[data[0] == chr, [1, 3, 4]].iterrows()]
+            tuples = [(int(position), ref.upper(), alt.upper())
+                      for index, (position, ref, alt)
+                      in data.loc[data[0] == chromosome, [1, 3, 4]].iterrows()]
         except ValueError as e:
             raise ConvError('position: {}'.format(e.args[0]))
-        for snps_chunk in divide_query(lambda poss: get_rs_ids_by_chr_pos_query(chr, poss), tuples, chunk_size=3000):
+        for snps_chunk in divide_query(lambda poss: get_rs_ids_by_chr_pos_query(chromosome, poss), tuples,
+                                       chunk_size=3000):
             snps += snps_chunk
-        for snps_chunk in divide_query(lambda poss: get_rs_ids_by_chr_pos_query(chr, poss, candidates=True), tuples, chunk_size=3000):
+        for snps_chunk in divide_query(lambda poss: get_rs_ids_by_chr_pos_query(chromosome, poss, candidates=True),
+                                       tuples, chunk_size=3000):
             snps += snps_chunk
-    return list(set(x.rs_id for x in snps))
+    found_snps = set((x.chromosome, x.position, x.ref, x.alt) for x in snps)
+    return list(set(x.rs_id for x in snps)), len_items, ['_'.join(map(str, x)) for x in all_snps - found_snps]
 
 
 def get_snps_from_interval(interval_str):
@@ -455,7 +472,7 @@ def get_snps_from_interval(interval_str):
         end = int(end)
         if end - start > 10000000:
             raise TooBigError(interval_str)
-        return list(set(x for (x, ) in session.query(SNP.rs_id).filter(
+        return list(set(x for (x,) in session.query(SNP.rs_id).filter(
             SNP.chromosome == chr,
             SNP.position.between(start, end)
         )) | set(x.rs_id for x in CandidateSNP.query.filter(
@@ -486,19 +503,19 @@ def transform_list(obj):
 
 
 def decode_snv_from_hash(hash):
-    chr_index, position = divmod(hash, 10**9)
+    chr_index, position = divmod(hash, 10 ** 9)
     return chromosomes[chr_index], position
 
 
 def get_local_snv_hash(hash, w_size):
     chromosome, position = decode_snv_from_hash(hash)
     start_hash = max(1, position - w_size)
-    end_hash = min(position + w_size, 10**9)
+    end_hash = min(position + w_size, 10 ** 9)
     chr_hash = chromosomes.index(chromosome) * 10 ** 9
     return chr_hash + start_hash, chr_hash + end_hash
 
 
-def snvs_to_hash(hash_list, w_size=10**6):
+def snvs_to_hash(hash_list, w_size=10 ** 6):
     snvs_list = [get_local_snv_hash(hash, w_size=w_size) for hash in hash_list]
     return transform_list(sorted(snvs_list, key=lambda x: x[0]))
 
@@ -530,7 +547,8 @@ def marshal_data(asb_data):
 def marshal_chr_data(asb_data):
     return [{k: marshal_inf(v) if k in ('log10_p_value', 'log10_fdr', 'odds',
                                         'tf_log10_p_value', 'tf_log10_fdr', 'tf_odds',
-                                        'cl_log10_p_value', 'cl_log10_fdr', 'cl_odds') else v for (k, v) in elem.items()} for
+                                        'cl_log10_p_value', 'cl_log10_fdr', 'cl_odds') else v for (k, v) in
+             elem.items()} for
             elem in asb_data]
 
 
@@ -543,16 +561,50 @@ def get_asb_counts_by_chromosome(asbs_list, negatives_list, chromosome, ag_snp=F
     negatives = len([cand for cand in negatives_list if cand.chromosome == chromosome])
     negatives_rs = len(set(cand.rs_id for cand in negatives_list if cand.chromosome == chromosome))
     return {
-               'asbs': asbs,
-               'asbs_rs': asbs_rs,
-               'negatives': negatives,
-               'negatives_rs': negatives_rs,
+        'asbs': asbs,
+        'asbs_rs': asbs_rs,
+        'negatives': negatives,
+        'negatives_rs': negatives_rs,
     }
 
 
 def get_p_and_odds_by_chromosome(counts_data, expected_asbs_rs, expected_negatives_rs):
-    return fisher_exact(((counts_data['asbs_rs'], counts_data['negatives_rs']), (expected_asbs_rs, expected_negatives_rs)),
-                           alternative='greater')
+    return fisher_exact(
+        ((counts_data['asbs_rs'], counts_data['negatives_rs']), (expected_asbs_rs, expected_negatives_rs)),
+        alternative='greater')
+
+
+def read_file_as_df(input_file_name, ticket):
+    try:
+        with gzip.open(input_file_name, 'rt') as f:
+            data = pd.read_table(f,
+                                 sep='\t',
+                                 header=None,
+                                 encoding='utf-8',
+                                 dtype=str,
+                                 comment='#')
+    except OSError:
+        try:
+            data = pd.read_table(input_file_name, sep='\t', header=None, encoding='utf-8', dtype=str, comment='#')
+        except:
+            update_ticket_status(ticket,
+                                 'Processing failed: the file must be a valid utf-8 text file with a single SNP rs-ID on each line or a valid .vcf(.gz) file')
+            raise ConvError
+    return data
+
+
+def get_rs_ids_from_list(rs_list):
+    not_found = []
+    formatted_rs = []
+    for rs_id in rs_list:
+        rs_id = rs_id.strip()
+        if re.match(r'^rs\d+$', rs_id):
+            formatted_rs.append(int(rs_id[2:]))
+        elif re.match(r'^\d+$', rs_id):
+            formatted_rs.append(int(rs_id))
+        else:
+            not_found.append(rs_id)
+    return formatted_rs, not_found
 
 
 @executor.job
@@ -575,56 +627,59 @@ def process_snp_file(ticket_id, fdr_class='0.05', annotate_tf=True, annotate_cl=
         if fdr_class not in stats_dict:
             update_ticket_status(ticket, 'Non-standard fdr threshold values are not supported: {}'.format(fdr_class))
             raise ConvError
-        try:
-            with gzip.open(input_file_name, 'rt') as f:
-                data = pd.read_table(f, sep='\t', header=None, encoding='utf-8', dtype=str, comment='#')
-        except:
-            try:
-                data = pd.read_table(input_file_name, sep='\t', header=None, encoding='utf-8', dtype=str, comment='#')
-            except:
-                update_ticket_status(ticket, 'Processing failed: the file must be a valid utf-8 text file with a single SNP rs-ID on each line or a single line with genomic interval or a valid .vcf(.gz) file')
-                raise ConvError
+
+        data = read_file_as_df(input_file_name, ticket)
         if len(data.columns) != 1:
-            len_items = len(data.index)
             try:
-                rs_ids = get_rs_ids_from_vcf(data)
+                rs_ids, len_items, not_found = get_rs_ids_from_vcf(data)
             except ConvError as e:
-                update_ticket_status(ticket, 'Processing failed: the file must contain a single SNP rs-ID on each line or a single line with genomic interval or be a valid vcf file, invalid {}'.format(e.args[0]))
+                update_ticket_status(ticket,
+                                     'Processing failed: the file must contain a single SNP rs-ID on each line or be '
+                                     'a valid vcf file, invalid {}'.format(
+                                         e.args[0]))
                 raise ConvError
             except:
                 change_status_on_fail = True
                 raise
         else:
-            rs_ids = None
-            if len(data.index) == 1:
-                try:
-                    rs_ids = get_snps_from_interval(data[0][0])
-                except ConvError:
-                    pass
-                except TooBigError:
-                    update_ticket_status(ticket, 'The provided genomic interval is too large (>10Mbp). Consider using complete ADASTRA database dump (https://adastra.autosome.ru/{}}/downloads) and performing stand-alone enrichment analysis.'.format(current_release.name))
-                    raise ConvError
-                except:
-                    change_status_on_fail = True
-                    raise
-            if rs_ids is None:
-                try:
-                    rs_ids = data[0].apply(convert_rs_to_int).unique().tolist()
-                except ConvError as e:
-                    if len(data.index) > 1:
-                        update_ticket_status(ticket, 'Processing failed, invalid rs id: "{}"'.format(e.args[0]))
-                    else:
-                        update_ticket_status(ticket, 'Processing failed, invalid rs id or genomic interval: "{}"'.format(e.args[0]))
-                    raise ConvError
-                except:
-                    change_status_on_fail = True
-                    raise
+            rs_ids, not_found = get_rs_ids_from_list(data[0].to_list())
+            # rs_ids = None
+            # if len(data.index) == 1:
+            #     try:
+            #         rs_ids = get_snps_from_interval(data[0][0])
+            #     except ConvError:
+            #         pass
+            #     except TooBigError:
+            #         update_ticket_status(ticket,
+            #                              'The provided genomic interval is too large (>10Mbp). Consider using complete ADASTRA database dump (https://adastra.autosome.ru/{}}/downloads) and performing stand-alone enrichment analysis.'.format(
+            #                                  current_release.name))
+            #         raise ConvError
+            #     except:
+            #         change_status_on_fail = True
+            #         raise
+            # if rs_ids is None:
+            #     try:
+            #         rs_ids = data[0].apply(convert_rs_to_int).unique().tolist()
+                # except ConvError as e:
+                #     if len(data.index) > 1:
+                #         update_ticket_status(ticket, 'Processing failed, invalid rs id: "{}"'.format(e.args[0]))
+                #     else:
+                #         update_ticket_status(ticket,
+                #                              'Processing failed, invalid rs id or genomic interval: "{}"'.format(
+                #                                  e.args[0]))
+                #     raise ConvError
+                # except:
+                #     change_status_on_fail = True
+                #     raise
 
         if len_items is None:
             len_items = len(rs_ids)
 
         if len_items > 10000:
-            update_ticket_status(ticket, 'Too many SNPs found (>10000). Consider using complete ADASTRA database dump (https://adastra.autosome.ru/{}/downloads) and performing stand-alone enrichment analysis.'.format(current_release.name))
+            update_ticket_status(ticket,
+                                 'Too many SNPs found (>10000). Consider using complete ADASTRA database dump ('
+                                 'https://adastra.autosome.ru/downloads) and performing stand-alone enrichment '
+                                 'analysis.')
             raise ConvError
 
         change_status_on_fail = True
@@ -672,14 +727,24 @@ def process_snp_file(ticket_id, fdr_class='0.05', annotate_tf=True, annotate_cl=
             idx = tf_table.groupby(['RS_ID', 'ALT'])['LOG10_TOP_FDR'].transform(max) == tf_table['LOG10_TOP_FDR']
             tf_sum_table = tf_table.loc[idx].copy()
             if len(idx) > 0:
-                tf_sum_table['TOP_EFFECT_SIZE'] = tf_sum_table.apply(lambda row: row['EFFECT_SIZE_REF'] if row['LOG10_FDR_REF'] >= row['LOG10_FDR_ALT'] else row['EFFECT_SIZE_ALT'], axis=1)
-                tf_sum_table['PREFERRED_ALLELE'] = tf_sum_table.apply(lambda row: 'Ref ({})'.format(row['REF']) if row['LOG10_FDR_REF'] >= row['LOG10_FDR_ALT'] else 'Alt ({})'.format(row['ALT']), axis=1)
-                tf_sum_table['MINOR_ALLELE'] = tf_sum_table.apply(lambda row: 'Alt ({})'.format(row['ALT']) if row['LOG10_FDR_REF'] >= row['LOG10_FDR_ALT'] else 'Ref ({})'.format(row['REF']), axis=1)
+                tf_sum_table['TOP_EFFECT_SIZE'] = tf_sum_table.apply(
+                    lambda row: row['EFFECT_SIZE_REF'] if row['LOG10_FDR_REF'] >= row['LOG10_FDR_ALT'] else row[
+                        'EFFECT_SIZE_ALT'], axis=1)
+                tf_sum_table['PREFERRED_ALLELE'] = tf_sum_table.apply(
+                    lambda row: 'Ref ({})'.format(row['REF']) if row['LOG10_FDR_REF'] >= row[
+                        'LOG10_FDR_ALT'] else 'Alt ({})'.format(row['ALT']), axis=1)
+                tf_sum_table['MINOR_ALLELE'] = tf_sum_table.apply(
+                    lambda row: 'Alt ({})'.format(row['ALT']) if row['LOG10_FDR_REF'] >= row[
+                        'LOG10_FDR_ALT'] else 'Ref ({})'.format(row['REF']), axis=1)
                 tf_table.drop(columns=['LOG10_TOP_FDR'], inplace=True)
-                tf_sum_table.drop(columns=['LOG10_FDR_REF', 'LOG10_FDR_ALT', 'EFFECT_SIZE_REF', 'EFFECT_SIZE_ALT'], inplace=True)
-                tf_sum_table['IS_EQTL'] = tf_sum_table['GTEX_EQTL_TARGET_GENES'].apply(lambda x: False if pd.isna(x) else True)
-                tf_sum_table['ALLELES'] = tf_sum_table.apply(lambda row: get_alleles(tf_table.loc[tf_table['RS_ID'] == row['RS_ID'], ['REF', 'ALT']]), axis=1)
-                tf_sum_table['TF_BINDING_PREFERENCES'] = tf_sum_table.apply(lambda row: get_preferences(tf_table.loc[tf_table['RS_ID'] == row['RS_ID'], ['LOG10_FDR_REF', 'LOG10_FDR_ALT']]), axis=1)
+                tf_sum_table.drop(columns=['LOG10_FDR_REF', 'LOG10_FDR_ALT', 'EFFECT_SIZE_REF', 'EFFECT_SIZE_ALT'],
+                                  inplace=True)
+                tf_sum_table['IS_EQTL'] = tf_sum_table['GTEX_EQTL_TARGET_GENES'].apply(
+                    lambda x: False if pd.isna(x) else True)
+                tf_sum_table['ALLELES'] = tf_sum_table.apply(
+                    lambda row: get_alleles(tf_table.loc[tf_table['RS_ID'] == row['RS_ID'], ['REF', 'ALT']]), axis=1)
+                tf_sum_table['TF_BINDING_PREFERENCES'] = tf_sum_table.apply(lambda row: get_preferences(
+                    tf_table.loc[tf_table['RS_ID'] == row['RS_ID'], ['LOG10_FDR_REF', 'LOG10_FDR_ALT']]), axis=1)
                 tf_sum_table.drop(columns=['REF', 'ALT'])
                 tf_sum_table.to_csv(ananastra_service.get_path_by_ticket_id(ticket_id, 'tf_sum'), sep='\t', index=False)
                 tf_table.to_csv(tf_path, sep='\t', index=False)
@@ -721,20 +786,28 @@ def process_snp_file(ticket_id, fdr_class='0.05', annotate_tf=True, annotate_cl=
             idx = cl_table.groupby(['RS_ID', 'ALT'])['LOG10_TOP_FDR'].transform(max) == cl_table['LOG10_TOP_FDR']
             cl_sum_table = cl_table.loc[idx].copy()
             if len(idx) > 0:
-                cl_sum_table['TOP_EFFECT_SIZE'] = cl_sum_table.apply(lambda row: row['EFFECT_SIZE_REF'] if row['LOG10_FDR_REF'] >= row['LOG10_FDR_ALT'] else row['EFFECT_SIZE_ALT'], axis=1)
-                cl_sum_table['PREFERRED_ALLELE'] = cl_sum_table.apply(lambda row: 'Ref ({})'.format(row['REF']) if row['LOG10_FDR_REF'] >= row['LOG10_FDR_ALT'] else 'Alt ({})'.format(row['ALT']), axis=1)
-                cl_sum_table['MINOR_ALLELE'] = cl_sum_table.apply(lambda row: 'Alt ({})'.format(row['ALT']) if row['LOG10_FDR_REF'] >= row['LOG10_FDR_ALT'] else 'Ref ({})'.format(row['REF']), axis=1)
+                cl_sum_table['TOP_EFFECT_SIZE'] = cl_sum_table.apply(
+                    lambda row: row['EFFECT_SIZE_REF'] if row['LOG10_FDR_REF'] >= row['LOG10_FDR_ALT'] else row[
+                        'EFFECT_SIZE_ALT'], axis=1)
+                cl_sum_table['PREFERRED_ALLELE'] = cl_sum_table.apply(
+                    lambda row: 'Ref ({})'.format(row['REF']) if row['LOG10_FDR_REF'] >= row[
+                        'LOG10_FDR_ALT'] else 'Alt ({})'.format(row['ALT']), axis=1)
+                cl_sum_table['MINOR_ALLELE'] = cl_sum_table.apply(
+                    lambda row: 'Alt ({})'.format(row['ALT']) if row['LOG10_FDR_REF'] >= row[
+                        'LOG10_FDR_ALT'] else 'Ref ({})'.format(row['REF']), axis=1)
                 cl_table.drop(columns=['LOG10_TOP_FDR'], inplace=True)
-                cl_sum_table.drop(columns=['LOG10_FDR_REF', 'LOG10_FDR_ALT', 'EFFECT_SIZE_REF', 'EFFECT_SIZE_ALT'], inplace=True)
-                cl_sum_table['ALLELES'] = cl_sum_table.apply(lambda row: get_alleles(cl_table.loc[cl_table['RS_ID'] == row['RS_ID'], ['REF', 'ALT']]), axis=1)
-                cl_sum_table['TF_BINDING_PREFERENCES'] = cl_sum_table.apply(lambda row: get_preferences(cl_table.loc[cl_table['RS_ID'] == row['RS_ID'], ['LOG10_FDR_REF', 'LOG10_FDR_ALT']]), axis=1)
+                cl_sum_table.drop(columns=['LOG10_FDR_REF', 'LOG10_FDR_ALT', 'EFFECT_SIZE_REF', 'EFFECT_SIZE_ALT'],
+                                  inplace=True)
+                cl_sum_table['ALLELES'] = cl_sum_table.apply(
+                    lambda row: get_alleles(cl_table.loc[cl_table['RS_ID'] == row['RS_ID'], ['REF', 'ALT']]), axis=1)
+                cl_sum_table['TF_BINDING_PREFERENCES'] = cl_sum_table.apply(lambda row: get_preferences(
+                    cl_table.loc[cl_table['RS_ID'] == row['RS_ID'], ['LOG10_FDR_REF', 'LOG10_FDR_ALT']]), axis=1)
                 cl_sum_table.drop(columns=['REF', 'ALT'])
                 cl_sum_table.to_csv(ananastra_service.get_path_by_ticket_id(ticket_id, 'cl_sum'), sep='\t', index=False)
                 cl_table.to_csv(cl_path, sep='\t', index=False)
                 cl_sum_counts = cl_sum_table['CELL_TYPE'].value_counts().to_dict()
             else:
                 cl_sum_table.to_csv(ananastra_service.get_path_by_ticket_id(ticket_id, 'cl_sum'), sep='\t', index=False)
-
 
             logger.info('Ticket {}: cl_sum done'.format(ticket_id))
             update_ticket_status(ticket, 'Checking the control data of candidate but non-significant ASBs (non-ASBs)')
@@ -743,13 +816,16 @@ def process_snp_file(ticket_id, fdr_class='0.05', annotate_tf=True, annotate_cl=
         cl_sum_counts = [{'name': key, 'count': value} for key, value in cl_sum_counts.items()]
 
         all_rs = len_items
-        tf_asbs_list = [x for query in divide_query(lambda x: get_asbs_by_level(x, fdr_class, level='TF'), rs_ids) for x in query]
+        tf_asbs_list = [x for query in divide_query(lambda x: get_asbs_by_level(x, fdr_class, level='TF'), rs_ids) for x
+                        in query]
         tf_asbs = len(tf_asbs_list)
         tf_asbs_rs = len(set(x.snp.rs_id for x in tf_asbs_list))
-        cl_asbs_list = [x for query in divide_query(lambda x: get_asbs_by_level(x, fdr_class, level='CL'), rs_ids) for x in query]
+        cl_asbs_list = [x for query in divide_query(lambda x: get_asbs_by_level(x, fdr_class, level='CL'), rs_ids) for x
+                        in query]
         cl_asbs = len(cl_asbs_list)
         cl_asbs_rs = len(set(x.snp.rs_id for x in cl_asbs_list))
-        all_asbs_list = [x for query in divide_query(lambda x: get_asbs_by_level(x, fdr_class, level='ALL'), rs_ids) for x in query]
+        all_asbs_list = [x for query in divide_query(lambda x: get_asbs_by_level(x, fdr_class, level='ALL'), rs_ids) for
+                         x in query]
         all_asbs = tf_asbs + cl_asbs
         all_asbs_rs = len(set(x.rs_id for x in all_asbs_list))
 
@@ -763,18 +839,29 @@ def process_snp_file(ticket_id, fdr_class='0.05', annotate_tf=True, annotate_cl=
             # tf_non_negative_candidates_rs_set = [x.rs_id for query in divide_query(lambda x: get_candidates_by_level(x, fdr_class_neg, level='TF', alternative='greater', rs=True), rs_ids) for x in query]
             # cl_non_negative_candidates_rs_set = [x.rs_id for query in divide_query(lambda x: get_candidates_by_level(x, fdr_class_neg, level='CL', alternative='greater', rs=True), rs_ids) for x in query]
             # all_non_negative_candidates_rs_set = [x.rs_id for query in divide_query(lambda x: get_all_candidates(x, fdr_class_neg, alternative='greater', rs=True), rs_ids) for x in query]
-            all_non_negative_candidates_rs = sum(query for query in divide_query(lambda x: get_candidates_by_level(x, fdr_class_neg, level='ALL', alternative='greater', rs=True, mode='count'), rs_ids))
+            all_non_negative_candidates_rs = sum(query for query in divide_query(
+                lambda x: get_candidates_by_level(x, fdr_class_neg, level='ALL', alternative='greater', rs=True,
+                                                  mode='count'), rs_ids))
             logger.info('Ticket {}: non-negative candidates done'.format(ticket_id))
 
-        tf_negatives_list = [x for query in divide_query(lambda x: get_candidates_by_level(x, fdr_class_neg, level='TF'), rs_ids) for x in query]
+        tf_negatives_list = [x for query in
+                             divide_query(lambda x: get_candidates_by_level(x, fdr_class_neg, level='TF'), rs_ids) for x
+                             in query]
         tf_negatives = len(tf_negatives_list)
-        tf_negatives_rs = sum(query for query in divide_query(lambda x: get_candidates_by_level(x, fdr_class_neg, level='TF', rs=True, mode='count'), rs_ids))
-        cl_negatives_list = [x for query in divide_query(lambda x: get_candidates_by_level(x, fdr_class_neg, level='CL'), rs_ids) for x in query]
+        tf_negatives_rs = sum(query for query in divide_query(
+            lambda x: get_candidates_by_level(x, fdr_class_neg, level='TF', rs=True, mode='count'), rs_ids))
+        cl_negatives_list = [x for query in
+                             divide_query(lambda x: get_candidates_by_level(x, fdr_class_neg, level='CL'), rs_ids) for x
+                             in query]
         cl_negatives = len(cl_negatives_list)
-        cl_negatives_rs = sum(query for query in divide_query(lambda x: get_candidates_by_level(x, fdr_class_neg, level='CL', rs=True, mode='count'), rs_ids))
-        all_negatives_list = [x for query in divide_query(lambda x: get_candidates_by_level(x, fdr_class_neg, level='ALL', rs=False, mode='all'), rs_ids) for x in query]
+        cl_negatives_rs = sum(query for query in divide_query(
+            lambda x: get_candidates_by_level(x, fdr_class_neg, level='CL', rs=True, mode='count'), rs_ids))
+        all_negatives_list = [x for query in divide_query(
+            lambda x: get_candidates_by_level(x, fdr_class_neg, level='ALL', rs=False, mode='all'), rs_ids) for x in
+                              query]
         all_negatives = tf_negatives + cl_negatives
-        all_negatives_rs = sum(query for query in divide_query(lambda x: get_candidates_by_level(x, fdr_class_neg, level='ALL', rs=True, mode='count'), rs_ids))
+        all_negatives_rs = sum(query for query in divide_query(
+            lambda x: get_candidates_by_level(x, fdr_class_neg, level='ALL', rs=True, mode='count'), rs_ids))
 
         if binary:
             undefined = 0
@@ -786,10 +873,10 @@ def process_snp_file(ticket_id, fdr_class='0.05', annotate_tf=True, annotate_cl=
 
         if background == 'LOCAL' or background.startswith('LD'):
             if background == 'LOCAL':
-                window_size = 10**6
+                window_size = 10 ** 6
                 local_intervals = snvs_to_hash(*zip(*(session.query(PositionHash.position_hash)
-                                               .join(CandidateRS, PositionHash.rs_id == CandidateRS.rs_id)
-                                               .filter(CandidateRS.rs_id.in_(rs_ids)))), w_size=window_size)
+                                                      .join(CandidateRS, PositionHash.rs_id == CandidateRS.rs_id)
+                                                      .filter(CandidateRS.rs_id.in_(rs_ids)))), w_size=window_size)
                 args = {'intervals': local_intervals}
 
             elif background.startswith('LD'):
@@ -809,19 +896,25 @@ def process_snp_file(ticket_id, fdr_class='0.05', annotate_tf=True, annotate_cl=
                         CandidateRS.rs_id.in_(rs_ids),
 
                     )
-                ))) - {None}
+                    ))) - {None}
 
                 args = {'lds': lds, 'ld_type': column}
             else:
                 raise ValueError
 
-            expected_tf_asbs_rs = get_candidates_by_level(**args, fdr=fdr_class, alternative='greater', level='TF', rs=True, mode='count') - tf_asbs_rs
-            expected_cl_asbs_rs = get_candidates_by_level(**args, fdr=fdr_class, alternative='greater', level='CL', rs=True, mode='count') - cl_asbs_rs
-            expected_all_asbs_rs = get_candidates_by_level(**args, fdr=fdr_class, alternative='greater', level='ALL', rs=True, mode='count') - all_asbs_rs
+            expected_tf_asbs_rs = get_candidates_by_level(**args, fdr=fdr_class, alternative='greater', level='TF',
+                                                          rs=True, mode='count') - tf_asbs_rs
+            expected_cl_asbs_rs = get_candidates_by_level(**args, fdr=fdr_class, alternative='greater', level='CL',
+                                                          rs=True, mode='count') - cl_asbs_rs
+            expected_all_asbs_rs = get_candidates_by_level(**args, fdr=fdr_class, alternative='greater', level='ALL',
+                                                           rs=True, mode='count') - all_asbs_rs
 
-            expected_tf_negatives_rs = get_candidates_by_level(**args, fdr=fdr_class_neg, level='TF', rs=True, mode='count') - tf_negatives_rs
-            expected_cl_negatives_rs = get_candidates_by_level(**args, fdr=fdr_class_neg, level='CL', rs=True, mode='count') - cl_negatives_rs
-            expected_all_negatives_rs = get_candidates_by_level(**args, fdr=fdr_class_neg, level='ALL', rs=True, mode='count') - all_negatives_rs
+            expected_tf_negatives_rs = get_candidates_by_level(**args, fdr=fdr_class_neg, level='TF', rs=True,
+                                                               mode='count') - tf_negatives_rs
+            expected_cl_negatives_rs = get_candidates_by_level(**args, fdr=fdr_class_neg, level='CL', rs=True,
+                                                               mode='count') - cl_negatives_rs
+            expected_all_negatives_rs = get_candidates_by_level(**args, fdr=fdr_class_neg, level='ALL', rs=True,
+                                                                mode='count') - all_negatives_rs
 
         elif background == 'WG':
             sd = stats_dict[fdr_class]
@@ -830,17 +923,23 @@ def process_snp_file(ticket_id, fdr_class='0.05', annotate_tf=True, annotate_cl=
             expected_tf_asbs_rs = sd['expected_tf_asbs_rs'] - tf_asbs_rs
             expected_cl_asbs_rs = sd['expected_cl_asbs_rs'] - cl_asbs_rs
             expected_all_asbs_rs = sd['expected_all_asbs_rs'] - all_asbs_rs
-            expected_tf_negatives_rs = stats_dict['1']['total_tf_candidates_rs'] - cand_sd['expected_tf_asbs_rs'] - tf_negatives_rs
-            expected_cl_negatives_rs = stats_dict['1']['total_cl_candidates_rs'] - cand_sd['expected_cl_asbs_rs'] - cl_negatives_rs
-            expected_all_negatives_rs = stats_dict['1']['total_all_candidates_rs'] - cand_sd['expected_all_asbs_rs'] - all_negatives_rs
+            expected_tf_negatives_rs = stats_dict['1']['total_tf_candidates_rs'] - cand_sd[
+                'expected_tf_asbs_rs'] - tf_negatives_rs
+            expected_cl_negatives_rs = stats_dict['1']['total_cl_candidates_rs'] - cand_sd[
+                'expected_cl_asbs_rs'] - cl_negatives_rs
+            expected_all_negatives_rs = stats_dict['1']['total_all_candidates_rs'] - cand_sd[
+                'expected_all_asbs_rs'] - all_negatives_rs
         else:
             raise ValueError
 
         update_ticket_status(ticket, 'Performing statistical analysis')
 
-        tf_odds_rs, tf_p_rs = fisher_exact(((tf_asbs_rs, tf_negatives_rs), (expected_tf_asbs_rs, expected_tf_negatives_rs)), alternative='greater')
-        cl_odds_rs, cl_p_rs = fisher_exact(((cl_asbs_rs, cl_negatives_rs), (expected_cl_asbs_rs, expected_cl_negatives_rs)), alternative='greater')
-        all_odds_rs, all_p_rs = fisher_exact(((all_asbs_rs, all_negatives_rs), (expected_all_asbs_rs, expected_all_negatives_rs)), alternative='greater')
+        tf_odds_rs, tf_p_rs = fisher_exact(
+            ((tf_asbs_rs, tf_negatives_rs), (expected_tf_asbs_rs, expected_tf_negatives_rs)), alternative='greater')
+        cl_odds_rs, cl_p_rs = fisher_exact(
+            ((cl_asbs_rs, cl_negatives_rs), (expected_cl_asbs_rs, expected_cl_negatives_rs)), alternative='greater')
+        all_odds_rs, all_p_rs = fisher_exact(
+            ((all_asbs_rs, all_negatives_rs), (expected_all_asbs_rs, expected_all_negatives_rs)), alternative='greater')
 
         tf_asb_data = []
         cl_asb_data = []
@@ -866,9 +965,13 @@ def process_snp_file(ticket_id, fdr_class='0.05', annotate_tf=True, annotate_cl=
                 asbs_rs = len(set(x.snp.rs_id for x in asbs_list if getattr(x, id_attr) == ag_id))
                 negatives = len([cand for cand in negatives_list if cand.ag_id == ag_id])
                 negatives_rs = len(set(cand.rs_id for cand in negatives_list if cand.ag_id == ag_id))
-                expected_asbs_rs = ag_stats_dict[str(ag_id)][fdr_class]['expected_{}_asbs_rs'.format(level.lower())] - asbs_rs
-                expected_negatives_rs = ag_stats_dict[str(ag_id)]['1']['total_{}_candidates_rs'.format(level.lower())] - ag_stats_dict[str(ag_id)][fdr_class_neg]['expected_{}_asbs_rs'.format(level.lower())] - negatives_rs
-                odds, p = fisher_exact(((asbs_rs, negatives_rs), (expected_asbs_rs, expected_negatives_rs)), alternative='greater')
+                expected_asbs_rs = ag_stats_dict[str(ag_id)][fdr_class][
+                                       'expected_{}_asbs_rs'.format(level.lower())] - asbs_rs
+                expected_negatives_rs = ag_stats_dict[str(ag_id)]['1']['total_{}_candidates_rs'.format(level.lower())] - \
+                                        ag_stats_dict[str(ag_id)][fdr_class_neg][
+                                            'expected_{}_asbs_rs'.format(level.lower())] - negatives_rs
+                odds, p = fisher_exact(((asbs_rs, negatives_rs), (expected_asbs_rs, expected_negatives_rs)),
+                                       alternative='greater')
                 p_list.append(p)
                 asb_data.append({
                     'name': name,
@@ -896,7 +999,8 @@ def process_snp_file(ticket_id, fdr_class='0.05', annotate_tf=True, annotate_cl=
         chr_tf_p_list = []
         chr_cl_p_list = []
         chr_asb_data = []
-        for chromosome in list(set(x.chromosome for x in all_asbs_list) | set(x.chromosome for x in all_negatives_list)):
+        for chromosome in list(
+                set(x.chromosome for x in all_asbs_list) | set(x.chromosome for x in all_negatives_list)):
             counts = get_asb_counts_by_chromosome(all_asbs_list, all_negatives_list, chromosome)
             expected_chr_asbs_rs = chr_stats_dict[chromosome][fdr_class]['expected_all_asbs_rs'] - counts['asbs_rs']
             expected_chr_negatives_rs = chr_stats_dict[chromosome]['1']['total_all_candidates_rs'] - \
@@ -910,7 +1014,8 @@ def process_snp_file(ticket_id, fdr_class='0.05', annotate_tf=True, annotate_cl=
             expected_chr_tf_negatives_rs = chr_stats_dict[chromosome]['1']['total_tf_candidates_rs'] - \
                                            chr_stats_dict[chromosome][fdr_class_neg]['expected_tf_asbs_rs'] - \
                                            counts['negatives_rs']
-            tf_odds, tf_p = get_p_and_odds_by_chromosome(tf_counts, expected_chr_tf_asbs_rs, expected_chr_tf_negatives_rs)
+            tf_odds, tf_p = get_p_and_odds_by_chromosome(tf_counts, expected_chr_tf_asbs_rs,
+                                                         expected_chr_tf_negatives_rs)
             chr_tf_p_list.append(tf_p)
 
             cl_counts = get_asb_counts_by_chromosome(cl_asbs_list, cl_negatives_list, chromosome, ag_snp=True)
@@ -918,7 +1023,8 @@ def process_snp_file(ticket_id, fdr_class='0.05', annotate_tf=True, annotate_cl=
             expected_chr_cl_negatives_rs = chr_stats_dict[chromosome]['1']['total_cl_candidates_rs'] - \
                                            chr_stats_dict[chromosome][fdr_class_neg]['expected_cl_asbs_rs'] - \
                                            counts['negatives_rs']
-            cl_odds, cl_p = get_p_and_odds_by_chromosome(cl_counts, expected_chr_cl_asbs_rs, expected_chr_cl_negatives_rs)
+            cl_odds, cl_p = get_p_and_odds_by_chromosome(cl_counts, expected_chr_cl_asbs_rs,
+                                                         expected_chr_cl_negatives_rs)
             chr_cl_p_list.append(cl_p)
 
             chr_asb_data.append({
@@ -1025,7 +1131,7 @@ def process_snp_file(ticket_id, fdr_class='0.05', annotate_tf=True, annotate_cl=
             logger.error(e, exc_info=True)
         ticket.status = 'Failed'
         if change_status_on_fail:
-            update_ticket_status(ticket, 'Processing failed while {}'.format(ticket.meta_info['status_details']))
+            update_ticket_status(ticket, 'Processing failed while "{}".'.format(ticket.meta_info['status_details']))
         session.commit()
         return
 
