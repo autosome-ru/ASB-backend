@@ -1202,6 +1202,7 @@ def process_snp_file(ticket_id, fdr_class='0.05', background='WG'):
 
         ticket.status = 'Processed'
         meta_info = dict(ticket.meta_info)
+        print('before',meta_info)
         meta_info.update({
             'processing_time': str(datetime.now() - processing_start_time),
             'all_rs': all_rs,
@@ -1251,7 +1252,7 @@ def process_snp_file(ticket_id, fdr_class='0.05', background='WG'):
                 'asb_data': marshal_chr_data(chr_asb_data),
             }
         })
-
+        print('after', meta_info)
     except Exception as e:
         if not isinstance(e, ConvError):
             logger.error(e, exc_info=True)
