@@ -1242,7 +1242,7 @@ def process_snp_file(ticket_id, fdr_class='0.05', background='WG'):
                 'expected_asbs_rs': expected_all_asbs_rs,
                 'expected_negatives_rs': expected_all_negatives_rs,
                 'odds_rs': marshal_inf(all_odds_rs),
-                'log10_p_value_rs': -np.log10(all_p_rs),
+                'log10_p_value_rs': marshal_logp(all_p_rs),
             },
             'chr': {
                 'log10_p_value_rs': marshal_logp(chr_p_rs),
@@ -1251,7 +1251,6 @@ def process_snp_file(ticket_id, fdr_class='0.05', background='WG'):
                 'asb_data': marshal_chr_data(chr_asb_data),
             }
         })
-
     except Exception as e:
         if not isinstance(e, ConvError):
             logger.error(e, exc_info=True)
