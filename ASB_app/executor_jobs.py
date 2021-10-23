@@ -711,7 +711,7 @@ def process_snp_file(ticket_id, fdr_class='0.05', background='WG'):
         # if submitted_snps_count is None:
         #     submitted_snps_count = len(rs_ids)
 
-        if submitted_snps_count > 10000:
+        if submitted_snps_count > 10000 and ticket.user_id != 'adminas':
             update_ticket_status(ticket,
                                  'Too many SNPs found (>10000). Consider using complete ADASTRA database dump ('
                                  'https://adastra.autosome.ru/downloads) and performing stand-alone enrichment '
