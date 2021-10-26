@@ -7,7 +7,7 @@ import pandas as pd
 
 from flask import send_file
 
-from ASB_app import executor
+from ASB_app import executor, logger
 from ASB_app.exceptions import FileNotProcessed
 from ASB_app.models import Ticket
 from ASB_app.releases import current_release
@@ -67,7 +67,7 @@ def update_ticket_status(ticket_id, status):
 def delete_ticket(ticket_id):
     ticket = get_ticket(ticket_id)
     if ticket.status == 'Processing':
-        return False
+        logger.info('Deleting a ticket in process: {}'.format(ticket_id))
     ticket_dir = get_path_by_ticket_id(ticket_id, path_type='dir')
     if os.path.isdir(ticket_dir):
         shutil.rmtree(ticket_dir)
