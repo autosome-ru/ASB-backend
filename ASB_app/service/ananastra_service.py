@@ -4,6 +4,7 @@ import shutil
 import tempfile
 from datetime import datetime, timedelta
 import pandas as pd
+from hashlib import md5
 
 from flask import send_file
 
@@ -30,8 +31,9 @@ def create_processed_path(ticket_id):
         os.mkdir(ticket_dir)
 
 
-def get_tickets_dir(suffix=''):
-    return os.path.join(os.path.expanduser('~/'), 'adastra', 'tickets', suffix)
+def get_tickets_dir(suffix='',):
+    return os.path.join(os.path.expanduser('~/'), 'adastra',
+                        'tickets', suffix)
 
 
 def get_path_by_ticket_id(ticket_id, path_type='input', ext='.tsv'):
@@ -62,6 +64,20 @@ def update_ticket_status(ticket_id, status):
     ticket = get_ticket(ticket_id)
     ticket.status = status
     session.commit()
+
+
+def log_hash(output):
+    with open(os.path.join(get_tickets_dir('logs'), 'hash_sums.log'), 'a') as out:
+        out.write(output + '\n')
+
+
+def start_processing_ticket(ticket_id):
+    calc_hash = md5()
+    update_ticket_status(ticket_id, 'Processing')
+    with open(get_path_by_ticket_id(ticket_id)) as r:
+        calc_hash.update(r.read())
+    output = calc_hash.digest()
+    log_hash(output)
 
 
 def delete_ticket(ticket_id):

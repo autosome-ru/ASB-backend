@@ -5,12 +5,11 @@ from datetime import datetime
 from flask import request
 
 from flask_restplus import Resource
-
 from ASB_app import executor
 from ASB_app.constants import fdr_choices, background_choices
 from ASB_app.executor_jobs import process_snp_file
 from ASB_app.serializers import ticket_model, ticket_model_short
-from ASB_app.service import ananastra_service, FileNotProcessed
+from ASB_app.service import ananastra_service, FileNotProcessed, get_path_by_ticket_id
 from ASB_app.service import get_ticket_id_from_path, get_tickets_dir
 from ASB_app.utils import PaginationMixin
 from ASB_app.models import Ticket
@@ -57,7 +56,7 @@ class ProcessTicket(Resource):
         Submits a ticket for processing
         """
         args = thresholds_parser.parse_args()
-        ananastra_service.update_ticket_status(ticket_id, 'Processing')
+        ananastra_service.start_processing_ticket(ticket_id)
         process_snp_file.submit_stored(ticket_id, ticket_id, fdr_class=args['fdr'], background=args['background'])
         return {'message': 'success'}, 202
 
