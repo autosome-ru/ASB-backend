@@ -1,3 +1,5 @@
+from logging.config import dictConfig
+
 from flask import Flask, Blueprint
 from flask_migrate import Migrate
 from flask_restplus import Api
@@ -10,6 +12,23 @@ from flask_cors import CORS
 from ASB_app.releases import Release
 
 from config import Config
+
+
+dictConfig({
+    'version': 1,
+    'formatters': {'default': {
+        'format': '[%(asctime)s] %(levelname)s in %(module)s: %(message)s',
+    }},
+    'handlers': {'wsgi': {
+        'class': 'logging.StreamHandler',
+        'stream': 'ext://flask.logging.wsgi_errors_stream',
+        'formatter': 'default'
+    }},
+    'root': {
+        'level': 'INFO',
+        'handlers': ['wsgi']
+    }
+})
 
 app = Flask(__name__)
 app.config.from_object(Config)
