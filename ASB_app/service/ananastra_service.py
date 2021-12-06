@@ -77,7 +77,7 @@ def start_processing_ticket(ticket_id):
     with open(get_path_by_ticket_id(ticket_id)) as r:
         calc_hash.update(r.read().encode('utf-8'))
     output = calc_hash.digest()
-    log_hash(output)
+    log_hash(output.decode('utf-8'))
 
 
 def delete_ticket(ticket_id):
