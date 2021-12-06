@@ -75,7 +75,7 @@ def start_processing_ticket(ticket_id):
     calc_hash = md5()
     update_ticket_status(ticket_id, 'Processing')
     with open(get_path_by_ticket_id(ticket_id)) as r:
-        calc_hash.update(r.read())
+        calc_hash.update(r.read().encode('utf-8'))
     output = calc_hash.digest()
     log_hash(output)
 
