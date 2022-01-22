@@ -53,7 +53,7 @@ def create_ticket(ticket_id, user_id):
         user_id=user_id,
         date_created=datetime.now(),
         fdr=None,
-        expiration_date=datetime.now() + timedelta(days=2)
+        expiration_date=datetime.now() + timedelta(days=3)
     )
     session.add(ticket)
     session.commit()

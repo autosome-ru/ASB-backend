@@ -13,7 +13,8 @@ chromosomes = ('chr1', 'chr2', 'chr3', 'chr4', 'chr5', 'chr6', 'chr7', 'chr8', '
 nucleotides = ('A', 'C', 'G', 'T')
 
 bads = ('1', '4/3', '3/2', '2', '5/2', '3', '4', '5', '6')
-
+max_nrows = 5000
+max_comments = 3000
 db_name_property_dict = {
     x: 'has_{}_associations'.format(x.lower())
     for x in ['clinvar', 'ebi', 'finemapping', 'grasp', 'phewas', 'QTL']

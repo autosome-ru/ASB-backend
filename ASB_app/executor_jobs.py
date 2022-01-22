@@ -4,7 +4,8 @@ from sqlalchemy import tuple_, or_
 import re
 from datetime import datetime
 from ASB_app import logger, executor
-from ASB_app.constants import stats_dict, tf_stats_dict, cl_stats_dict, chr_stats_dict, chromosomes
+from ASB_app.constants import stats_dict, tf_stats_dict, cl_stats_dict, chr_stats_dict, chromosomes, max_nrows, \
+    max_comments
 from ASB_app.service import ananastra_service
 from ASB_app.utils import pack, process_row, group_concat_distinct_sep
 from ASB_app.utils.statistics import get_stats_dict, get_corresponding_fdr_classes
@@ -122,7 +123,7 @@ def get_tf_query(rs_ids, fdr):
         isouter=True
     ).filter(
         ((ExpSNP.p_value_ref - ExpSNP.p_value_alt) * (
-                    TranscriptionFactorSNP.log_p_value_alt - TranscriptionFactorSNP.log_p_value_ref) > 0) |
+                TranscriptionFactorSNP.log_p_value_alt - TranscriptionFactorSNP.log_p_value_ref) > 0) |
         (ExpSNP.p_value_ref == None)
     ).join(
         Experiment,
@@ -585,25 +586,37 @@ def get_p_and_odds_by_chromosome(counts_data, expected_asbs_rs, expected_negativ
         alternative='greater')
 
 
+def read_table_as_df(f):
+    not_null_rows = 0
+    for index, line in enumerate(f, 1):
+        if not line.startswith('#'):
+            not_null_rows += 1
+        if index - not_null_rows > max_comments or not_null_rows > max_nrows:
+            return False, None
+    return True, pd.read_table(f,
+                               sep='\t',
+                               header=None,
+                               encoding='utf-8',
+                               dtype=str,
+                               comment='#',
+                               keep_default_na=False)
+
+
 def read_file_as_df(input_file_name, ticket):
     try:
         with gzip.open(input_file_name, 'rt') as f:
-            data = pd.read_table(f,
-                                 sep='\t',
-                                 header=None,
-                                 encoding='utf-8',
-                                 dtype=str,
-                                 comment='#',
-                                 keep_default_na=False)
+            status, data = read_table_as_df(f)
+
     except OSError:
         try:
-            data = pd.read_table(input_file_name, sep='\t',header=None, encoding='utf-8',
-                                 dtype=str, comment='#', keep_default_na=False)
+            with open(input_file_name, 'r') as f:
+                status, data = read_table_as_df(f)
         except:
             update_ticket_status(ticket,
-                                 'Processing failed: the file must be a valid utf-8 text file with a single SNP rs-ID on each line or a valid .vcf(.gz) file')
+                                 'Processing failed: the file must be a valid utf-8 text file with a single SNP rs-ID '
+                                 'on each line or a valid .vcf(.gz) file')
             raise ConvError
-    return data
+    return status, data
 
 
 def get_rs_ids_from_list(rs_list):
@@ -662,60 +675,32 @@ def process_snp_file(ticket_id, fdr_class='0.05', background='WG'):
             update_ticket_status(ticket, 'Non-standard fdr threshold values are not supported: {}'.format(fdr_class))
             raise ConvError
 
-        data = read_file_as_df(input_file_name, ticket)
-        submitted_snps_count = len(data.index)
-        unique_submitted_snps_count = len(data[0].unique())
-        if len(data.columns) != 1:
-            try:
-                rs_ids, not_found = get_rs_ids_from_vcf(data)
-            except ConvError as e:
-                update_ticket_status(ticket,
-                                     'Processing failed: the file must contain a single SNP rs-ID on each line or be '
-                                     'a valid vcf file, invalid {}'.format(
-                                         e.args[0]))
-                raise ConvError
-            except:
-                change_status_on_fail = True
-                raise
-        else:
-            rs_ids, not_found = get_rs_ids_from_list(data[0].unique())
-            # rs_ids = None
-            # if len(data.index) == 1:
-            #     try:
-            #         rs_ids = get_snps_from_interval(data[0][0])
-            #     except ConvError:
-            #         pass
-            #     except TooBigError:
-            #         update_ticket_status(ticket,
-            #                              'The provided genomic interval is too large (>10Mbp). Consider using complete ADASTRA database dump (https://adastra.autosome.ru/{}}/downloads) and performing stand-alone enrichment analysis.'.format(
-            #                                  current_release.name))
-            #         raise ConvError
-            #     except:
-            #         change_status_on_fail = True
-            #         raise
-            # if rs_ids is None:
-            #     try:
-            #         rs_ids = data[0].apply(convert_rs_to_int).unique()
-                # except ConvError as e:
-                #     if len(data.index) > 1:
-                #         update_ticket_status(ticket, 'Processing failed, invalid rs id: "{}"'.format(e.args[0]))
-                #     else:
-                #         update_ticket_status(ticket,
-                #                              'Processing failed, invalid rs id or genomic interval: "{}"'.format(
-                #                                  e.args[0]))
-                #     raise ConvError
-                # except:
-                #     change_status_on_fail = True
-                #     raise
+        status, data = read_file_as_df(input_file_name, ticket)
+        submitted_snps_count = 0
+        if status:
+            submitted_snps_count = len(data.index)
+            if len(data.columns) != 1:
+                try:
+                    rs_ids, not_found = get_rs_ids_from_vcf(data)
+                    unique_submitted_snps_count = len(rs_ids)
+                except ConvError as e:
+                    update_ticket_status(ticket,
+                                         'Processing failed: the file must contain a single SNP rs-ID on each line or be '
+                                         'a valid vcf file, invalid {}'.format(
+                                             e.args[0]))
+                    raise ConvError
+                except:
+                    change_status_on_fail = True
+                    raise
+            else:
+                unique_submitted_snps_count = len(data[0].unique())
+                rs_ids, not_found = get_rs_ids_from_list(data[0].unique())
 
-        # if submitted_snps_count is None:
-        #     submitted_snps_count = len(rs_ids)
-
-        if submitted_snps_count > 10000 and ticket.user_id != 'adminas':
+        if not status or (submitted_snps_count > max_nrows and ticket.user_id != 'adminas'):
             update_ticket_status(ticket,
-                                 'Too many SNPs found (>10000). Consider using complete ADASTRA database dump ('
+                                 'Too many SNPs found (>{}). Consider using complete ADASTRA database dump ('
                                  'https://adastra.autosome.ru/downloads) and performing stand-alone enrichment '
-                                 'analysis.')
+                                 'analysis.'.format(max_nrows))
             raise ConvError
 
         change_status_on_fail = True
@@ -864,13 +849,12 @@ def process_snp_file(ticket_id, fdr_class='0.05', background='WG'):
         logger.info('Ticket {}: query count asb done'.format(ticket_id))
         update_ticket_status(ticket, 'Checking the control data of candidate but non-significant ASBs (non-ASBs)')
 
-
         fdr_class_neg = '0.25'
         # tf_non_negative_candidates_rs_set = [x.rs_id for query in divide_query(lambda x: get_candidates_by_level(x, fdr_class_neg, level='TF', alternative='greater', rs=True), rs_ids) for x in query]
         # cl_non_negative_candidates_rs_set = [x.rs_id for query in divide_query(lambda x: get_candidates_by_level(x, fdr_class_neg, level='CL', alternative='greater', rs=True), rs_ids) for x in query]
         # all_non_negative_candidates_rs_set = [x.rs_id for query in divide_query(lambda x: get_all_candidates(x, fdr_class_neg, alternative='greater', rs=True), rs_ids) for x in query]
         all_non_negative_candidates_rs_set = set(x.rs_id for query in divide_query(
-            lambda x: get_candidates_by_level(x, fdr_class_neg, level='ALL', alternative='greater', rs=True,), rs_ids)
+            lambda x: get_candidates_by_level(x, fdr_class_neg, level='ALL', alternative='greater', rs=True, ), rs_ids)
                                                  for x in query)
         all_non_negative_candidates_rs = len(all_non_negative_candidates_rs_set)
         logger.info('Ticket {}: non-negative candidates done'.format(ticket_id))
@@ -907,18 +891,18 @@ def process_snp_file(ticket_id, fdr_class='0.05', background='WG'):
 
         rs_set_dict = {
             'asb': {
-                    'tf': tf_asbs_rs_set,
-                    'cl': cl_asbs_rs_set,
-                    'all': all_asbs_rs_set,
-                },
+                'tf': tf_asbs_rs_set,
+                'cl': cl_asbs_rs_set,
+                'all': all_asbs_rs_set,
+            },
             'neg': {
-                    'tf': tf_negatives_rs_set,
-                    'cl': cl_negatives_rs_set,
-                    'all': all_negatives_rs_set,
-                },
+                'tf': tf_negatives_rs_set,
+                'cl': cl_negatives_rs_set,
+                'all': all_negatives_rs_set,
+            },
             'non-neg': {
-                    'all': all_non_negative_candidates_rs_set,
-                }
+                'all': all_non_negative_candidates_rs_set,
+            }
         }
 
         header = ['CHROMOSOME', 'POSITION', 'RS_ID', 'REF', 'ALT',
@@ -937,10 +921,10 @@ def process_snp_file(ticket_id, fdr_class='0.05', background='WG'):
                   ]
 
         attribute_tuples = {tag: ('CL', tag[:-5]) if tag.endswith(' (CL)') else
-                                 ('TF', tag[:-5]) if tag.endswith(' (TF)') else
-                                 ('TF', tag) if tag == 'TRANSCRIPTION_FACTOR' else
-                                 ('CL', tag) if tag == 'CELL_TYPE' else
-                                 ('ALL', tag)
+        ('TF', tag[:-5]) if tag.endswith(' (TF)') else
+        ('TF', tag) if tag == 'TRANSCRIPTION_FACTOR' else
+        ('CL', tag) if tag == 'CELL_TYPE' else
+        ('ALL', tag)
                             for tag in header
                             }
 
@@ -974,7 +958,7 @@ def process_snp_file(ticket_id, fdr_class='0.05', background='WG'):
 
         for snp_id in not_found:
             row = {
-               'SNP_ID': snp_id
+                'SNP_ID': snp_id
             }
             row.update({
                 'ASB_STATUS': 'NOT_IN_ADASTRA',
@@ -986,7 +970,8 @@ def process_snp_file(ticket_id, fdr_class='0.05', background='WG'):
 
         not_found_ids = [row['SNP_ID'] for row in list_of_rows if row['ASB_STATUS'] == 'NOT_IN_ADASTRA']
 
-        all_table = pd.DataFrame(list_of_rows, columns=['SNP_ID', 'ASB_STATUS', 'TF_ASB_STATUS', 'CL_ASB_STATUS'] + header)
+        all_table = pd.DataFrame(list_of_rows,
+                                 columns=['SNP_ID', 'ASB_STATUS', 'TF_ASB_STATUS', 'CL_ASB_STATUS'] + header)
         all_table.to_csv(ananastra_service.get_path_by_ticket_id(ticket_id, 'all'), sep='\t', index=False)
 
         with open(ananastra_service.get_path_by_ticket_id(ticket_id, 'not_found'), 'w') as f:
