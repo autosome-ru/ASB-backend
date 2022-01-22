@@ -611,6 +611,7 @@ def read_file_as_df(input_file_name, ticket):
         try:
             with open(input_file_name, 'r') as f:
                 status, data = read_table_as_df(f)
+                print(status, data)
         except:
             update_ticket_status(ticket,
                                  'Processing failed: the file must be a valid utf-8 text file with a single SNP rs-ID '
