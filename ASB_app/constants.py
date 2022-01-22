@@ -1,7 +1,6 @@
 import json
 import os
 
-from ASB_app import models, releases
 import pathlib
 
 ananastra_stats_file = os.path.join(pathlib.Path(__file__).parent.absolute(), 'ananastra_constants.json')
