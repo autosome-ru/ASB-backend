@@ -60,6 +60,7 @@ for release in Release.__subclasses__():
     setattr(release, 'migrate', Migrate(app, new_db))
 
 scheduler = APScheduler(app=app)
+scheduler.start()
 executor = Executor(app)
 
 # @app.after_request
