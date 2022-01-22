@@ -593,6 +593,7 @@ def read_table_as_df(f):
             not_null_rows += 1
         if index - not_null_rows > max_comments or not_null_rows > max_nrows:
             return False, None
+    f.seek(0)
     return True, pd.read_table(f,
                                sep='\t',
                                header=None,
