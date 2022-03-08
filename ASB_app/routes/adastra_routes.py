@@ -290,12 +290,14 @@ for release in Release.__subclasses__():
                 """
                 Get the list of transcription factors available in the database
                 """
-                args = pagination_parser.parse_args()
+                args = browse_parser.parse_args()
                 filters = (self.BaseEntity.aggregated_snps_count > 0, )
-                filter_exp = args.pop('filter', None)
+                filter_exp = args.pop('like_regexp', None)
                 if filter_exp is not None:
                     filters += (self.BaseEntity.name.like(filter_exp))
-                result = self.paginate(args, extra_filters=filters, default_order_clauses=(desc(self.BaseEntity.aggregated_snps_count), ))
+                result = self.paginate(args,
+                                       extra_filters=filters,
+                                       default_order_clauses=(desc(self.BaseEntity.aggregated_snps_count), ))
                 total = self.items_count(extra_filters=filters)
                 return {'results': result, 'total': total}
 
@@ -312,12 +314,14 @@ for release in Release.__subclasses__():
             """
             Get the list of cell types available in the database
             """
-            args = pagination_parser.parse_args()
+            args = browse_parser.parse_args()
             filters = (self.BaseEntity.aggregated_snps_count > 0, )
-            filter_exp = args.pop('filter', None)
+            filter_exp = args.pop('like_regexp', None)
             if filter_exp is not None:
                 filters += (self.BaseEntity.name.like(filter_exp))
-            result = self.paginate(args, extra_filters=filters, default_order_clauses=(desc(self.BaseEntity.aggregated_snps_count), ))
+            result = self.paginate(args,
+                                   extra_filters=filters,
+                                   default_order_clauses=(desc(self.BaseEntity.aggregated_snps_count), ))
             total = self.items_count(extra_filters=filters)
             return {'results': result, 'total': total}
 
