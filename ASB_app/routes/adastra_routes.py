@@ -115,7 +115,7 @@ for release in Release.__subclasses__():
         BaseEntity = release_service.SNP
         used_release = release
 
-        @api.marshal_with(release_serializers.search_results_model, PaginationMixin)
+        @api.marshal_with(release_serializers.search_results_model)
         @api.expect(pagination_parser)
         def get(self, rs_id):
             """
