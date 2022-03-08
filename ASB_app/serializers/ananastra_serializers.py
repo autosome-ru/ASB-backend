@@ -11,6 +11,7 @@ asb_data_model = api.model('ASB data entity', {
     'negatives': fields.Integer,
     'asbs_rs': fields.Integer,
     'negatives_rs': fields.Integer,
+    'expected_asbs': fields.Integer,
     'expected_asbs_rs': fields.Integer,
     'expected_negatives_rs': fields.Integer,
     'odds': fields.String,
@@ -42,6 +43,7 @@ chr_asb_data_model = api.clone('ASB data by chromosome entity', asb_data_model, 
 asb_count_model = api.model('ASB count entity', {
     'name': fields.String,
     'count': fields.Integer,
+    'background_count': fields.Integer,
 })
 
 concordant_asb_model = api.model('Motif-concordant ASB', {

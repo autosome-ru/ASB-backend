@@ -413,15 +413,22 @@ def modify_counts(asb_data, counts=None, top=False):
             tuples.append((count, data))
         counts_list, _ = (list(a) for a in
                           zip(*sorted(tuples, key=lambda x: (x[0]['count'], x[1]['odds']), reverse=True)))
+        for item in counts_list:
+            # In background it'd be more precise to group expected asbs by rs+alt, but expected_asbs_rs is a good approx.
+            item['background_count'] = data_by_name[item['name']]['expected_asbs_rs'] + item['count']
         if len(counts_list) > 7:
-            counts_list = counts_list[:6] + [{'name': 'Other', 'count': sum(x['count'] for x in counts_list[6:])}]
+            counts_list = counts_list[:6] + [{'name': 'Other', 'count': sum(x['count'] for x in counts_list[6:]),
+                                              'background_count': sum(x['background_count'] for x in counts_list[6:])}]
     else:
         counts_list = sorted(asb_data, key=lambda x: (x['asbs'], x['odds']), reverse=True)
         if len(counts_list) > 7:
-            counts_list = [{'name': x['name'], 'count': x['asbs']} for x in counts_list[:6]] + [
-                {'name': 'Other', 'count': sum(x['asbs'] for x in counts_list[6:])}]
+            counts_list = [{'name': x['name'], 'count': x['asbs'],
+                            'background_count': x['expected_asbs'] + x['asbs']} for x in counts_list[:6]] + [
+                {'name': 'Other', 'count': sum(x['asbs'] for x in counts_list[6:]),
+                 'background_count': sum(x['asbs'] + x['expected_asbs'] for x in counts_list[6:])}]
         else:
-            counts_list = [{'name': x['name'], 'count': x['asbs']} for x in counts_list]
+            counts_list = [{'name': x['name'], 'count': x['asbs'],
+                            'background_count': x['expected_asbs'] + x['asbs']} for x in counts_list]
     return counts_list
 
 
@@ -1077,6 +1084,8 @@ def process_snp_file(ticket_id, fdr_class='0.05', background='WG'):
                 asbs_rs = len(set(x.snp.rs_id for x in asbs_list if getattr(x, id_attr) == ag_id))
                 negatives = len([cand for cand in negatives_list if cand.ag_id == ag_id])
                 negatives_rs = len(set(cand.rs_id for cand in negatives_list if cand.ag_id == ag_id))
+                expected_asbs = ag_stats_dict[str(ag_id)][fdr_class][
+                                       'expected_{}_asbs'.format(level.lower())] - asbs
                 expected_asbs_rs = ag_stats_dict[str(ag_id)][fdr_class][
                                        'expected_{}_asbs_rs'.format(level.lower())] - asbs_rs
                 expected_negatives_rs = ag_stats_dict[str(ag_id)]['1']['total_{}_candidates_rs'.format(level.lower())] - \
@@ -1091,6 +1100,7 @@ def process_snp_file(ticket_id, fdr_class='0.05', background='WG'):
                     'asbs_rs': asbs_rs,
                     'negatives': negatives,
                     'negatives_rs': negatives_rs,
+                    'expected_asbs': expected_asbs,
                     'expected_asbs_rs': expected_asbs_rs,
                     'expected_negatives_rs': expected_negatives_rs,
                     'odds': odds,
