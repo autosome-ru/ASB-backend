@@ -139,7 +139,7 @@ class TicketCollection(Resource, PaginationMixin):
 
     @api.marshal_list_with(ticket_model)
     @api.expect(pagination_parser)
-    @api.hide()
+    @api.hide
     def get(self):
         """
         Get all tickets
