@@ -133,22 +133,3 @@ class ProcessingResult(Resource):
             return {'message': 'file is not processed'}, 403
 
 
-@ananastra_nsp.route('/ticket')
-class TicketCollection(Resource, PaginationMixin):
-    BaseEntity = Ticket
-
-    @api.marshal_list_with(ticket_model)
-    @api.expect(pagination_parser)
-    @api.hide
-    def get(self):
-        """
-        Get all tickets
-        """
-        return self.paginate(pagination_parser.parse_args())
-
-    # def delete(self):
-    #     """
-    #     Delete all tickets and corresponding files
-    #     """
-    #     ananastra_service.delete_all_tickets()
-    #     return {'message': 'success'}, 200
