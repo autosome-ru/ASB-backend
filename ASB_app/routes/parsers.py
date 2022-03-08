@@ -32,6 +32,9 @@ for release in Release.__subclasses__():
     search_parser_tsv = search_parser.copy()
     search_parser_tsv.replace_argument('size', type=inputs.natural, help='Items per page', default=0)
 
+    browse_parser = pagination_parser.copy()
+    browse_parser.add_argument('filter', help="Regular expression for filtering resulting TFs' or cell types' names")
+
     used_hints_parser = api.parser()
     used_hints_parser.add_argument('options', action='split')
     used_hints_parser.add_argument('search')

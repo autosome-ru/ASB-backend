@@ -9,7 +9,8 @@ from flask_restplus import Resource
 from sqlalchemy.orm.exc import NoResultFound
 
 from ASB_app.utils import PaginationMixin
-from ASB_app.routes import search_parser, csv_columns_parser, used_hints_parser, pagination_parser, search_parser_tsv
+from ASB_app.routes import search_parser, csv_columns_parser, used_hints_parser, pagination_parser, search_parser_tsv,\
+    browse_parser
 
 from ASB_app.releases import Release, get_release_by_version
 
@@ -256,13 +257,17 @@ for release in Release.__subclasses__():
             used_release = release
 
             @api.marshal_with(release_serializers.transcription_factor_browse_model)
-            @api.expect(pagination_parser)
+            @api.expect(browse_parser)
             def get(self):
                 """
                 Get the list of transcription factors available in the database
                 """
+                args = pagination_parser.parse_args()
                 filters = (self.BaseEntity.aggregated_snps_count > 0, )
-                result = self.paginate(pagination_parser.parse_args(), extra_filters=filters, default_order_clauses=(desc(self.BaseEntity.aggregated_snps_count), ))
+                if 'filter' in args:
+                    filter_exp = args.pop('filter')
+                    filters += (self.BaseEntity.name.like(filter_exp))
+                result = self.paginate(args, extra_filters=filters, default_order_clauses=(desc(self.BaseEntity.aggregated_snps_count), ))
                 total = self.items_count(extra_filters=filters)
                 return {'results': result, 'total': total}
 
@@ -274,13 +279,17 @@ for release in Release.__subclasses__():
         used_release = release
 
         @api.marshal_with(release_serializers.cell_line_browse_model)
-        @api.expect(pagination_parser)
+        @api.expect(browse_parser)
         def get(self):
             """
             Get the list of cell types available in the database
             """
-            filters = (self.BaseEntity.aggregated_snps_count > 0,)
-            result = self.paginate(pagination_parser.parse_args(), extra_filters=filters, default_order_clauses=(desc(self.BaseEntity.aggregated_snps_count), ))
+            args = pagination_parser.parse_args()
+            filters = (self.BaseEntity.aggregated_snps_count > 0, )
+            if 'filter' in args:
+                filter_exp = args.pop('filter')
+                filters += (self.BaseEntity.name.like(filter_exp))
+            result = self.paginate(args, extra_filters=filters, default_order_clauses=(desc(self.BaseEntity.aggregated_snps_count), ))
             total = self.items_count(extra_filters=filters)
             return {'results': result, 'total': total}
 
