@@ -66,6 +66,25 @@ class ReleaseService:
             (self.SNP.alt == alt)
         ).one()
 
+    def get_aggregated_snp(self, chromosome, position, alt, ag_level, ag_id):
+        if not ag_level in ('TF', 'CL'):
+            raise ValueError(ag_level)
+        AgSNPClass = {
+            'TF': self.TranscriptionFactorSNP,
+            'CL': self.CellLineSNP,
+        }[ag_level]
+        ag_id_attibute = {
+            'TF': 'tf_id',
+            'CL': 'cl_id',
+        }[ag_level]
+        ag_snp = AgSNPClass.query.filter(
+            (AgSNPClass.chromosome == chromosome) &
+            (AgSNPClass.position == position) &
+            (AgSNPClass.alt == alt) &
+            (getattr(AgSNPClass, ag_id_attibute) == ag_id)
+        ).one()
+        return ag_snp
+
     @staticmethod
     def format_header(header):
         format_dict = {

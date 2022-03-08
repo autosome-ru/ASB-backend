@@ -81,6 +81,34 @@ for release in Release.__subclasses__():
                 api.abort(404)
 
 
+    @snp_nsp.route('/<string:chromosome>/<int:position>/<string:alt>/TF/<int:ag_id>')
+    @set_release_service(release_service)
+    class TFAgrSnpItem(Resource):
+        @api.marshal_with(release_serializers.tf_snp_model_full)
+        def get(self, chromosome, position, alt, ag_id):
+            """
+            Get individual SNPs that support a given SNP in aggregation by TF or cell type
+            """
+            try:
+                return self.release_service.get_aggregated_snp(chromosome, position, alt, 'TF', ag_id)
+            except NoResultFound:
+                api.abort(404)
+
+
+    @snp_nsp.route('/<string:chromosome>/<int:position>/<string:alt>/CL/<int:ag_id>')
+    @set_release_service(release_service)
+    class CLAgrSNPItem(Resource):
+        @api.marshal_with(release_serializers.cl_snp_model_full)
+        def get(self, chromosome, position, alt, ag_id):
+            """
+            Get individual SNPs that support a given SNP in aggregation by cell type
+            """
+            try:
+                return self.release_service.get_aggregated_snp(chromosome, position, alt, 'CL', ag_id)
+            except NoResultFound:
+                api.abort(404)
+
+
     @search_nsp.route('/snps/rs/<int:rs_id>')
     @set_release_service(release_service)
     class SearchSNPByIdCollection(Resource, PaginationMixin):
