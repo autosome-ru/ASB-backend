@@ -292,8 +292,8 @@ for release in Release.__subclasses__():
                 """
                 args = pagination_parser.parse_args()
                 filters = (self.BaseEntity.aggregated_snps_count > 0, )
-                if 'filter' in args:
-                    filter_exp = args.pop('filter')
+                filter_exp = args.pop('filter', None)
+                if filter_exp is not None:
                     filters += (self.BaseEntity.name.like(filter_exp))
                 result = self.paginate(args, extra_filters=filters, default_order_clauses=(desc(self.BaseEntity.aggregated_snps_count), ))
                 total = self.items_count(extra_filters=filters)
@@ -314,8 +314,8 @@ for release in Release.__subclasses__():
             """
             args = pagination_parser.parse_args()
             filters = (self.BaseEntity.aggregated_snps_count > 0, )
-            if 'filter' in args:
-                filter_exp = args.pop('filter')
+            filter_exp = args.pop('filter', None)
+            if filter_exp is not None:
                 filters += (self.BaseEntity.name.like(filter_exp))
             result = self.paginate(args, extra_filters=filters, default_order_clauses=(desc(self.BaseEntity.aggregated_snps_count), ))
             total = self.items_count(extra_filters=filters)
