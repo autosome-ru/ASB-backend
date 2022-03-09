@@ -1,5 +1,5 @@
 from flask_restplus import inputs
-from ASB_app.constants import chromosomes, fdr_choices, es_choices, background_choices
+from ASB_app.constants import chromosomes, fdr_choices, es_choices, background_choices, nucleotides
 from werkzeug.datastructures import FileStorage
 
 from ASB_app.releases import Release, current_release
@@ -24,8 +24,8 @@ for release in Release.__subclasses__():
     search_parser.add_argument('cell_types', action='split', help='Comma-separated list of cell types, search SNPs ASB for every cell type scpecified')
     search_parser.add_argument('transcription_factors', action='split', help='Comma-separated list of cell types, search SNPs ASB for every cell type scpecified')
     search_parser.add_argument('chromosome', choices=chromosomes, help='Search only SNPs on the specified chromosome')
-    search_parser.add_argument('start', type=inputs.positive, help='Search SNPs in interval from specified position, Requires "chromosome" and "end"')
-    search_parser.add_argument('end', type=inputs.positive, help='Search SNPs in interval to specified position, Requiers "chromosome" and "start"')
+    search_parser.add_argument('start', type=inputs.positive, help='Search SNPs in interval from specified position, Requires "chromosome" and "end", 1-based')
+    search_parser.add_argument('end', type=inputs.positive, help='Search SNPs in interval to specified position, Requiers "chromosome" and "start", 1-based')
     search_parser.add_argument('phenotype_databases', action='split', help='Comma-separated list of databases, possible choices {grasp, ebi, clinvar, phewas, finemapping, QTL}, earch SNPs that have phenotype associations in all specified databases')
     search_parser.add_argument('motif_concordance', action='split', help='Comma-separated list of motif concordance values, possible choices {Concordant. Discordant, Weak Concordant, Weak Discordant}, if no TF specified will search SNPs with any TF having any of the specified concordance valuese, else only SNPs ASB for the specified TFs and any of the specified concordance values for these TFs')
 
@@ -34,6 +34,12 @@ for release in Release.__subclasses__():
 
     browse_parser = pagination_parser.copy()
     browse_parser.add_argument('like_regexp', help="Regular expression for filtering resulting TFs' or cell types' names")
+
+    aggregated_snp_parser = api.parser()
+    aggregated_snp_parser.add_argument('chromosome', choices=chromosomes, required=True, help='Chromosome')
+    aggregated_snp_parser.add_argument('position', type=inputs.positive, required=True, help='Genome position in chromosome, 1-based')
+    aggregated_snp_parser.add_argument('alt', choices=nucleotides, required=True, help='Alternative alllele')
+    aggregated_snp_parser.add_argument('aggregation_name', type=inputs.positive, required=True, help='TF or Cell Type name')
 
     used_hints_parser = api.parser()
     used_hints_parser.add_argument('options', action='split')

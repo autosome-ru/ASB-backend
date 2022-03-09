@@ -10,7 +10,7 @@ from sqlalchemy.orm.exc import NoResultFound
 
 from ASB_app.utils import PaginationMixin
 from ASB_app.routes import search_parser, csv_columns_parser, used_hints_parser, pagination_parser, search_parser_tsv,\
-    browse_parser
+    browse_parser, aggregated_snp_parser
 
 from ASB_app.releases import Release, get_release_by_version
 
@@ -81,30 +81,36 @@ for release in Release.__subclasses__():
                 api.abort(404)
 
 
-    @snp_nsp.route('/<string:chromosome>/<int:position>/<string:alt>/TF/<int:ag_id>')
+    @snp_nsp.route('/tf_aggregated')
     @set_release_service(release_service)
     class TFAgrSnpItem(Resource):
         @api.marshal_with(release_serializers.tf_snp_model_full)
-        def get(self, chromosome, position, alt, ag_id):
+        @api.expect(aggregated_snp_parser)
+        def get(self):
             """
             Get individual SNPs that support a given SNP in aggregation by TF or cell type
             """
+            args = aggregated_snp_parser.parse_args()
             try:
-                return self.release_service.get_aggregated_snp(chromosome, position, alt, 'TF', ag_id)
+                return self.release_service.get_aggregated_snp(args['chromosome'], args['position'],
+                                                               args['alt'], 'TF', args['aggregation_name'])
             except NoResultFound:
                 api.abort(404)
 
 
-    @snp_nsp.route('/<string:chromosome>/<int:position>/<string:alt>/CL/<int:ag_id>')
+    @snp_nsp.route('/cl_aggregated')
     @set_release_service(release_service)
     class CLAgrSNPItem(Resource):
         @api.marshal_with(release_serializers.cl_snp_model_full)
-        def get(self, chromosome, position, alt, ag_id):
+        @api.expect(aggregated_snp_parser)
+        def get(self):
             """
             Get individual SNPs that support a given SNP in aggregation by cell type
             """
+            args = aggregated_snp_parser.parse_args()
             try:
-                return self.release_service.get_aggregated_snp(chromosome, position, alt, 'CL', ag_id)
+                return self.release_service.get_aggregated_snp(args['chromosome'], args['position'],
+                                                               args['alt'], 'CL', args['aggregation_name'])
             except NoResultFound:
                 api.abort(404)
 
