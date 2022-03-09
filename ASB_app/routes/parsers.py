@@ -39,7 +39,7 @@ for release in Release.__subclasses__():
     aggregated_snp_parser.add_argument('chromosome', choices=chromosomes, required=True, help='Chromosome')
     aggregated_snp_parser.add_argument('position', type=inputs.positive, required=True, help='Genome position in chromosome, 1-based')
     aggregated_snp_parser.add_argument('alt', choices=nucleotides, required=True, help='Alternative alllele')
-    aggregated_snp_parser.add_argument('aggregation_name', type=inputs.positive, required=True, help='TF or Cell Type name')
+    aggregated_snp_parser.add_argument('aggregation_name', required=True, help='TF or Cell Type name')
 
     used_hints_parser = api.parser()
     used_hints_parser.add_argument('options', action='split')
