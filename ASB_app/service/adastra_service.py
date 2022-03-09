@@ -70,8 +70,8 @@ class ReleaseService:
         if not ag_level in ('TF', 'CL'):
             raise ValueError(ag_level)
         AgSNPClass = {
-            'TF': self.TranscriptionFactorSNP,
-            'CL': self.CellLineSNP,
+            'TF': self.TranscriptionFactorSNP.transcription_factor,
+            'CL': self.CellLineSNP.cell_line,
         }[ag_level]
         ag_snp = AgSNPClass.query.filter(
             (AgSNPClass.chromosome == chromosome) &
