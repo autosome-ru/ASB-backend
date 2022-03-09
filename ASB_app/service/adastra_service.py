@@ -70,14 +70,26 @@ class ReleaseService:
         if not ag_level in ('TF', 'CL'):
             raise ValueError(ag_level)
         AgSNPClass = {
-            'TF': self.TranscriptionFactorSNP.transcription_factor,
-            'CL': self.CellLineSNP.cell_line,
+            'TF': self.TranscriptionFactorSNP,
+            'CL': self.CellLineSNP,
+        }[ag_level]
+        AgClass = {
+            'TF': self.TranscriptionFactor,
+            'CL': self.CellLine,
+        }[ag_level]
+        ag_attr = {
+            'TF': 'tf_id',
+            'CL': 'cl_id',
         }[ag_level]
         ag_snp = AgSNPClass.query.filter(
             (AgSNPClass.chromosome == chromosome) &
             (AgSNPClass.position == position) &
-            (AgSNPClass.alt == alt) &
-            (AgSNPClass.name == ag_name)
+            (AgSNPClass.alt == alt)
+        ).join(
+            AgClass,
+            getattr(AgSNPClass, ag_attr) == getattr(AgClass, ag_attr)
+        ).filter(
+            (AgClass.name == ag_name)
         ).one()
         return ag_snp
 
