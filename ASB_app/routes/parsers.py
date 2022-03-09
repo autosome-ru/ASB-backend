@@ -33,7 +33,7 @@ for release in Release.__subclasses__():
     search_parser_tsv.replace_argument('size', type=inputs.natural, help='Items per page', default=0)
 
     browse_parser = pagination_parser.copy()
-    browse_parser.add_argument('like_regexp', help="Regular expression for filtering resulting TFs' or cell types' names")
+    browse_parser.add_argument('regexp', help="Regular expression for filtering resulting TFs' or cell types' names")
 
     aggregated_snp_parser = api.parser()
     aggregated_snp_parser.add_argument('chromosome', choices=chromosomes, required=True, help='Chromosome')

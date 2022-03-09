@@ -298,7 +298,7 @@ for release in Release.__subclasses__():
                 """
                 args = browse_parser.parse_args()
                 filters = (self.BaseEntity.aggregated_snps_count > 0, )
-                filter_exp = args.pop('like_regexp', None)
+                filter_exp = args.pop('regexp', None)
                 if filter_exp is not None:
                     filters += (self.BaseEntity.name.like(filter_exp), )
                 result = self.paginate(args,
@@ -322,7 +322,7 @@ for release in Release.__subclasses__():
             """
             args = browse_parser.parse_args()
             filters = (self.BaseEntity.aggregated_snps_count > 0, )
-            filter_exp = args.pop('like_regexp', None)
+            filter_exp = args.pop('regexp', None)
             if filter_exp is not None:
                 filters += (self.BaseEntity.name.like(filter_exp), )
             result = self.paginate(args,
