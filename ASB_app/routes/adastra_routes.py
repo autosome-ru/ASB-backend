@@ -300,7 +300,7 @@ for release in Release.__subclasses__():
                 filters = (self.BaseEntity.aggregated_snps_count > 0, )
                 filter_exp = args.pop('like_regexp', None)
                 if filter_exp is not None:
-                    filters += (self.BaseEntity.name.like(filter_exp))
+                    filters += (self.BaseEntity.name.like(filter_exp), )
                 result = self.paginate(args,
                                        extra_filters=filters,
                                        default_order_clauses=(desc(self.BaseEntity.aggregated_snps_count), ))
@@ -324,7 +324,7 @@ for release in Release.__subclasses__():
             filters = (self.BaseEntity.aggregated_snps_count > 0, )
             filter_exp = args.pop('like_regexp', None)
             if filter_exp is not None:
-                filters += (self.BaseEntity.name.like(filter_exp))
+                filters += (self.BaseEntity.name.like(filter_exp), )
             result = self.paginate(args,
                                    extra_filters=filters,
                                    default_order_clauses=(desc(self.BaseEntity.aggregated_snps_count), ))
