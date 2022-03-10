@@ -82,6 +82,7 @@ def get_tf_query(rs_ids, fdr):
         db.func.group_concat(db.func.distinct(TranscriptionFactorSNP.alt)),
         db.func.group_concat(db.func.distinct(SNP.context)),
         db.func.group_concat(db.func.distinct(TranscriptionFactor.name)),
+        db.func.group_concat(db.func.distinct(TranscriptionFactor.uniprot_ac)),
         db.func.group_concat(db.func.distinct(TranscriptionFactorSNP.peak_calls)),
         db.func.group_concat(db.func.distinct(TranscriptionFactorSNP.mean_bad)),
         db.func.group_concat(db.func.distinct(TranscriptionFactorSNP.log_p_value_ref)),
@@ -186,6 +187,7 @@ def get_cl_query(rs_ids, fdr):
         db.func.group_concat(db.func.distinct(CellLineSNP.alt)),
         db.func.group_concat(db.func.distinct(SNP.context)),
         db.func.group_concat(db.func.distinct(CellLine.name)),
+        db.func.group_concat(db.func.distinct(CellLine.cl_id)),
         db.func.group_concat(db.func.distinct(CellLineSNP.peak_calls)),
         db.func.group_concat(db.func.distinct(CellLineSNP.mean_bad)),
         db.func.group_concat(db.func.distinct(CellLineSNP.log_p_value_ref)),
@@ -719,8 +721,8 @@ def process_snp_file(ticket_id, fdr_class='0.05', background='WG'):
         common_header_2 = ['PEAK_CALLS', 'MEAN_BAD', 'LOG10_FDR_REF', 'LOG10_FDR_ALT',
                            'EFFECT_SIZE_REF', 'EFFECT_SIZE_ALT']
         common_header_3 = ['GTEX_EQTL', 'EBI', 'PHEWAS', 'FINEMAPPING', 'GRASP', 'CLINVAR', 'GTEX_EQTL_TARGET_GENES']
-        cl_header = common_header_1 + ['CELL_TYPE'] + common_header_2 + ['SUPPORTING_TFS'] + common_header_3
-        tf_header = common_header_1 + ['TRANSCRIPTION_FACTOR'] + common_header_2 + \
+        cl_header = common_header_1 + ['CELL_TYPE'] + ['CELL_TYPE_GTRD_ID'] + common_header_2 + ['SUPPORTING_TFS'] + common_header_3
+        tf_header = common_header_1 + ['TRANSCRIPTION_FACTOR'] + ['TF_UNIPROT_AC'] + common_header_2 + \
                     ['MOTIF_LOG_P_REF', 'MOTIF_LOG_P_ALT', 'MOTIF_LOG2_FC', 'MOTIF_POSITION',
                      'MOTIF_ORIENTATION', 'MOTIF_CONCORDANCE', 'SUPPORTING_CELL_TYPES'] + common_header_3
 
@@ -916,13 +918,13 @@ def process_snp_file(ticket_id, fdr_class='0.05', background='WG'):
         }
 
         header = ['CHROMOSOME', 'POSITION', 'RS_ID', 'REF', 'ALT',
-                  'TRANSCRIPTION_FACTOR', 'PEAK_CALLS (TF)', 'MEAN_BAD (TF)', 'MOTIF_LOG_P_REF (TF)',
+                  'TRANSCRIPTION_FACTOR', 'TF_UNIPROT_AC', 'PEAK_CALLS (TF)', 'MEAN_BAD (TF)', 'MOTIF_LOG_P_REF (TF)',
                   'MOTIF_LOG_P_ALT (TF)', 'MOTIF_LOG2_FC (TF)', 'MOTIF_POSITION (TF)',
                   'MOTIF_ORIENTATION (TF)', 'MOTIF_CONCORDANCE (TF)', 'SUPPORTING_CELL_TYPES (TF)',
                   'LOG10_TOP_FDR (TF)', 'TOP_EFFECT_SIZE (TF)', 'PREFERRED_ALLELE (TF)',
                   'MINOR_ALLELE (TF)', 'ALLELES (TF)',
                   'TF_BINDING_PREFERENCES (TF)',
-                  'CELL_TYPE', 'PEAK_CALLS (CL)', 'MEAN_BAD (CL)', 'SUPPORTING_TFS (CL)',
+                  'CELL_TYPE', 'CELL_TYPE_GTRD_ID', 'PEAK_CALLS (CL)', 'MEAN_BAD (CL)', 'SUPPORTING_TFS (CL)',
                   'LOG10_TOP_FDR (CL)', 'TOP_EFFECT_SIZE (CL)', 'PREFERRED_ALLELE (CL)',
                   'MINOR_ALLELE (CL)', 'ALLELES (CL)',
                   'TF_BINDING_PREFERENCES (CL)',
@@ -932,8 +934,8 @@ def process_snp_file(ticket_id, fdr_class='0.05', background='WG'):
 
         attribute_tuples = {tag: ('CL', tag[:-5]) if tag.endswith(' (CL)') else
         ('TF', tag[:-5]) if tag.endswith(' (TF)') else
-        ('TF', tag) if tag == 'TRANSCRIPTION_FACTOR' else
-        ('CL', tag) if tag == 'CELL_TYPE' else
+        ('TF', tag) if tag in ('TRANSCRIPTION_FACTOR', 'TF_UNIPROT_AC') else
+        ('CL', tag) if tag in ('CELL_TYPE', 'CELL_TYPE_GTRD_ID') else
         ('ALL', tag)
                             for tag in header
                             }

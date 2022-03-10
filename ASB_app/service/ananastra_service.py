@@ -106,15 +106,11 @@ def get_result(ticket_id, param, limit, format):
         raise FileNotProcessed
     out_file = get_path_by_ticket_id(ticket_id, path_type=param)
     if format == 'json':
-        result = []
-        out = pd.read_table(out_file, na_values=['None', 'NaN', 'nan', '', 'NULL'])
-        header = list(out.columns)
-        new_header = [x.lower() for x in header]
-        for number, line in out.iterrows():
-            if limit != 0 and number == limit + 1:
-                break
-            result.append(dict(zip(new_header, [modify_null(line[field]) for field in header])))
-        return result
+        out = pd.read_table(out_file, na_values=['None', 'NaN', 'nan', '', 'NULL'],
+                            nrows=None if limit == 0 else limit)
+        new_header = {x: x.lower() for x in out.columns}
+        out.rename(columns=new_header, inplace=True)
+        return out.to_json(orient='records')
     elif format == 'tsv':
         file = tempfile.NamedTemporaryFile('wt', suffix='.tsv')
         csv_writer = csv.writer(file, dialect=TsvDialect)
