@@ -1,4 +1,5 @@
 import csv
+import json
 import os
 import shutil
 import tempfile
@@ -110,7 +111,7 @@ def get_result(ticket_id, param, limit, format):
                             nrows=None if limit == 0 else limit)
         new_header = {x: x.lower() for x in out.columns}
         out.rename(columns=new_header, inplace=True)
-        return out.to_json(orient='records')
+        return json.loads(out.to_json(orient='records'))
     elif format == 'tsv':
         file = tempfile.NamedTemporaryFile('wt', suffix='.tsv')
         csv_writer = csv.writer(file, dialect=TsvDialect)
