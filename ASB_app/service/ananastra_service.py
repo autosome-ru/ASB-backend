@@ -155,6 +155,7 @@ def get_result(ticket_id, param, size, offset, order_by_str, filter_list, format
                             out_filters.append(item['name'])
                 else:
                     in_filters.append(filter_str)
+            print(out_filters)
             out = out[(out[field].isin(in_filters)) & (~out[field].isin(out_filters))]
 
         if order_by_str:
