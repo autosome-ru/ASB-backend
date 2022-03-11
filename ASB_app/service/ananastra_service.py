@@ -160,12 +160,13 @@ def get_result(ticket_id, param, size, offset, order_by_str, filter_list, format
             by, key = get_sorting_func(order_by_str)
             out.sort_values(by=by, key=key, ascending=not desc, axis=1, inplace=True, na_position='last')
 
+        total = len(out.index)
         if size:
             out.reset_index(drop=True, inplace=True)
             out = out.iloc[offset: offset + size, :]
 
         return {
-            'total': len(out.index),
+            'total': total,
             'results': json.loads(out.to_json(orient='records')),
         }
 
