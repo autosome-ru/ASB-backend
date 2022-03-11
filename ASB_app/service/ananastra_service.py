@@ -175,7 +175,7 @@ def get_result(ticket_id, param, size, offset, order_by_str, filter_list, format
         csv_writer = csv.writer(file, dialect=TsvDialect)
         with open(out_file) as out:
             for number, line in enumerate(out):
-                if size != 0 and number == size + 1:
+                if size and number == size + 1:
                     break
                 if param != 'not_found':
                     if number == 0:
