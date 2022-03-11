@@ -122,6 +122,16 @@ def get_sorting_func(order_by_str):
         return [order_by_str], None
 
 
+def get_asb_data_from_ticket(ticket, param):
+    try:
+        prefix = param[:2]  # tf or cl
+        asb_counts_attr = 'asb_counts{}'.format('_top' if param.endswith('sum') else '')
+        asb_data = ticket.meta_info[prefix][asb_counts_attr]
+    except KeyError:
+        raise ParsingError
+    return asb_data
+
+
 def get_result(ticket_id, param, size, offset, order_by_str, filter_list, format):
     ticket = get_ticket(ticket_id)
     if ticket.status != 'Processed':
@@ -146,16 +156,12 @@ def get_result(ticket_id, param, size, offset, order_by_str, filter_list, format
                 if filter_str.startswith('-'):
                     out_filters.append(filter_str[1:])
                 elif filter_str == 'Other':
-                    asb_data = getattr(
-                        getattr(ticket.meta_info, param[:2]),
-                        'asb_counts{}'.format('_top' if param.endswith('sum') else '')
-                    )
+                    asb_data = get_asb_data_from_ticket(ticket, param)
                     for item in asb_data:
                         if item['name'] != 'Other':
                             out_filters.append(item['name'])
                 else:
                     in_filters.append(filter_str)
-            print(out_filters)
             out = out[(out[field].isin(in_filters)) & (~out[field].isin(out_filters))]
 
         if order_by_str:
