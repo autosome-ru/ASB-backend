@@ -147,7 +147,7 @@ def get_result(ticket_id, param, size, offset, order_by_str, filter_list, format
                     out_filters.append(filter_str[1:])
                 else:
                     in_filters.append(filter_str)
-            out = out[out[(out[field].isin(in_filters)) & (~out[field].isin(out_filters))]]
+            out = out[(out[field].isin(in_filters)) & (~out[field].isin(out_filters))]
 
         if order_by_str:
             if order_by_str.startswith('-'):
