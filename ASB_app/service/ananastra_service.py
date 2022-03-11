@@ -223,7 +223,7 @@ def get_target_genes(ticket_id):
 
     file = tempfile.NamedTemporaryFile('wt', suffix='.tsv')
     csv_writer = csv.writer(file, dialect=TsvDialect)
-    for line in enumerate(target_genes):
+    for line in target_genes:
         csv_writer.writerow([line])
     file.flush()
     return send_file(
