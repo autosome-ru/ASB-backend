@@ -107,9 +107,9 @@ def get_sorting_func(order_by_str):
     :return: (by, key, desc) to plug into pd.DataFrame.sort_values()
     """
     if order_by_str == 'genome_position':
-        return ('chromosome', 'position'), None
+        return ['chromosome', 'position'], None
     elif order_by_str == 'motif_concordance':
-        return 'motif_concordance', lambda series: series.apply(
+        return ['motif_concordance'], lambda series: series.apply(
             lambda concordance:
                 4 if concordance == 'Concordant' else
                 3 if concordance == 'Weak Concordant' else
@@ -119,7 +119,7 @@ def get_sorting_func(order_by_str):
                 concordance
         )
     else:
-        return order_by_str, None
+        return [order_by_str], None
 
 
 def get_result(ticket_id, param, size, offset, order_by_str, filter_list, format):
@@ -132,7 +132,6 @@ def get_result(ticket_id, param, size, offset, order_by_str, filter_list, format
         out = pd.read_table(out_file, na_values=['None', 'NaN', 'nan', '', 'NULL'])
         new_header = {x: x.lower() for x in out.columns}
         out.rename(columns=new_header, inplace=True)
-        print(out.columns)
 
         if filter_list:
             if param.startswith('tf'):
