@@ -145,6 +145,14 @@ def get_result(ticket_id, param, size, offset, order_by_str, filter_list, format
             for filter_str in filter_list:
                 if filter_str.startswith('-'):
                     out_filters.append(filter_str[1:])
+                elif filter_str == 'Other':
+                    asb_data = getattr(
+                        getattr(ticket.meta_info, param[:2]),
+                        'asb_counts{}'.format('_top' if param.endswith('sum') else '')
+                    )
+                    for item in asb_data:
+                        if item['name'] != 'Other':
+                            out_filters.append(item['name'])
                 else:
                     in_filters.append(filter_str)
             out = out[(out[field].isin(in_filters)) & (~out[field].isin(out_filters))]
