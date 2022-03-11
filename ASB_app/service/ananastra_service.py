@@ -160,6 +160,7 @@ def get_result(ticket_id, param, size, offset, order_by_str, filter_list, format
                     for item in asb_data:
                         if item['name'] != 'Other':
                             out_filters.append(item['name'])
+                    print(out_filters)
                 else:
                     in_filters.append(filter_str)
             out = out[(out[field].isin(in_filters)) & (~out[field].isin(out_filters))]
