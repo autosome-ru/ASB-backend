@@ -52,7 +52,10 @@ for release in Release.__subclasses__():
 result_param_parser = current_release.api.parser()
 result_param_parser.add_argument('result_param', choices=('tf', 'cl', 'tf_sum', 'cl_sum', 'all', 'not_found'), default='all')
 result_param_parser.add_argument('format', choices=('json', 'tsv'), default='json')
-result_param_parser.add_argument('limit', type=inputs.positive, default=0)
+result_param_parser.add_argument('page', type=inputs.positive, help='Page number', default=1)
+result_param_parser.add_argument('size', type=inputs.int_range(1, 1000), help='Items per page, ≤1000')
+result_param_parser.add_argument('filter', help='comma-separated tf or cell-line names, "-" for exclude', action='split')
+result_param_parser.add_argument('order_by', help='order by column, "-" for desc')
 
 thresholds_parser = current_release.api.parser()
 thresholds_parser.add_argument('fdr', help='FDR threshold', default='0.05', choices=fdr_choices)

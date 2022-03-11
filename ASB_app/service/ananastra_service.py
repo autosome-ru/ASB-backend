@@ -10,7 +10,7 @@ from hashlib import md5
 from flask import send_file
 
 from ASB_app import executor, logger
-from ASB_app.exceptions import FileNotProcessed
+from ASB_app.exceptions import FileNotProcessed, ParsingError
 from ASB_app.models import Ticket
 from ASB_app.releases import current_release
 from ASB_app.utils.aggregates import TsvDialect
@@ -101,23 +101,80 @@ def modify_null(field):
     return field
 
 
-def get_result(ticket_id, param, limit, format):
+def get_sorting_func(order_by_str):
+    """
+    :param order_by_str: order_by from pagination parser
+    :return: (by, key, desc) to plug into pd.DataFrame.sort_values()
+    """
+    if order_by_str == 'genome_position':
+        return ('chromosome', 'position'), lambda series: series
+    elif order_by_str == 'motif_concordance':
+        return 'motif_concordance', lambda series: series.apply(
+            lambda concordance:
+                4 if concordance == 'Concordant' else
+                3 if concordance == 'Weak Concordant' else
+                2 if concordance == 'Weak Discordant' else
+                1 if concordance == 'Discordant' else
+                0 if concordance == 'No Hit' else
+                concordance
+        )
+    else:
+        return order_by_str, lambda series: series
+
+
+def get_result(ticket_id, param, size, offset, order_by_str, filter_list, format):
     ticket = get_ticket(ticket_id)
     if ticket.status != 'Processed':
         raise FileNotProcessed
     out_file = get_path_by_ticket_id(ticket_id, path_type=param)
+
     if format == 'json':
-        out = pd.read_table(out_file, na_values=['None', 'NaN', 'nan', '', 'NULL'],
-                            nrows=None if limit == 0 else limit)
+        out = pd.read_table(out_file, na_values=['None', 'NaN', 'nan', '', 'NULL'])
         new_header = {x: x.lower() for x in out.columns}
         out.rename(columns=new_header, inplace=True)
-        return json.loads(out.to_json(orient='records'))
+
+        if filter_list:
+            if param.startswith('tf'):
+                field = 'transcription_factor'
+            elif param.startswith('cl'):
+                field = 'cell_type'
+            else:
+                raise ParsingError
+            in_filters = []
+            out_filters = []
+            for filter_str in filter_list:
+                if filter_str.startswith('-'):
+                    out_filters.append(filter_str[1:])
+                else:
+                    in_filters.append(filter_str)
+            out = out[out[(out[field].isin(in_filters)) & (~out[field].isin(out_filters))]]
+
+        if order_by_str:
+            if order_by_str.startswith('-'):
+                desc = True
+                order_by_str = order_by_str[1:]
+            else:
+                desc = False
+            if order_by_str not in new_header.values():
+                raise ParsingError
+            by, key = get_sorting_func(order_by_str)
+            out.sort_values(by=by, key=key, ascending=not desc, axis=1, inplace=True, na_position='last')
+
+        if size:
+            out.reset_index(drop=True, inplace=True)
+            out = out.iloc[offset: offset + size, :]
+
+        return {
+            'total': len(out.index),
+            'results': json.loads(out.to_json(orient='records')),
+        }
+
     elif format == 'tsv':
         file = tempfile.NamedTemporaryFile('wt', suffix='.tsv')
         csv_writer = csv.writer(file, dialect=TsvDialect)
         with open(out_file) as out:
             for number, line in enumerate(out):
-                if limit != 0 and number == limit + 1:
+                if size != 0 and number == size + 1:
                     break
                 if param != 'not_found':
                     if number == 0:
@@ -131,6 +188,31 @@ def get_result(ticket_id, param, limit, format):
             mimetype="text/tsv",
             as_attachment=True
         )
+
+
+def get_target_genes(ticket_id):
+    ticket = get_ticket(ticket_id)
+    if ticket.status != 'Processed':
+        raise FileNotProcessed
+    out_file = get_path_by_ticket_id(ticket_id, path_type='all')
+    out = pd.read_table(out_file, na_values=['None', 'NaN', 'nan', '', 'NULL'])
+    new_header = {x: x.lower() for x in out.columns}
+    out.rename(columns=new_header, inplace=True)
+    target_genes = out['gtex_eqtl_target_genes'].tolist()
+    target_genes = [gene for g_list in target_genes if not pd.isna(g_list) for gene in g_list.split(',')]
+    target_genes = list(set(target_genes))
+
+    file = tempfile.NamedTemporaryFile('wt', suffix='.tsv')
+    csv_writer = csv.writer(file, dialect=TsvDialect)
+    for line in enumerate(target_genes):
+        csv_writer.writerow([line])
+    file.flush()
+    return send_file(
+        file.name,
+        cache_timeout=0,
+        mimetype="text/tsv",
+        as_attachment=True
+    )
 
 
 def delete_all_tickets():

@@ -7,6 +7,7 @@ from flask import request
 from flask_restplus import Resource
 from ASB_app import executor
 from ASB_app.constants import fdr_choices, background_choices
+from ASB_app.exceptions import ParsingError
 from ASB_app.executor_jobs import process_snp_file
 from ASB_app.serializers import ticket_model, ticket_model_short
 from ASB_app.service import ananastra_service, FileNotProcessed, get_path_by_ticket_id
@@ -121,15 +122,31 @@ class ProcessingResult(Resource):
         args = result_param_parser.parse_args()
         result_param = args['result_param']
         format = args['format']
-        limit = args['limit']
+        size = args['size']
+        if size:
+            offset = size * (args['page'] - 1)
+        else:
+            offset = 0
+        order_by = args['order_by']
+        filter = args['filter']
         try:
+            result = ananastra_service.get_result(ticket_id, result_param, size, offset, order_by, filter, format)
             if format == 'json':
                 if result_param in ('all', 'not_found'):
                     return {'message': 'JSON format is not available for specified options'}, 403
-                return ananastra_service.get_result(ticket_id, result_param, limit, format), 200
+                return result, 200
             else:
-                return ananastra_service.get_result(ticket_id, result_param, limit, format)
+                return result
         except FileNotProcessed:
             return {'message': 'file is not processed'}, 403
+        except ParsingError:
+            return {'message': 'invalid parameters'}, 403
 
 
+@ananastra_nsp.route('/target_genes/<string:ticket_id>')
+class ProcessingResult(Resource):
+    def get(self, ticket_id):
+        """
+        Get a list of target genes for a ticket processing result
+        """
+        return ananastra_service.get_target_genes(ticket_id), 200
