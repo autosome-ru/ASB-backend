@@ -149,4 +149,4 @@ class ProcessingResult(Resource):
         """
         Get a list of target genes for a ticket processing result
         """
-        return ananastra_service.get_target_genes(ticket_id), 200
+        return ananastra_service.get_target_genes(ticket_id)
