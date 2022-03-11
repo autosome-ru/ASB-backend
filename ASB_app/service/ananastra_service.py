@@ -158,7 +158,7 @@ def get_result(ticket_id, param, size, offset, order_by_str, filter_list, format
             if order_by_str not in list(new_header.values()) + ['genome_position']:
                 raise ParsingError
             by, key = get_sorting_func(order_by_str)
-            print(out, key)
+            print(out, by, out.sort_values(by=by))
             out.sort_values(by=by, key=key, ascending=not desc, axis=1, inplace=True, na_position='last')
 
         total = len(out.index)
