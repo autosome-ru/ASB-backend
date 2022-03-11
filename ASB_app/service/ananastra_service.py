@@ -161,9 +161,12 @@ def get_result(ticket_id, param, size, offset, order_by_str, filter_list, format
             out.sort_values(by=by, key=key, ascending=not desc, inplace=True, na_position='last')
 
         total = len(out.index)
+        print(out)
         if size:
             out.reset_index(drop=True, inplace=True)
             out = out.iloc[offset: offset + size, :]
+
+        print(out)
 
         return {
             'total': total,
