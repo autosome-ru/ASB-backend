@@ -101,7 +101,7 @@ def modify_null(field):
     return field
 
 
-def get_sorting_func(order_by_str):
+def get_sorting_func(order_by_str, desc):
     """
     :param order_by_str: order_by from pagination parser
     :return: (by, key, desc) to plug into pd.DataFrame.sort_values()
@@ -115,7 +115,8 @@ def get_sorting_func(order_by_str):
                 3 if concordance == 'Weak Concordant' else
                 2 if concordance == 'Weak Discordant' else
                 1 if concordance == 'Discordant' else
-                0 if concordance == 'No Hit' else
+                (0 if desc else 5)
+                if concordance == 'No Hit' else
                 concordance
         )
     else:
@@ -175,7 +176,7 @@ def get_result(ticket_id, param, size, offset, order_by_str, filter_list, format
                 desc = False
             if order_by_str not in list(new_header.values()) + ['genome_position']:
                 raise ParsingError
-            by, key = get_sorting_func(order_by_str)
+            by, key = get_sorting_func(order_by_str, desc)
             out.sort_values(by=by, key=key, ascending=not desc, inplace=True, na_position='last')
 
         total = len(out.index)
