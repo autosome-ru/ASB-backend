@@ -82,7 +82,7 @@ from . import routes
 from . import utils
 from . import scheduler_jobs
 
-from service.ananastra_service import get_tickets_dir
+from ASB_app.service.ananastra_service import get_tickets_dir
 
 for suffix in ('', 'accepted', 'logs'):
     check_and_create_dir(get_tickets_dir(suffix=suffix))
