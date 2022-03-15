@@ -3,14 +3,16 @@ import math
 from ASB_app import *
 from ASB_app import constants
 from ASB_app.models import *
+from ASB_app.utils.aggregates import update_motif_concordance, update_has_concordance, update_phenotype_associations, \
+    update_best_p_value, update_best_es
 import os
 import json
 import numpy as np
 import pandas as pd
 
-from sqlalchemy.sql import case
+from ASB_app.utils.statistics import get_fdr_class, get_es_class
 
-current_release = releases.ReleaseFord
+current_release = releases.ReleaseZanthar
 session = current_release.session
 
 TranscriptionFactor, \
@@ -38,25 +40,35 @@ current_release.BADGroup, \
 current_release.GeneSNPCorrespondence, \
 current_release.Gene
 
+tr = 0.25
 
-TF = 0
-CL = 0
-tr = 0.05
-EXP = 0
-TF_DICT = 0
-CL_DICT = 0
-PHEN = 0
-CONTEXT = 0
-CONTROLS = 0
-BAD_GROUP = 0
-PEAKS_TF = 0
-PEAKS_CL = 0
-GENES = 0
-TARGET_GENES = 0
+EXP = 1
+TF = 1
+CL = 1
+PHEN = 1
+TF_DICT = 1
+CL_DICT = 1
+CONTEXT = 1
+CONTROLS = 1
+BAD_GROUP = 1
+GENES = 1
+TARGET_GENES = 1
+PROMOTER_GENES = 0  # not needed at first time
+TARGET_GENE_SNP_COUNT = 1
+UPDATE_CONCORDANCE = 1  # Don't forget to change current_release in releases.py
+UPDATE_PHEN_COUNT = 1
+UPDATE_HAS_CONCORDANCE = 1
+UPDATE_BEST_P_VALUE = 1
+UPDATE_BEST_ES = 1
+PROMOTER_GENE_COUNT = 1
+TARGET_GENE_COUNT_010 = 1
+PROMOTER_GENE_COUNT_010 = 1
+SET_NONE_TO_ZERO = 1
+CHECK_NONE = 1
 
 
-release_path = os.path.expanduser('~/Data/')
-parameters_path = os.path.expanduser('~/ConfigsTest/')
+release_path = os.path.expanduser('~/DataChipZantharFixed/')
+parameters_path = os.path.expanduser('~/Configs/')
 
 conv_bad = dict(zip(
     (1, 4 / 3, 3 / 2, 2, 5 / 2, 3, 4, 5, 6),
@@ -64,7 +76,7 @@ conv_bad = dict(zip(
 ))
 
 if __name__ == '__main__':
-    with open(os.path.join(release_path, 'release_stats', 'convert_cl_names.json')) as file:
+    with open(os.path.join(release_path, 'release_stats', 'convert_cell_lines.json')) as file:
         cl_dict = json.loads(file.readline())
 
     cl_dict_reverse = {}
@@ -72,7 +84,8 @@ if __name__ == '__main__':
         cl_dict_reverse[value] = key
 
     if EXP:
-        table = pd.read_table(parameters_path + 'master-list-annotated.txt')
+        print('Loading experiments')
+        table = pd.read_table(parameters_path + 'master-chip.txt')
         counter = 1
         exps = []
         tfs = []
@@ -109,6 +122,7 @@ if __name__ == '__main__':
         session.close()
 
     for param in ['TF'] * TF + ['CL'] * CL:
+        print('Loading {} ASBs'.format(param))
         pv_path = os.path.join(release_path, '{}_P-values/'.format(param))
         for file in sorted(os.listdir(pv_path)):
             with open(pv_path + file, 'r') as table:
@@ -167,13 +181,16 @@ if __name__ == '__main__':
                     if min_pv > tr:
                         continue
 
+                    max_es = max(x for x in (row['es_mean_ref'],
+                                             row['es_mean_alt']) if x is not None)
+
                     for field in int_fields:
                         if row[field] == '' or row[field] == '.':
                             row[field] = None
                         else:
                             row[field] = int(row[field])
 
-                    row['ID'] = int(row['ID'][2:])
+                    row['ID'] = int(row['ID'][row['ID'].rfind('rs') + 2:])
                     mutation = SNP.query.filter((SNP.rs_id == row['ID']) &
                                                 (SNP.alt == row['alt'])).first()
                     if not mutation:
@@ -192,11 +209,15 @@ if __name__ == '__main__':
                         'position': int(row['pos']),
                         'alt': row['alt'],
                         ({'TF': 'tf_id', 'CL': 'cl_id'}[param]): ag_id,
-                        'log_p_value_ref': -np.log10(row['fdrp_bh_ref']),
-                        'log_p_value_alt': -np.log10(row['fdrp_bh_alt']),
+                        'log_p_value_ref': -np.log10(row['fdrp_bh_ref']) if row['fdrp_bh_ref'] != 0 else 310,
+                        'log_p_value_alt': -np.log10(row['fdrp_bh_alt']) if row['fdrp_bh_alt'] != 0 else 310,
+                        'best_p_value': -np.log10(min_pv),
+                        'best_es': max_es,
+                        'fdr_class': get_fdr_class(-np.log10(min_pv)),
+                        'es_class': get_es_class(max_es),
                         'es_ref': row['es_mean_ref'],
                         'es_alt': row['es_mean_alt'],
-                        'is_asb': min_pv <= 0.05,
+                        'is_asb': min_pv <= 0.1,
                         'mean_bad': row['mean_BAD'],
                         'peak_calls': row['n_peak_calls'],
                         'peak_callers': row['n_peak_callers'],
@@ -220,11 +241,12 @@ if __name__ == '__main__':
             session.close()
 
     if PHEN:
+        print('Loading phenotypes')
         table = pd.read_table(os.path.join(release_path, 'release_stats', 'phenotypes_stats.tsv'))
         for index, row in table.iterrows():
             if (index + 1) % 1000 == 0:
                 print(index + 1)
-            mutations = SNP.query.filter(SNP.rs_id == int(row['RSID'][2:])).all()
+            mutations = SNP.query.filter(SNP.rs_id == int(row['RSID'][row['RSID'].rfind('rs') + 2:])).all()
             if not mutations:
                 print('No snps for ', int(row['RSID'][2:]))
             for database in ['grasp', 'ebi', 'clinvar', 'phewas', 'finemapping', 'QTL']:
@@ -243,6 +265,7 @@ if __name__ == '__main__':
     session.close()
 
     for param in ['TF'] * TF_DICT + ['CL'] * CL_DICT:
+        print('Loading {} experiment snps'.format(param))
         pv_path = release_path + '{}_DICTS/'.format(param)
         for file in sorted(os.listdir(pv_path)):
 
@@ -263,6 +286,14 @@ if __name__ == '__main__':
             else:
                 ag_id = ag.tf_id
 
+            # exp_snp = ExpSNP.query.filter(
+            #     getattr(ExpSNP, {'TF': 'tf_aggregated_snp', 'CL': 'cl_aggregated_snp'}[param]).has(
+            #         getattr(SNPClass, {'TF': 'tf_id', 'CL': 'cl_id'}[param]) == ag_id,
+            #     ),
+            # ).first()
+            # if exp_snp:
+            #     continue
+
             items_length = len(content)
 
             items = list(content.items())
@@ -276,7 +307,7 @@ if __name__ == '__main__':
                         print(index)
                     chromosome, position, rs_id, ref, alt = key.strip().split('\t')[:5]
                     position = int(position)
-                    rs_id = int(rs_id[2:])
+                    rs_id = int(rs_id[rs_id.rfind('rs') + 2:])
                     ag_snp = SNPClass.query.filter(
                         SNPClass.chromosome == chromosome,
                         SNPClass.position == position,
@@ -318,8 +349,7 @@ if __name__ == '__main__':
                         for i in range(len(value['aligns']))]
 
                     for parameter in parameters_list:
-                        # FIXME TEMPORARY
-                        exp_id = Experiment.query.filter(Experiment.align == parameter['aligns'][0]).one().exp_id
+                        exp_id = Experiment.query.filter(Experiment.align == parameter['aligns']).one().exp_id
 
                         exp_snp = ExpSNP.query.filter(
                             ExpSNP.exp_id == exp_id,
@@ -343,7 +373,10 @@ if __name__ == '__main__':
                             assert other_id == {'TF': another_dict.get(cl_dict_reverse.get(parameter.get('CL'))),
                                                 'CL': another_dict.get(parameter.get('TF'))}[param]
                             assert exp_snp.ref_readcount == parameter['ref_counts']
-                            assert exp_snp.p_value_alt == parameter['alt_pvalues']
+                            try:
+                                assert round(exp_snp.p_value_alt, 4) == round(parameter['alt_pvalues'], 4)
+                            except AssertionError:
+                                print(exp_snp.p_value_alt, parameter['alt_pvalues'])
                             assert exp_snp.bad == conv_bad[parameter['BAD']]
 
                         exp_snps.append(exp_snp)
@@ -354,6 +387,7 @@ if __name__ == '__main__':
                 processed += chunk_size
 
     if CONTEXT:
+        print('Loading SNP context')
         used = set()
         with open(os.path.join(release_path, 'Sarus', 'all_tfs.fasta')) as file:
             line = file.readline()
@@ -371,7 +405,8 @@ if __name__ == '__main__':
         session.commit()
 
     if CONTROLS:
-        table = pd.read_table(parameters_path + 'master-list-annotated.txt')
+        print('Loading control experiments')
+        table = pd.read_table(parameters_path + 'master-chip.txt')
         exps = []
         cls = []
         used_exp_ids = set()
@@ -381,9 +416,10 @@ if __name__ == '__main__':
                 print(index + 1)
 
             if len(exps) >= 990:
-                session.add_all(exps)
+                session.add_all(cls + exps)
                 session.commit()
                 exps = []
+                cls = []
                 session.close()
 
             if not (row['TF_UNIPROT_NAME'] is None or pd.isna(row['TF_UNIPROT_NAME'])):
@@ -412,6 +448,7 @@ if __name__ == '__main__':
         session.close()
 
     if BAD_GROUP:
+        print('Loading BAD groups')
         with open(os.path.join(release_path, 'release_stats', 'badmaps_dict.json')) as f:
             cell_lines_dict = json.loads(f.readline())
         exps = []
@@ -443,9 +480,10 @@ if __name__ == '__main__':
         session.close()
 
     if GENES:
+        print('Loading genes')
         genes = []
         genes_ids = set()
-        with open(os.path.expanduser('~/Desktop/gencode.v35.annotation.gtf')) as inp:
+        with open(os.path.expanduser('~/REFERENCE/gencode.v35.annotation.gtf')) as inp:
             for index, line in enumerate(inp):
                 if line.startswith('#'):
                     continue
@@ -459,17 +497,20 @@ if __name__ == '__main__':
                 gene_name = params_dict['gene_name'].strip('"')
                 gene_id = params_dict['gene_id'].strip('"')
                 if orient == '+':
-                    start_pos = max(start_pos - 5000, 1)
+                    start_pos_ext = max(start_pos - 5000, 1)
+                    end_pos_ext = end_pos
                 elif orient == '-':
-                    end_pos = end_pos + 5000
+                    start_pos_ext = start_pos
+                    end_pos_ext = end_pos + 5000
                 else:
                     raise ValueError
 
                 snps = SNP.query.filter(SNP.chromosome == chrom,
-                                        SNP.position.between(start_pos, end_pos)).count()
+                                        SNP.position.between(start_pos_ext, end_pos_ext)).all()
 
                 gene = Gene(gene_id=gene_id, gene_name=gene_name, start_pos=start_pos, end_pos=end_pos, chromosome=chrom,
-                            orientation=True if orient == '+' else False if orient == '-' else None, snps_count=snps)
+                            orientation=True if orient == '+' else False if orient == '-' else None, snps_count=len(snps),
+                            proximal_promoter_snps=snps)
                 if gene_id in genes_ids:
                     print(gene_id, chrom, start_pos, end_pos)
                     continue
@@ -491,9 +532,9 @@ if __name__ == '__main__':
         session.commit()
 
     if TARGET_GENES:
-        qtl_genes = {}
+        print('Loading target genes')
         # table = pd.read_table(os.path.join(release_path, 'release_stats', 'phenotypes_stats.tsv'))
-        table = pd.read_table(os.path.expanduser('~/Desktop/phenotypes_stats.tsv'))
+        table = pd.read_table(os.path.join(release_path, 'release_stats', 'phenotypes_stats.tsv'))
         print(len(table.index))
         genes = []
         for index, row in table.iterrows():
@@ -515,7 +556,7 @@ if __name__ == '__main__':
                     genes.append(gene)
                     all_target_genes.append(gene)
 
-            mutations = SNP.query.filter(SNP.rs_id == int(row['RSID'][2:])).all()
+            mutations = SNP.query.filter(SNP.rs_id == int(row['RSID'][row['RSID'].rfind('rs') + 2:])).all()
             if not mutations:
                 print('No snps for ', int(row['RSID'][2:]))
 
@@ -523,3 +564,127 @@ if __name__ == '__main__':
                 mutation.target_genes = all_target_genes
         session.add_all(genes)
         session.commit()
+
+    if PROMOTER_GENES:
+        print('Updating promoter snps')
+        genes = []
+        for index, gene in enumerate(Gene.query.filter(~((Gene.start_pos == 1) & (Gene.end_pos == 1)))):
+            if (index + 1) % 1000 == 0:
+                print(index + 1)
+
+            gene.proximal_promoter_snps = SNP.query.filter(
+                    SNP.chromosome == gene.chromosome,
+                    SNP.position.between(gene.start_pos - 5000, gene.end_pos) if gene.orientation
+                    else SNP.position.between(gene.start_pos, gene.end_pos + 5000)
+            ).all()
+            genes.append(gene)
+        session.commit()
+
+    if TARGET_GENE_SNP_COUNT:
+        print('Updating target snp count')
+        q = session.query(Gene, db.func.count('*')).join(SNP, Gene.snps_by_target).group_by(Gene)
+        for i, (gene, count) in enumerate(q, 1):
+            if i % 1000 == 0:
+                print(i)
+            gene.eqtl_snps_count = count
+        session.commit()
+        for gene in Gene.query.filter(Gene.eqtl_snps_count.is_(None)):
+            gene.eqtl_snps_count = 0
+        session.commit()
+        session.close()
+
+    if UPDATE_CONCORDANCE:
+        print('Updating motif concordance')
+        update_motif_concordance()
+
+    if UPDATE_PHEN_COUNT:
+        print('Updating phenotype associations counts')
+        update_phenotype_associations()
+
+    if UPDATE_HAS_CONCORDANCE:
+        print('Updating "has concordant snps"')
+        update_has_concordance()
+
+    if UPDATE_BEST_P_VALUE:
+        print('Updating best p-value')
+        update_best_p_value()
+
+    if UPDATE_BEST_ES:
+        print('Updating best effect_size')
+        update_best_es()
+
+    if TARGET_GENE_COUNT_010:
+        print('Updating target snp count 010')
+        q = session.query(Gene, db.func.count('*')).join(SNP, Gene.snps_by_target).filter(SNP.fdr_class.in_(['0.01', '0.05', '0.1'])).group_by(Gene)
+        for i, (gene, count) in enumerate(q, 1):
+            if i % 1000 == 0:
+                print(i)
+            gene.eqtl_snps_count010 = count
+        session.commit()
+        for gene in Gene.query.filter(Gene.eqtl_snps_count010.is_(None)):
+            gene.eqtl_snps_count010 = 0
+        session.commit()
+        session.close()
+
+    if PROMOTER_GENE_COUNT:
+        print('Updating promoter snp count')
+        q = session.query(Gene, db.func.count('*')).join(SNP, Gene.proximal_promoter_snps).group_by(Gene)
+        for i, (gene, count) in enumerate(q, 1):
+            if i % 1000 == 0:
+                print(i)
+            gene.snps_count = count
+        session.commit()
+        for gene in Gene.query.filter(Gene.snps_count.is_(None)):
+            gene.snps_count = 0
+        session.commit()
+        session.close()
+
+    if PROMOTER_GENE_COUNT_010:
+        print('Updating promoter snp count 010')
+        q = session.query(Gene, db.func.count('*')).join(SNP, Gene.proximal_promoter_snps).filter(SNP.fdr_class.in_(['0.01', '0.05', '0.1'])).group_by(Gene)
+        for i, (gene, count) in enumerate(q, 1):
+            if i % 1000 == 0:
+                print(i)
+            gene.snps_count010 = count
+        session.commit()
+        for gene in Gene.query.filter(Gene.snps_count010.is_(None)):
+            gene.snps_count010 = 0
+        session.commit()
+        session.close()
+
+    if SET_NONE_TO_ZERO:
+        print('Setting 0 when NULL')
+        items_dict = {
+            Gene: ['snps_count', 'snps_count010', 'eqtl_snps_count', 'eqtl_snps_count010'],
+            SNP: ['has_clinvar_associations', 'has_phewas_associations', 'has_ebi_associations',
+                  'has_qtl_associations', 'has_grasp_associations', 'has_finemapping_associations',
+                  'has_concordance'],
+            TranscriptionFactor: ['aggregated_snps_count', 'aggregated_snps_count005', 'aggregated_snps_count010'],
+            CellLine: ['aggregated_snps_count', 'aggregated_snps_count005', 'aggregated_snps_count010']
+        }
+        for cls, lst in items_dict.items():
+            for field in lst:
+                print(cls.__name__, field)
+                for item in cls.query.filter(getattr(cls, field).is_(None)):
+                    setattr(item, field, 0)
+                session.commit()
+
+    if CHECK_NONE:
+        print('Performing NULL checks')
+        items_dict = {
+            Gene: ['snps_count', 'snps_count010', 'eqtl_snps_count', 'eqtl_snps_count010'],
+            SNP: ['best_p_value', 'fdr_class', 'best_es', 'es_class', 'context', 'has_clinvar_associations', 'has_phewas_associations',
+                  'has_ebi_associations', 'has_qtl_associations', 'has_grasp_associations',
+                  'has_finemapping_associations', 'has_concordance'],
+            TranscriptionFactor: ['aggregated_snps_count', 'aggregated_snps_count005', 'aggregated_snps_count010'],
+            CellLine: ['aggregated_snps_count', 'aggregated_snps_count005', 'aggregated_snps_count010'],
+            TranscriptionFactorSNP: ['best_p_value', 'fdr_class', 'best_es', 'es_class'],
+            CellLineSNP: ['best_p_value', 'fdr_class', 'best_es', 'es_class'],
+        }
+        for cls, lst in items_dict.items():
+            for field in lst:
+                print(cls.__name__, field)
+                ctr = cls.query.filter(getattr(cls, field).is_(None)).count()
+                if ctr > 0:
+                    print('WARN: {} occasions of {}.{} = NULL'.format(ctr, cls, field))
+

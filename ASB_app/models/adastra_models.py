@@ -1,38 +1,64 @@
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy_utils.aggregates import aggregated
 
-from ASB_app.constants import chromosomes, nucleotides, bads
+from ASB_app.constants import chromosomes, nucleotides, bads, fdr_classes, es_classes
 
 from ASB_app.releases import Release
-from .placeholders import abstract_models
+from .placeholders import abstract_models, abstract_models_dnase
+
+import numpy as np
 
 __all__ = []
 
 for release in Release.__subclasses__():
     db = release.db
 
-    class TranscriptionFactor(db.Model):
-        __bind_key__ = release.name
-        __tablename__ = 'transcription_factors'
-        __table_args__ = (
-            db.Index('tf_uniprot_ac_index', 'name'),
-        )
+    if release.name != 'dnase':
+        class TranscriptionFactor(db.Model):
+            __bind_key__ = release.name
+            __tablename__ = 'transcription_factors'
+            __table_args__ = (
+                db.Index('tf_uniprot_ac_index', 'name'),
+            )
 
-        tf_id = db.Column(db.Integer, primary_key=True)
-        name = db.Column(db.String(50), nullable=False)
-        uniprot_ac = db.Column(db.String(60), index=True)
-        motif_legnth = db.Column(db.Integer)
+            tf_id = db.Column(db.Integer, primary_key=True)
+            name = db.Column(db.String(50), nullable=False)
+            uniprot_ac = db.Column(db.String(60), index=True)
+            if int(release.version) >= 4:
+                gene_name = db.Column(db.String(50), index=True)
+            motif_legnth = db.Column(db.Integer)
 
-        @aggregated('tf_aggregated_snps', db.Column(db.Integer))
-        def aggregated_snps_count(self):
-            return db.func.count(TranscriptionFactorSNP.tf_snp_id)
+            @aggregated('tf_aggregated_snps', db.Column(db.Integer))
+            def aggregated_snps_count(self):
+                return db.func.count(TranscriptionFactorSNP.tf_snp_id)
 
-        @aggregated('experiments', db.Column(db.Integer))
-        def experiments_count(self):
-            return db.func.count(Experiment.exp_id)
+            @aggregated('experiments', db.Column(db.Integer))
+            def experiments_count(self):
+                return db.func.count(Experiment.exp_id)
 
-        def __repr__(self):
-            return '<TranscriptionFactor #{0.tf_id}, {0.name}>'.format(self)
+            if int(release.version) >= 3:
+                tf_aggregated_snps005 = db.relationship(
+                    'TranscriptionFactorSNP',
+                    primaryjoin='(TranscriptionFactor.tf_id == TranscriptionFactorSNP.tf_id) & (TranscriptionFactorSNP.best_p_value >= {})'.format(
+                        -np.log10(0.05))
+                )
+
+                @aggregated('tf_aggregated_snps005', db.Column(db.Integer))
+                def aggregated_snps_count005(self):
+                    return db.func.count(TranscriptionFactorSNP.tf_snp_id)
+
+                tf_aggregated_snps010 = db.relationship(
+                    'TranscriptionFactorSNP',
+                    primaryjoin='(TranscriptionFactor.tf_id == TranscriptionFactorSNP.tf_id) & (TranscriptionFactorSNP.best_p_value >= {})'.format(
+                        -np.log10(0.1))
+                )
+
+                @aggregated('tf_aggregated_snps010', db.Column(db.Integer))
+                def aggregated_snps_count010(self):
+                    return db.func.count(TranscriptionFactorSNP.tf_snp_id)
+
+            def __repr__(self):
+                return '<TranscriptionFactor #{0.tf_id}, {0.name}>'.format(self)
 
 
     class CellLine(db.Model):
@@ -43,12 +69,18 @@ for release in Release.__subclasses__():
         )
 
         cl_id = db.Column(db.Integer, primary_key=True)
-        name = db.Column(db.String(50), nullable=False)
+        name = db.Column(db.String(200), nullable=False)
 
-        non_input_experiments = db.relationship(
-            'Experiment',
-            primaryjoin='(Experiment.cl_id == CellLine.cl_id) & (~Experiment.is_control)'
-        )
+        if release.name != 'dnase':
+            non_input_experiments = db.relationship(
+                'Experiment',
+                primaryjoin='(Experiment.cl_id == CellLine.cl_id) & (~Experiment.is_control)'
+            )
+        else:
+            non_input_experiments = db.relationship(
+                'Experiment',
+                primaryjoin='Experiment.cl_id == CellLine.cl_id'
+            )
 
         @aggregated('cl_aggregated_snps', db.Column(db.Integer))
         def aggregated_snps_count(self):
@@ -57,6 +89,27 @@ for release in Release.__subclasses__():
         @aggregated('non_input_experiments', db.Column(db.Integer))
         def experiments_count(self):
             return db.func.count(Experiment.exp_id)
+
+        if int(release.version) >= 3:
+            cl_aggregated_snps005 = db.relationship(
+                'CellLineSNP',
+                primaryjoin='(CellLine.cl_id == CellLineSNP.cl_id) & (CellLineSNP.best_p_value >= {})'.format(
+                    -np.log10(0.05))
+            )
+
+            @aggregated('cl_aggregated_snps005', db.Column(db.Integer))
+            def aggregated_snps_count005(self):
+                return db.func.count(CellLineSNP.cl_snp_id)
+
+            cl_aggregated_snps010 = db.relationship(
+                'CellLineSNP',
+                primaryjoin='(CellLine.cl_id == CellLineSNP.cl_id) & (CellLineSNP.best_p_value >= {})'.format(
+                    -np.log10(0.1))
+            )
+
+            @aggregated('cl_aggregated_snps010', db.Column(db.Integer))
+            def aggregated_snps_count010(self):
+                return db.func.count(CellLineSNP.cl_snp_id)
 
         def __repr__(self):
             return '<CellLine #{0.cl_id}, {0.name}>'.format(self)
@@ -68,22 +121,24 @@ for release in Release.__subclasses__():
         __table_args__ = (
             db.Index('align_index', 'align'),
         )
-        if float(release.version) >= 2:
-            exp_id = db.Column(db.String(10), primary_key=True)
-            align = db.Column(db.String(10), nullable=False)
-        else:
-            exp_id = db.Column(db.Integer, primary_key=True)
-            align = db.Column(db.Integer, nullable=False)
+        exp_id = db.Column(db.String(10), primary_key=True)
+        align = db.Column(db.String(13), nullable=False)
 
-        tf_id = db.Column(db.Integer, db.ForeignKey('transcription_factors.tf_id'), nullable=True)
+        if release.name != 'dnase':
+            tf_id = db.Column(db.Integer, db.ForeignKey('transcription_factors.tf_id'), nullable=True)
         cl_id = db.Column(db.Integer, db.ForeignKey('cell_lines.cl_id'), nullable=False)
-        geo_gse = db.Column(db.String(10))
-        encode = db.Column(db.String(11))
-        is_control = db.Column(db.Boolean, nullable=False, server_default='0')
+        if release.name != 'dnase':
+            geo_gse = db.Column(db.String(10))
+        else:
+            geo_gse = db.Column(db.String(26))
+        encode = db.Column(db.String(30))
+        if release.name != 'dnase':
+            is_control = db.Column(db.Boolean, nullable=False, server_default='0')
         bad_group_id = db.Column(db.Integer, db.ForeignKey('bad_groups.bad_group_id'))
 
         bad_group = db.relationship('BADGroup', backref='experiments')
-        transcription_factor = db.relationship('TranscriptionFactor', backref='experiments')
+        if release.name != 'dnase':
+            transcription_factor = db.relationship('TranscriptionFactor', backref='experiments')
         cell_line = db.relationship('CellLine', backref='experiments')
 
         def __repr__(self):
@@ -95,7 +150,7 @@ for release in Release.__subclasses__():
         __bind_key__ = release.name
 
         bad_group_id = db.Column(db.Integer, primary_key=True)
-        bad_group_name = db.Column(db.String(100), nullable=False, unique=True)
+        bad_group_name = db.Column(db.String(200), nullable=False, unique=True)
 
         def __repr__(self):
             return '<BAD Group #{0.bad_group_id}: {0.bad_group_name}>'.format(self)
@@ -104,15 +159,23 @@ for release in Release.__subclasses__():
     class ExpSNP(db.Model):
         __tablename__ = 'exp_snps'
         __bind_key__ = release.name
-        __table_args__ = (
-            db.UniqueConstraint('exp_id', 'tf_snp_id',
-                                name='unique_tf_aggregated_snp'),
-            db.UniqueConstraint('exp_id', 'cl_snp_id',
-                                name='unique_cl_aggregated_snp'),
-            db.Index('tf_snp_index', 'tf_snp_id'),
-            db.Index('cl_snp_index', 'cl_snp_id'),
-            db.Index('exp_index', 'exp_id'),
-        )
+        if release.name != 'dnase':
+            __table_args__ = (
+                db.UniqueConstraint('exp_id', 'tf_snp_id',
+                                    name='unique_tf_aggregated_snp'),
+                db.UniqueConstraint('exp_id', 'cl_snp_id',
+                                    name='unique_cl_aggregated_snp'),
+                db.Index('tf_snp_index', 'tf_snp_id'),
+                db.Index('cl_snp_index', 'cl_snp_id'),
+                db.Index('exp_index', 'exp_id'),
+            )
+        else:
+            __table_args__ = (
+                db.UniqueConstraint('exp_id', 'cl_snp_id',
+                                    name='unique_cl_aggregated_snp'),
+                db.Index('cl_snp_index', 'cl_snp_id'),
+                db.Index('exp_index', 'exp_id'),
+            )
 
         exp_snp_id = db.Column(db.Integer, primary_key=True)
         ref_readcount = db.Column(db.Integer, nullable=False)
@@ -120,14 +183,13 @@ for release in Release.__subclasses__():
         p_value_ref = db.Column(db.Float)
         p_value_alt = db.Column(db.Float)
         bad = db.Column(db.Enum(*bads))
-        tf_snp_id = db.Column(db.Integer, db.ForeignKey('tf_snps.tf_snp_id'))
+        if release.name != 'dnase':
+            tf_snp_id = db.Column(db.Integer, db.ForeignKey('tf_snps.tf_snp_id'))
         cl_snp_id = db.Column(db.Integer, db.ForeignKey('cl_snps.cl_snp_id'))
-        if float(release.version) >= 2:
-            exp_id = db.Column(db.String(10), db.ForeignKey('experiments.exp_id'), nullable=False)  # FIXME
-        else:
-            exp_id = db.Column(db.Integer, db.ForeignKey('experiments.exp_id'), nullable=False)
+        exp_id = db.Column(db.String(10), db.ForeignKey('experiments.exp_id'), nullable=False)
 
-        tf_aggregated_snp = db.relationship('TranscriptionFactorSNP', backref='exp_snps')
+        if release.name != 'dnase':
+            tf_aggregated_snp = db.relationship('TranscriptionFactorSNP', backref='exp_snps')
         cl_aggregated_snp = db.relationship('CellLineSNP', backref='exp_snps')
         experiment = db.relationship('Experiment', backref='exp_snps')
 
@@ -137,11 +199,12 @@ for release in Release.__subclasses__():
             backref='exp_snps'
         )
 
-        transcription_factor = db.relationship(
-            'TranscriptionFactor',
-            secondary='tf_snps',
-            backref='exp_snps'
-        )
+        if release.name != 'dnase':
+            transcription_factor = db.relationship(
+                'TranscriptionFactor',
+                secondary='tf_snps',
+                backref='exp_snps'
+            )
 
         def __repr__(self):
             return '<ExpSNP #{0.exp_snp_id}, {0.exp_id}, {0.tf_snp_id}, {0.cl_snp_id}>'.format(self)
@@ -165,11 +228,11 @@ for release in Release.__subclasses__():
 
         ref = db.Column(db.Enum(*nucleotides), nullable=False)
         rs_id = db.Column(db.Integer, nullable=False)
-        context = db.Column(db.String(51))
 
-        tf_aggregated_snps = db.relationship('TranscriptionFactorSNP',
-                                             order_by='TranscriptionFactorSNP.best_p_value.desc()',
-                                             back_populates='snp')
+        if release.name != 'dnase':
+            tf_aggregated_snps = db.relationship('TranscriptionFactorSNP',
+                                                 order_by='TranscriptionFactorSNP.best_p_value.desc()',
+                                                 back_populates='snp')
         cl_aggregated_snps = db.relationship('CellLineSNP',
                                              order_by='CellLineSNP.best_p_value.desc()',
                                              back_populates='snp')
@@ -180,6 +243,14 @@ for release in Release.__subclasses__():
         has_qtl_associations = db.Column(db.Boolean)
         has_grasp_associations = db.Column(db.Boolean)
         has_finemapping_associations = db.Column(db.Boolean)
+
+        if int(release.version) >= 3:
+            best_p_value = db.Column(db.Float, index=True)
+            fdr_class = db.Column(db.Enum(*fdr_classes), index=True)
+            best_es = db.Column(db.Float, index=True)
+            es_class = db.Column(db.Enum(*es_classes), index=True)
+
+        context = db.Column(db.String(51))
 
         has_concordance = db.Column(db.Boolean, index=True, server_default='0', nullable=False)
 
@@ -199,51 +270,85 @@ for release in Release.__subclasses__():
         peak_calls = db.Column(db.Integer)
         peak_callers = db.Column(db.Integer)
 
-        @hybrid_property
-        def best_p_value(self):
-            return max(self.log_p_value_alt, self.log_p_value_ref)
+        if int(release.version) >= 3:
+            best_p_value = db.Column(db.Float)
+            fdr_class = db.Column(db.Enum(*fdr_classes))
+            best_es = db.Column(db.Float)
+            es_class = db.Column(db.Enum(*es_classes))
 
-        @best_p_value.expression
-        def best_p_value(cls):
-            return db.func.max(cls.log_p_value_alt, cls.log_p_value_ref)
+        else:
+            @hybrid_property
+            def best_p_value(self):
+                return max(self.log_p_value_alt, self.log_p_value_ref)
+
+            @best_p_value.expression
+            def best_p_value(cls):
+                return db.func.greatest(cls.log_p_value_alt, cls.log_p_value_ref)
 
 
-    class TranscriptionFactorSNP(AggregatedSNP):
-        __tablename__ = 'tf_snps'
-        __bind_key__ = release.name
-        __table_args__ = (db.ForeignKeyConstraint(['chromosome', 'position', 'alt'],
-                                                  ['snps.chromosome', 'snps.position', 'snps.alt']),
-                          db.Index('unique_tf_mutation_index', 'chromosome', 'position', 'alt', 'tf_id'),
-                          db.Index('tf_id_index', 'tf_id'),
-                          db.Index('motif_concordance_index', 'motif_concordance'),
-                          )
+    if release.name != 'dnase':
+        class TranscriptionFactorSNP(AggregatedSNP):
+            __tablename__ = 'tf_snps'
+            __bind_key__ = release.name
+            if int(release.version) >= 3:
+                __table_args__ = (db.ForeignKeyConstraint(['chromosome', 'position', 'alt'],
+                                                          ['snps.chromosome', 'snps.position', 'snps.alt']),
+                                  db.UniqueConstraint('chromosome', 'position', 'alt', 'tf_id',
+                                                      name='tf_unique_mutation'),
+                                  db.Index('tf_id_index', 'tf_id'),
+                                  db.Index('motif_concordance_index', 'motif_concordance'),
+                                  db.Index('ix_tf_snps_best_p_value', 'best_p_value'),
+                                  db.Index('ix_tf_snps_fdr_class', 'fdr_class'),
+                                  db.Index('ix_tf_snps_best_es', 'best_es'),
+                                  db.Index('ix_tf_snps_es_class', 'es_class'),
+                                  )
+            else:
+                __table_args__ = (db.ForeignKeyConstraint(['chromosome', 'position', 'alt'],
+                                                          ['snps.chromosome', 'snps.position', 'snps.alt']),
+                                  db.UniqueConstraint('chromosome', 'position', 'alt', 'tf_id',
+                                                      name='tf_unique_mutation'),
+                                  db.Index('tf_id_index', 'tf_id'),
+                                  db.Index('motif_concordance_index', 'motif_concordance'),
+                                  )
 
-        tf_snp_id = db.Column(db.Integer, primary_key=True)
-        tf_id = db.Column(db.Integer, db.ForeignKey('transcription_factors.tf_id'), nullable=False)
-        motif_log_p_ref = db.Column(db.Float)
-        motif_log_p_alt = db.Column(db.Float)
-        motif_log_2_fc = db.Column(db.Float)
-        motif_orientation = db.Column(db.Boolean)
-        motif_position = db.Column(db.Integer)
-        motif_concordance = db.Column(db.Enum('Concordant', 'Discordant', 'Weak Concordant', 'Weak Discordant', 'No Hit'), nullable=True)
+            tf_snp_id = db.Column(db.Integer, primary_key=True)
+            tf_id = db.Column(db.Integer, db.ForeignKey('transcription_factors.tf_id'), nullable=False)
+            motif_log_p_ref = db.Column(db.Float)
+            motif_log_p_alt = db.Column(db.Float)
+            motif_log_2_fc = db.Column(db.Float)
+            motif_orientation = db.Column(db.Boolean)
+            motif_position = db.Column(db.Integer)
+            motif_concordance = db.Column(
+                db.Enum('Concordant', 'Discordant', 'Weak Concordant', 'Weak Discordant', 'No Hit'), nullable=True)
 
-        snp = db.relationship('SNP', back_populates='tf_aggregated_snps')
-        transcription_factor = db.relationship('TranscriptionFactor', backref='tf_aggregated_snps')
+            snp = db.relationship('SNP', back_populates='tf_aggregated_snps')
+            transcription_factor = db.relationship('TranscriptionFactor', backref='tf_aggregated_snps')
 
-        def __repr__(self):
-            return '<TranscriptionFactorSNP #{0.tf_snp_id} at {0.chromosome} {0.position} {0.alt}>'.format(self)
+            def __repr__(self):
+                return '<TranscriptionFactorSNP #{0.tf_snp_id} at {0.chromosome} {0.position} {0.alt}>'.format(self)
 
 
     class CellLineSNP(AggregatedSNP):
         __tablename__ = 'cl_snps'
         __bind_key__ = release.name
-        __table_args__ = (db.ForeignKeyConstraint(['chromosome', 'position', 'alt'],
-                                                  ['snps.chromosome', 'snps.position', 'snps.alt']),
-                          db.UniqueConstraint('chromosome', 'position', 'alt', 'cl_id',
-                                              name='cell_line_unique_mutation'),
-                          db.Index('unique_cl_mutation_index', 'chromosome', 'position', 'alt', 'cl_id'),
-                          db.Index('cl_id_index', 'cl_id')
-                          )
+        if int(release.version) >= 3:
+            __table_args__ = (db.ForeignKeyConstraint(['chromosome', 'position', 'alt'],
+                                                      ['snps.chromosome', 'snps.position', 'snps.alt']),
+                              db.UniqueConstraint('chromosome', 'position', 'alt', 'cl_id',
+                                                  name='cell_line_unique_mutation'),
+                              db.Index('cl_id_index', 'cl_id'),
+                              db.Index('ix_cl_snps_best_p_value', 'best_p_value'),
+                              db.Index('ix_cl_snps_fdr_class', 'fdr_class'),
+                              db.Index('ix_cl_snps_best_es', 'best_es'),
+                              db.Index('ix_cl_snps_es_class', 'es_class'),
+                              )
+        else:
+            __table_args__ = (db.ForeignKeyConstraint(['chromosome', 'position', 'alt'],
+                                                      ['snps.chromosome', 'snps.position', 'snps.alt']),
+                              db.UniqueConstraint('chromosome', 'position', 'alt', 'cl_id',
+                                                  name='cell_line_unique_mutation'),
+                              db.Index('cl_id_index', 'cl_id')
+                              )
 
         cl_snp_id = db.Column(db.Integer, primary_key=True)
         cl_id = db.Column(db.Integer, db.ForeignKey('cell_lines.cl_id'), nullable=False)
@@ -264,7 +369,7 @@ for release in Release.__subclasses__():
 
         phenotype_id = db.Column(db.Integer, primary_key=True)
         db_name = db.Column(db.String(100), index=True)
-        phenotype_name = db.Column(db.String(100))
+        phenotype_name = db.Column(db.String(200))
 
         snps = db.relationship(
             'SNP',
@@ -299,12 +404,24 @@ for release in Release.__subclasses__():
         start_pos = db.Column(db.Integer, nullable=False)
         end_pos = db.Column(db.Integer, nullable=False)
         orientation = db.Column(db.Boolean, nullable=False)
-        snps_count = db.Column(db.Integer)
+        if int(release.version) >= 3:
+            snps_count = db.Column(db.Integer)
+            snps_count010 = db.Column(db.Integer)
+            eqtl_snps_count = db.Column(db.Integer)
+            eqtl_snps_count010 = db.Column(db.Integer)
+        else:
+            snps_count = db.Column(db.Integer)
 
         snps_by_target = db.relationship(
             'SNP',
             secondary='genes_SNPs',
             backref='target_genes'
+        )
+
+        proximal_promoter_snps = db.relationship(
+            'SNP',
+            secondary='genes_promoter_SNPs',
+            backref='genes_by_proximal_promoter'
         )
 
 
@@ -320,23 +437,55 @@ for release in Release.__subclasses__():
                           )
 
         pair_id = db.Column(db.Integer, primary_key=True)
-        gene_id = db.Column(db.Integer, db.ForeignKey('genes.gene_id'),
-                                 nullable=False)
+        gene_id = db.Column(db.String(30), db.ForeignKey('genes.gene_id'),
+                            nullable=False)
 
-    models = [
-        TranscriptionFactor,
-        CellLine,
-        Experiment,
-        ExpSNP,
-        SNP,
-        TranscriptionFactorSNP,
-        CellLineSNP,
-        Phenotype,
-        PhenotypeSNPCorrespondence,
-        BADGroup,
-        Gene,
-        GeneSNPCorrespondence,
-    ]
 
-    for abstract_model, model in zip(abstract_models, models):
-        setattr(release, abstract_model.__name__, model)
+    class ProximalPromoterSNPCorrespondence(GenomePolymorphismLocation):
+        __tablename__ = 'genes_promoter_SNPs'
+        __bind_key__ = release.name
+        __table_args__ = (db.ForeignKeyConstraint(['chromosome', 'position', 'alt'],
+                                                  ['snps.chromosome', 'snps.position', 'snps.alt']),
+                          db.UniqueConstraint('chromosome', 'position', 'alt', 'gene_id',
+                                              name='unique_gene_promoter_snp_pair'),
+                          db.Index('snp_genes_promoter_SNPs_index', 'chromosome', 'position', 'alt'),
+                          db.Index('gene_promoter_index', 'gene_id')
+                          )
+
+        pair_id = db.Column(db.Integer, primary_key=True)
+        gene_id = db.Column(db.String(30), db.ForeignKey('genes.gene_id'),
+                            nullable=False)
+
+
+    if release.name != 'dnase':
+        models = [
+            TranscriptionFactor,
+            CellLine,
+            Experiment,
+            ExpSNP,
+            SNP,
+            TranscriptionFactorSNP,
+            CellLineSNP,
+            Phenotype,
+            PhenotypeSNPCorrespondence,
+            BADGroup,
+            Gene,
+            GeneSNPCorrespondence,
+        ]
+        for abstract_model, model in zip(abstract_models, models):
+            setattr(release, abstract_model.__name__, model)
+    else:
+        models = [
+            CellLine,
+            Experiment,
+            ExpSNP,
+            SNP,
+            CellLineSNP,
+            Phenotype,
+            PhenotypeSNPCorrespondence,
+            BADGroup,
+            Gene,
+            GeneSNPCorrespondence,
+        ]
+        for abstract_model, model in zip(abstract_models_dnase, models):
+            setattr(release, abstract_model.__name__, model)

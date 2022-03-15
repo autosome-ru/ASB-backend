@@ -3,10 +3,11 @@ import os
 import json
 import numpy as np
 
-from ASB_app.models import CandidateSNP, CandidateRS, CandidateTFRS, CandidateCLRS
+from ASB_app.constants import chromosomes
+from ASB_app.models import CandidateSNP, CandidateRS, CandidateTFRS, CandidateCLRS, PositionHash, LDIslandsInfo
 from ASB_app.utils.statistics import get_fdr_class, get_es_class
 
-current_release = releases.ReleaseSusan
+current_release = releases.ReleaseZanthar
 session = current_release.session
 db = current_release.db
 
@@ -34,14 +35,15 @@ current_release.BADGroup, \
 current_release.Gene
 
 
-TF = 1
-CL = 1
-SNP_RS = 1
-TF_SNP = 1
-CL_SNP = 1
+TF = 0
+CL = 0
+SNP_RS = 0
+TF_SNP = 0
+CL_SNP = 0
+HASH = 0
+LD = 0
 
-
-release_path = os.path.expanduser('~/DataChipRescaleW/')
+release_path = os.path.expanduser('~/DataChipZantharFixed/')
 parameters_path = os.path.expanduser('~/Configs/')
 
 conv_bad = dict(zip(
@@ -50,7 +52,7 @@ conv_bad = dict(zip(
 ))
 
 if __name__ == '__main__':
-    with open(os.path.join(release_path, 'release_stats', 'convert_cl_names.json')) as file:
+    with open(os.path.join(release_path, 'release_stats', 'convert_cell_lines.json')) as file:
         cl_dict = json.loads(file.readline())
 
     cl_dict_reverse = {}
@@ -106,7 +108,8 @@ if __name__ == '__main__':
 
                     row['ID'] = int(row['ID'][row['ID'].rfind('rs') + 2:])
 
-                    min_pv = -np.log10(min(row['fdrp_bh_ref'], row['fdrp_bh_alt']))
+                    min_pv = -np.log10(min(row['fdrp_bh_ref'], row['fdrp_bh_alt'])) \
+                        if (row['fdrp_bh_ref'] != 0 and row['fdrp_bh_alt'] != 0) else 310
                     max_es = max([x for x in (row['es_mean_ref'],
                                              row['es_mean_alt']) if x is not None], default=None)
 
@@ -169,3 +172,59 @@ if __name__ == '__main__':
             snps.append(snp)
         session.add_all(snps)
         session.commit()
+
+    if HASH:
+        phs = []
+        rs_ids = set()
+        for cand in CandidateSNP.query:
+            if CandidateSNP.rs_id in rs_ids:
+                continue
+            else:
+                phs.append(
+                    PositionHash(
+                        rs_id=cand.rs_id,
+                        position_hash=chromosomes.index(cand.chromosome) * 10 ** 9 + cand.position
+                    )
+                )
+                rs_ids.add(CandidateSNP.rs_id)
+        session.add_all(phs)
+        session.commit()
+        session.close()
+
+    if LD:
+        lds = []
+        for cand in CandidateRS.query:
+            lds.append(
+                LDIslandsInfo(
+                    rs_id=cand.rs_id,
+                )
+            )
+        session.add_all(lds)
+        session.commit()
+        session.close()
+
+        print('created')
+
+        adastra_rs = set(*zip(*session.query(CandidateRS.rs_id)))
+        for file, column in zip(('asn_rs.tsv', 'afr_rs.tsv', 'eur_rs.tsv'), ('ld_asn', 'ld_afr', 'ld_eur')):
+            print(column)
+            island_num = {}
+            num = 0
+            num_rs = {}
+            with open(os.path.join('D:\Sashok\Desktop\ANANASTRA', file)) as f:
+                for line in f:
+                    line = line.strip('\n').split('\t')
+                    rs = int(line[0][2:])
+                    if rs not in adastra_rs:
+                        continue
+                    island = (line[1], line[2], line[3])
+                    if island not in island_num:
+                        print(island)
+                        island_num[island] = num
+                        num += 1
+                    num_rs.setdefault(num, set()).add(rs)
+            for num, rs_set in num_rs.items():
+                print(num)
+                session.execute(db.update(LDIslandsInfo).where(LDIslandsInfo.rs_id.in_(rs_set)).values(**{column: num}))
+            session.commit()
+            session.close()

@@ -16,10 +16,16 @@ class ReleaseSoos(Release):
     full_version = '1.6'
 
 
-class ReleaseFord(Release):
-    name = 'ford'
-    version = '2'
-    full_version = '2.1'
+class ReleaseSusan(Release):
+    name = 'susan'
+    version = '3'
+    full_version = '3.5'
+
+
+class ReleaseZanthar(Release):
+    name = 'zanthar'
+    version = '4'
+    full_version = '4.0'
 
 
 def get_release_by_version(version):
@@ -29,4 +35,4 @@ def get_release_by_version(version):
     raise ReleaseNotFound('No release: v{}'.format(version))
 
 
-current_release = ReleaseFord
+current_release = ReleaseZanthar

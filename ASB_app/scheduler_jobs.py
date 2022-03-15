@@ -1,7 +1,7 @@
 from ASB_app import scheduler, logger
 from ASB_app.models import Ticket
 from ASB_app.service import ananastra_service
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from ASB_app.releases import current_release
 session = current_release.session

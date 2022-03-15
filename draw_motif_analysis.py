@@ -2,10 +2,10 @@ from svgutils import transform
 import numpy as np
 from math import lgamma
 import os
+from tqdm import tqdm
 
 from ASB_app import *
-from ASB_app.releases import ReleaseFord, ReleaseSoos
-current_release = ReleaseFord
+from ASB_app.releases import current_release
 
 session = current_release.session
 SNP = current_release.SNP
@@ -109,8 +109,8 @@ if __name__ == '__main__':
 
     letters = ['A', 'C', 'G', 'T']
 
-    unit_width = 300
-    unit_height = 600
+    unit_width = 30
+    unit_height = 60
 
     motif_gap = 0.1
     snp_gap = 0.1
@@ -128,7 +128,7 @@ if __name__ == '__main__':
     dna_h = 1/3*2/3*0.8
 
     concordance_indent = 1
-    concordance_scale = 3000/(3351.318*(unit_height/300))
+    concordance_scale = 10/(3351.318*2) * unit_width
     conc_self_width = 331.204
 
     visible_cut_tr = 0.05
@@ -179,8 +179,8 @@ if __name__ == '__main__':
         'g': 'c',
     }
 
-    for tf_snp, snp, tf in session.query(TranscriptionFactorSNP, SNP, TranscriptionFactor).filter(TranscriptionFactorSNP.motif_concordance.isnot(None) &
-                                                                         TranscriptionFactorSNP.motif_concordance.isnot('No Hit')).join(
+    for tf_snp, snp, tf in tqdm(session.query(TranscriptionFactorSNP, SNP, TranscriptionFactor).filter(TranscriptionFactorSNP.motif_concordance.isnot(None) &
+                                                                                                  (TranscriptionFactorSNP.motif_concordance != 'No Hit')).join(
         SNP,
         (SNP.chromosome == TranscriptionFactorSNP.chromosome) &
         (SNP.position == TranscriptionFactorSNP.position) &
@@ -188,14 +188,17 @@ if __name__ == '__main__':
     ).join(
         TranscriptionFactor,
         TranscriptionFactor.tf_id == TranscriptionFactorSNP.tf_id
-    ):
+    ), total=71445):
         for draw_revcomp in True, False:
+            # if os.path.isfile('D:\Sashok\svgs_{}/{}_{}_{}{}.svg.gz'.format(current_release.name, tf.name, snp.rs_id, snp.alt, '_revcomp' if draw_revcomp else '')):
+            #     continue
+
             pcm_filename = name_dict[tf.name]
 
             pcm_path = os.path.expanduser('~/pcm/{}'.format(pcm_filename))
 
             context = ' ' * 20 + (''.join([get_revcomp[x] for x in snp.context[::-1]]) if draw_revcomp else snp.context) + ' ' * 20
-            print(context)
+            # print(context)
             alt = get_revcomp[snp.alt] if draw_revcomp else snp.alt
             pos_in_motif = tf_snp.motif_position
             motif_pref = 1/np.power(10, tf_snp.motif_log_p_ref)
@@ -207,21 +210,21 @@ if __name__ == '__main__':
             fdr = 1/np.power(10, tf_snp.log_p_value_ref) if asb_is_ref else 1/np.power(10, tf_snp.log_p_value_alt)
 
             m, heights = get_heights(pcm_path, mode='KDIC')
-            print(full_gap, text_h, indent)
+            # print(full_gap, text_h, indent)
             fig_x = (m + add_letters + add_letters + concordance_indent) * unit_width
             fig_y = unit_height * (1 + full_gap + text_h + indent + hill_sum_height + strands_h + hill_gap + 0.35)
-            fig = transform.SVGFigure("{}px".format(fig_x), "{}px".format(fig_y))
+            fig = transform.SVGFigure("{}".format(fig_x), "{}".format(fig_y))
             txt_gen = transform.TextElement(fig_x - 0.1 * unit_width, fig_y - 0.1 * unit_height,
-                                            'ADASTRA v{}'.format(current_release.full_version), size=str(p_value_text_h * unit_height) + 'px',
+                                            'ADASTRA v{}'.format(current_release.full_version), size=str(p_value_text_h * unit_height),
                                             anchor='end', color='#a8a8a8', font='PT Sans, Arial')
-            txt_snp = transform.TextElement(fig_x - 0.1 * unit_width, fig_y - (2 * p_value_text_h + 0.1) * unit_height,
-                                            'rs{}'.format(snp.rs_id), size=str(p_value_text_h * unit_height) + 'px',
+            txt_snp = transform.TextElement(fig_x - 0.1 * unit_width, fig_y - (2 * p_value_text_h + 0.15) * unit_height,
+                                            'rs{}'.format(snp.rs_id), size=str(p_value_text_h * unit_height),
                                             anchor='end', color='#a8a8a8', font='PT Sans, Arial')
-            txt_tf = transform.TextElement(fig_x - 0.1 * unit_width, fig_y - (p_value_text_h + 0.1) * unit_height,
-                                           tf.name, size=str(p_value_text_h * unit_height) + 'px',
+            txt_tf = transform.TextElement(fig_x - 0.1 * unit_width, fig_y - (p_value_text_h + 0.15) * unit_height,
+                                           tf.name, size=str(p_value_text_h * unit_height),
                                            anchor='end', color='#a8a8a8', font='PT Sans, Arial')
             txt_strand = transform.TextElement(0.1 * unit_width, fig_y - (0.1) * unit_height,
-                                           '({}) strand'.format('-' if draw_revcomp else '+'), size=str(p_value_text_h * unit_height) + 'px',
+                                           '({}) strand'.format('-' if draw_revcomp else '+'), size=str(p_value_text_h * unit_height),
                                            anchor='start', color='#a8a8a8', font='PT Sans, Arial')
             fig.append([txt_gen, txt_snp, txt_tf, txt_strand])
 
@@ -236,7 +239,7 @@ if __name__ == '__main__':
 
             hill_width = m
 
-            print(motif_context, pos_in_motif)
+            # print(motif_context, pos_in_motif)
 
             place_letter_on_svg(fig, os.path.expanduser('~/letters/rect.svg'), (pos_in_motif + concordance_indent) * unit_width, 0, (1 + full_gap + text_h/2 + snp_gap/2 + snp_text_h) * unit_height, unit_width)
 
@@ -268,17 +271,17 @@ if __name__ == '__main__':
 
             text_x = pos_in_motif + 1 + concordance_indent
             letter_text = pos_in_motif + 1 - 0.05
-            txt_ref = transform.TextElement(text_x * unit_width, (1.24 + (motif_gap + indent)/2 + p_value_text_h/2) * unit_height, 'P-value: ' + get_scientific_text(motif_pref), size=str(p_value_text_h*unit_height) + 'px', color='#000000de', font='PT Sans, Arial')
-            motif_word_ref = transform.TextElement(text_x * unit_width, (1.24 + (motif_gap + indent)/2 - p_value_text_h/2) * unit_height, 'Motif', size=str(p_value_text_h*unit_height) + 'px', color='#000000de', font='PT Sans, Arial')
-            txt_alt = transform.TextElement(text_x * unit_width, (1 + motif_gap + indent*3/2 + text_h + p_value_text_h/2) * unit_height, 'P-value: ' + get_scientific_text(motif_palt), size=str(p_value_text_h*unit_height) + 'px', color='#000000de', font='PT Sans, Arial')
-            motif_word_alt = transform.TextElement(text_x * unit_width, (1 + motif_gap + indent*3/2 + text_h - p_value_text_h/2) * unit_height, 'Motif', size=str(p_value_text_h*unit_height) + 'px', color='#000000de', font='PT Sans, Arial')
+            txt_ref = transform.TextElement(text_x * unit_width, (1.24 + (motif_gap + indent)/2 + p_value_text_h/2) * unit_height, 'P-value: ' + get_scientific_text(motif_pref), size=str(p_value_text_h*unit_height), color='#000000de', font='PT Sans, Arial')
+            motif_word_ref = transform.TextElement(text_x * unit_width, (1.24 + (motif_gap + indent)/2 - p_value_text_h/2) * unit_height, 'Motif', size=str(p_value_text_h*unit_height), color='#000000de', font='PT Sans, Arial')
+            txt_alt = transform.TextElement(text_x * unit_width, (1 + motif_gap + indent*3/2 + text_h + p_value_text_h/2) * unit_height, 'P-value: ' + get_scientific_text(motif_palt), size=str(p_value_text_h*unit_height), color='#000000de', font='PT Sans, Arial')
+            motif_word_alt = transform.TextElement(text_x * unit_width, (1 + motif_gap + indent*3/2 + text_h - p_value_text_h/2) * unit_height, 'Motif', size=str(p_value_text_h*unit_height), color='#000000de', font='PT Sans, Arial')
             txt_ref_letter = transform.TextElement((letter_text) * unit_width,
                                             (1.24 + (motif_gap + indent)/2 - p_value_text_h/2) * unit_height,
                                             'Ref',
-                                            size=str(p_value_text_h * unit_height) + 'px', color='#000000de',
+                                            size=str(p_value_text_h * unit_height), color='#000000de',
                                             font='PT Sans, Arial', anchor='end')
             txt_alt_letter = transform.TextElement((letter_text) * unit_width, (1 + motif_gap + indent*3/2 + text_h + p_value_text_h/2) * unit_height, 'Alt',
-                                                   size=str(p_value_text_h * unit_height) + 'px', color='#000000de',
+                                                   size=str(p_value_text_h * unit_height), color='#000000de',
                                                    font='PT Sans, Arial', anchor='end')
 
             fig.append([txt_ref, txt_alt, motif_word_ref, motif_word_alt, txt_ref_letter, txt_alt_letter])
@@ -290,8 +293,8 @@ if __name__ == '__main__':
                 ef_text_y = 1 + full_gap + text_h + indent + hill_gap + ref_height + strands_h + alt_height*1/3 - p_value_text_h/2
                 fdr_text_y = 1 + full_gap + text_h + indent + hill_gap + ref_height + strands_h + alt_height*2/3 - p_value_text_h/2
 
-            txt_ef = transform.TextElement(((m-1)/2 + add_letters + 0.7 + concordance_indent) * unit_width, ef_text_y * unit_height, 'ASB Effect Size, log₂ : {:.2f}'.format(ef), size=str(p_value_text_h*unit_height) + 'px', anchor='middle', color='#000000de', font='PT Sans, Arial')
-            txt_fdr = transform.TextElement(((m-1)/2 + add_letters + 0.7 + concordance_indent) * unit_width, fdr_text_y * unit_height, 'ASB FDR: ' + get_scientific_text(fdr), size=str(p_value_text_h*unit_height) + 'px', anchor='middle', color='#000000de', font='PT Sans, Arial')
+            txt_ef = transform.TextElement(((m-1)/2 + add_letters + 0.7 + concordance_indent) * unit_width, ef_text_y * unit_height, 'ASB Effect Size, log₂ : {:.2f}'.format(ef), size=str(p_value_text_h*unit_height), anchor='middle', color='#000000de', font='PT Sans, Arial')
+            txt_fdr = transform.TextElement(((m-1)/2 + add_letters + 0.7 + concordance_indent) * unit_width, fdr_text_y * unit_height, 'ASB FDR: ' + get_scientific_text(fdr), size=str(p_value_text_h*unit_height), anchor='middle', color='#000000de', font='PT Sans, Arial')
             fig.append([txt_ef, txt_fdr])
 
             bracket_thick = 10
@@ -302,4 +305,4 @@ if __name__ == '__main__':
             place_letter_on_svg(fig, os.path.expanduser('~/letters/rect2.svg'), conc_label_space*2*unit_width+concordance_w, (1/2 - bracket_thick/600/2) * unit_height, bracket_thick/600*unit_height, (add_letters + concordance_indent - 3*conc_label_space)*unit_width - concordance_w)
             place_letter_on_svg(fig, os.path.expanduser('~/letters/rect2.svg'), conc_label_space*2*unit_width+concordance_w, (1 + full_gap + text_h + indent + hill_gap + strands_h/2 + ref_height - bracket_thick/600/2) * unit_height, bracket_thick/600*unit_height, (add_letters + concordance_indent - 3*conc_label_space)*unit_width - concordance_w)
 
-            fig.save('D:\Shashok\svgs_{}/{}_{}_{}{}.svg'.format(current_release.name, tf.name, snp.rs_id, snp.alt, '_revcomp' if draw_revcomp else ''))
+            fig.save('D:\Sashok\svgs_{}/{}_{}_{}{}.svg'.format(current_release.name, tf.name, snp.rs_id, snp.alt, '_revcomp' if draw_revcomp else ''))

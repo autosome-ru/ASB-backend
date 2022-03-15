@@ -5,18 +5,19 @@ from datetime import datetime
 from flask import request
 
 from flask_restplus import Resource
-
 from ASB_app import executor
+from ASB_app.constants import fdr_choices, background_choices
+from ASB_app.exceptions import ParsingError
 from ASB_app.executor_jobs import process_snp_file
 from ASB_app.serializers import ticket_model, ticket_model_short
-from ASB_app.service import ananastra_service, FileNotProcessed
+from ASB_app.service import ananastra_service, FileNotProcessed, get_path_by_ticket_id
 from ASB_app.service import get_ticket_id_from_path, get_tickets_dir
 from ASB_app.utils import PaginationMixin
 from ASB_app.models import Ticket
 
 from ASB_app.releases import current_release
 
-from ASB_app.routes import file_parser, pagination_parser, result_param_parser
+from ASB_app.routes import file_parser, pagination_parser, result_param_parser, thresholds_parser
 
 api = current_release.api
 
@@ -38,7 +39,8 @@ class CommitFile(Resource):
         if 'file' not in request.files:
             api.abort(400, 'No files')
         else:
-            fd, filename = tempfile.mkstemp(prefix=current_release.name + '_', suffix='.tsv', dir=get_tickets_dir('accepted'))
+            fd, filename = tempfile.mkstemp(prefix=current_release.name + '_', suffix='.tsv',
+                                            dir=get_tickets_dir('accepted'))
             request.files['file'].save(filename)
             os.close(fd)
             ticket_id = get_ticket_id_from_path(filename)
@@ -49,12 +51,14 @@ class CommitFile(Resource):
 class ProcessTicket(Resource):
     @api.response(202, 'Ticket accepted for processing')
     @api.response(404, 'Ticket not found')
+    @api.expect(thresholds_parser)
     def post(self, ticket_id):
         """
         Submits a ticket for processing
         """
-        ananastra_service.update_ticket_status(ticket_id, 'Processing')
-        process_snp_file.submit_stored(ticket_id, ticket_id)
+        args = thresholds_parser.parse_args()
+        ananastra_service.start_processing_ticket(ticket_id)
+        process_snp_file.submit_stored(ticket_id, ticket_id, fdr_class=args['fdr'], background=args['background'])
         return {'message': 'success'}, 202
 
 
@@ -118,31 +122,31 @@ class ProcessingResult(Resource):
         args = result_param_parser.parse_args()
         result_param = args['result_param']
         format = args['format']
-        limit = args['limit']
+        size = args['size']
+        if size:
+            offset = size * (args['page'] - 1)
+        else:
+            offset = 0
+        order_by = args['order_by']
+        filter = args['filter']
         try:
+            result = ananastra_service.get_result(ticket_id, result_param, size, offset, order_by, filter, format)
             if format == 'json':
-                return ananastra_service.get_result(ticket_id, result_param, limit, format), 200
+                if result_param in ('all', 'not_found'):
+                    return {'message': 'JSON format is not available for specified options'}, 403
+                return result, 200
             else:
-                return ananastra_service.get_result(ticket_id, result_param, limit, format)
+                return result
         except FileNotProcessed:
             return {'message': 'file is not processed'}, 403
+        except ParsingError:
+            return {'message': 'invalid parameters'}, 403
 
 
-@ananastra_nsp.route('/ticket')
-class TicketCollection(Resource, PaginationMixin):
-    BaseEntity = Ticket
-
-    @api.marshal_list_with(ticket_model)
-    @api.expect(pagination_parser)
-    def get(self):
+@ananastra_nsp.route('/target_genes/<string:ticket_id>')
+class ProcessingResult(Resource):
+    def get(self, ticket_id):
         """
-        Get all tickets
+        Get a list of target genes for a ticket processing result
         """
-        return self.paginate(pagination_parser.parse_args())
-
-    # def delete(self):
-    #     """
-    #     Delete all tickets and corresponding files
-    #     """
-    #     ananastra_service.delete_all_tickets()
-    #     return {'message': 'success'}, 200
+        return ananastra_service.get_target_genes(ticket_id)
