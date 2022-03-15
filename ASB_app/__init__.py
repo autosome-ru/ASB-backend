@@ -1,3 +1,4 @@
+import os
 from logging.config import dictConfig
 
 from flask import Flask, Blueprint
@@ -12,6 +13,14 @@ from flask_cors import CORS
 from ASB_app.releases import Release
 
 from config import Config
+
+
+def check_and_create_dir(path):
+    if not os.path.isdir(path):
+        if os.path.isfile(path):
+            raise AssertionError('File exists {}'.format(path))
+        else:
+            os.mkdir(path)
 
 
 dictConfig({
@@ -68,8 +77,12 @@ executor = Executor(app)
 #     response.headers['Access-Control-Allow-Origin'] = '*'
 #     return response
 
-
 from . import models
 from . import routes
 from . import utils
 from . import scheduler_jobs
+
+from service.ananastra_service import get_tickets_dir
+
+for suffix in ('', 'accepted', 'logs'):
+    check_and_create_dir(get_tickets_dir(suffix=suffix))

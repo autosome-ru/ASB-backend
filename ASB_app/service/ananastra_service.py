@@ -33,6 +33,7 @@ def create_processed_path(ticket_id):
 
 
 def get_tickets_dir(suffix='',):
+    # TODO: make relative path
     return os.path.join(os.path.expanduser('~/'), 'adastra',
                         'tickets', suffix)
 
