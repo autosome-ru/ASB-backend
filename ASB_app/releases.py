@@ -28,6 +28,12 @@ class ReleaseZanthar(Release):
     full_version = '4.0'
 
 
+class ReleaseBillCipher(Release):
+    name = 'billcipher'
+    version = '5'
+    full_version = '5.0'
+
+
 def get_release_by_version(version):
     for release in Release.__subclasses__():
         if release.version == version:
