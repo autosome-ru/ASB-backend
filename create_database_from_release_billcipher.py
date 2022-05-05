@@ -263,7 +263,7 @@ if __name__ == '__main__':
 
     for param in ['TF'] * TF_DICT + ['CL'] * CL_DICT:
         print('Loading {} experiment snps'.format(param))
-        pv_path = release_path + '{}_DICTS/'.format(param)
+        pv_path = os.path.join(release_path, '{}_DICTS/'.format(param))
         for file in tqdm(sorted(os.listdir(pv_path))):
 
             name = file.replace('.json', '')
