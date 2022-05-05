@@ -10,6 +10,8 @@ import json
 import numpy as np
 import pandas as pd
 
+from tqdm import tqdm
+
 from ASB_app.utils.statistics import get_fdr_class, get_es_class
 
 current_release = releases.ReleaseBillCipher
@@ -92,9 +94,7 @@ if __name__ == '__main__':
         cls = []
         used_tf_names = {}
         used_cl_ids = set()
-        for index, row in table.iterrows():
-            if (index + 1) % 1000 == 0:
-                print(index + 1)
+        for index, row in tqdm(table.iterrows(), total=len(table.index)):
 
             if row['TF_UNIPROT_NAME'] is None or pd.isna(row['TF_UNIPROT_NAME']):
                 assert row['EXP_TYPE'] in ('chip_control', 'chipexo_control')
@@ -124,21 +124,22 @@ if __name__ == '__main__':
     for param in ['TF'] * TF + ['CL'] * CL:
         print('Loading {} ASBs'.format(param))
         pv_path = os.path.join(release_path, '{}_P-values/'.format(param))
-        for file in sorted(os.listdir(pv_path)):
+        for file in tqdm(sorted(os.listdir(pv_path))):
+            with open(pv_path + file, 'r') as table:
+                num_rows = len(table.readlines())
             with open(pv_path + file, 'r') as table:
                 name = file.replace('.tsv', '')
                 if param == 'CL':
                     name = cl_dict_reverse[name]
                 # elif param == 'TF':
                 #     name = name.replace('_HUMAN', '')
-                print(name)
 
                 AgrClass = {'TF': TranscriptionFactor, 'CL': CellLine}[param]
                 SNPClass = {'TF': TranscriptionFactorSNP, 'CL': CellLineSNP}[param]
 
                 ag = AgrClass.query.filter(AgrClass.name == name).first()
                 if not ag:
-                    print('There is no {} {}'.format(param, name))
+                    # print('There is no {} {}'.format(param, name))
                     ag = AgrClass(name=name)
                     session.add(ag)
                     session.commit()
@@ -150,9 +151,7 @@ if __name__ == '__main__':
                 ag_snps = []
                 snps = []
                 header = []
-                for index, row in enumerate(table):
-                    print(index + 1) if (index + 1) % 50000 == 0 else ...
-
+                for row in tqdm(table, leave=False, total=num_rows):
                     if row[0] == '#':
                         header = row.strip('\n').split('\t')
                         continue
@@ -243,12 +242,10 @@ if __name__ == '__main__':
     if PHEN:
         print('Loading phenotypes')
         table = pd.read_table(os.path.join(release_path, 'release_stats', 'phenotypes_stats.tsv'))
-        for index, row in table.iterrows():
-            if (index + 1) % 1000 == 0:
-                print(index + 1)
+        for index, row in tqdm(table.iterrows(), total=len(table.index)):
             mutations = SNP.query.filter(SNP.rs_id == int(row['RSID'][row['RSID'].rfind('rs') + 2:])).all()
-            if not mutations:
-                print('No snps for ', int(row['RSID'][2:]))
+            # if not mutations:
+                # print('No snps for ', int(row['RSID'][2:]))
             for database in ['grasp', 'ebi', 'clinvar', 'phewas', 'finemapping', 'QTL']:
                 if str(row[database]) == 'nan':
                     continue
@@ -267,12 +264,11 @@ if __name__ == '__main__':
     for param in ['TF'] * TF_DICT + ['CL'] * CL_DICT:
         print('Loading {} experiment snps'.format(param))
         pv_path = release_path + '{}_DICTS/'.format(param)
-        for file in sorted(os.listdir(pv_path)):
+        for file in tqdm(sorted(os.listdir(pv_path))):
 
             name = file.replace('.json', '')
             if param == 'CL':
                 name = cl_dict_reverse[name]
-            print(name)
 
             with open(pv_path + file, 'r') as info:
                 content = json.loads(info.readline())
@@ -295,6 +291,7 @@ if __name__ == '__main__':
             #     continue
 
             items_length = len(content)
+            total_length = items_length
 
             items = list(content.items())
 
@@ -302,9 +299,10 @@ if __name__ == '__main__':
             chunk_size = 100000
             while items_length - processed > 0:
                 exp_snps = []
-                for index, (key, value) in enumerate(items[processed: min(items_length, processed + chunk_size)], 1):
-                    if index % 10000 == 0:
-                        print(index)
+                for key, value in tqdm(items[processed: min(items_length, processed + chunk_size)],
+                                       leave=False,
+                                       initial=processed,
+                                       total=total_length):
                     chromosome, position, rs_id, ref, alt = key.strip().split('\t')[:5]
                     position = int(position)
                     rs_id = int(rs_id[rs_id.rfind('rs') + 2:])
@@ -374,7 +372,7 @@ if __name__ == '__main__':
                                                 'CL': another_dict.get(parameter.get('TF'))}[param]
                             assert exp_snp.ref_readcount == parameter['ref_counts']
                             try:
-                                assert round(exp_snp.p_value_alt, 4) == round(parameter['alt_pvalues'], 4)
+                                assert round(exp_snp.p_value_alt, 3) == round(parameter['alt_pvalues'], 3)
                             except AssertionError:
                                 print(exp_snp.p_value_alt, parameter['alt_pvalues'])
                             assert exp_snp.bad == conv_bad[parameter['BAD']]
@@ -411,10 +409,7 @@ if __name__ == '__main__':
         cls = []
         used_exp_ids = set()
         used_cl_ids = set([x[0] for x in session.query(CellLine.cl_id.distinct())])
-        for index, row in table.iterrows():
-            if (index + 1) % 1000 == 0:
-                print(index + 1)
-
+        for index, row in tqdm(table.iterrows(), total=len(table.index)):
             if len(exps) >= 990:
                 session.add_all(cls + exps)
                 session.commit()
@@ -453,8 +448,7 @@ if __name__ == '__main__':
             cell_lines_dict = json.loads(f.readline())
         exps = []
         bad_groups = []
-        for key, value in cell_lines_dict.items():
-            print(key)
+        for key, value in tqdm(cell_lines_dict.items()):
             name = key
             bad_group = BADGroup.query.filter(BADGroup.bad_group_name == name).one_or_none()
             if not bad_group:
@@ -484,15 +478,15 @@ if __name__ == '__main__':
         genes = []
         genes_ids = set()
         with open(os.path.expanduser('~/REFERENCE/gencode.v35.annotation.gtf')) as inp:
-            for index, line in enumerate(inp):
+            num_items = len(inp.readlines())
+        with open(os.path.expanduser('~/REFERENCE/gencode.v35.annotation.gtf')) as inp:
+            for line in tqdm(inp, total=num_items):
                 if line.startswith('#'):
                     continue
                 line = line.strip('\n').split('\t')
                 chrom, start_pos, end_pos, orient = line[0], int(line[3]), int(line[4]), line[6]
                 if chrom not in constants.chromosomes or line[2] != 'gene':
                     continue
-                if index % 1000 == 0:
-                    print(index, len(genes))
                 params_dict = dict(map(lambda x: tuple(x.split(' ')), line[8].split('; ')))
                 gene_name = params_dict['gene_name'].strip('"')
                 gene_id = params_dict['gene_id'].strip('"')
@@ -535,11 +529,8 @@ if __name__ == '__main__':
         print('Loading target genes')
         # table = pd.read_table(os.path.join(release_path, 'release_stats', 'phenotypes_stats.tsv'))
         table = pd.read_table(os.path.join(release_path, 'release_stats', 'phenotypes_stats.tsv'))
-        print(len(table.index))
         genes = []
-        for index, row in table.iterrows():
-            if (index + 1) % 1000 == 0:
-                print(index + 1)
+        for index, row in tqdm(table.iterrows(), total=len(table.index)):
             if str(row['QTLg']) in ('nan', '', 'None'):
                 continue
 
@@ -547,8 +538,8 @@ if __name__ == '__main__':
             for id in row['QTLg'].strip('\n').split(';'):
                 target_genes = Gene.query.filter(Gene.gene_id.like(id.split('.')[0] + '%')).all()
                 if target_genes:
-                    if len(set(g.gene_name for g in target_genes)) != 1:
-                        print('Bad genes: {}'.format(target_genes))
+                    # if len(set(g.gene_name for g in target_genes)) != 1:
+                    #     print('Bad genes: {}'.format(target_genes))
                     gene = target_genes[0]
                     all_target_genes.append(gene)
                 else:
@@ -557,8 +548,8 @@ if __name__ == '__main__':
                     all_target_genes.append(gene)
 
             mutations = SNP.query.filter(SNP.rs_id == int(row['RSID'][row['RSID'].rfind('rs') + 2:])).all()
-            if not mutations:
-                print('No snps for ', int(row['RSID'][2:]))
+            # if not mutations:
+            #     print('No snps for ', int(row['RSID'][2:]))
 
             for mutation in mutations:
                 mutation.target_genes = all_target_genes
@@ -568,9 +559,8 @@ if __name__ == '__main__':
     if PROMOTER_GENES:
         print('Updating promoter snps')
         genes = []
-        for index, gene in enumerate(Gene.query.filter(~((Gene.start_pos == 1) & (Gene.end_pos == 1)))):
-            if (index + 1) % 1000 == 0:
-                print(index + 1)
+        q = Gene.query.filter(~((Gene.start_pos == 1) & (Gene.end_pos == 1)))
+        for gene in tqdm(Gene.query.filter(~((Gene.start_pos == 1) & (Gene.end_pos == 1))), total=q.count()):
 
             gene.proximal_promoter_snps = SNP.query.filter(
                     SNP.chromosome == gene.chromosome,
@@ -583,9 +573,10 @@ if __name__ == '__main__':
     if TARGET_GENE_SNP_COUNT:
         print('Updating target snp count')
         q = session.query(Gene, db.func.count('*')).join(SNP, Gene.snps_by_target).group_by(Gene)
-        for i, (gene, count) in enumerate(q, 1):
-            if i % 1000 == 0:
-                print(i)
+        for gene, count in tqdm(
+            session.query(Gene, db.func.count('*')).join(SNP, Gene.snps_by_target).group_by(Gene),
+            total=q.count()
+        ):
             gene.eqtl_snps_count = count
         session.commit()
         for gene in Gene.query.filter(Gene.eqtl_snps_count.is_(None)):
@@ -616,9 +607,11 @@ if __name__ == '__main__':
     if TARGET_GENE_COUNT_010:
         print('Updating target snp count 010')
         q = session.query(Gene, db.func.count('*')).join(SNP, Gene.snps_by_target).filter(SNP.fdr_class.in_(['0.01', '0.05', '0.1'])).group_by(Gene)
-        for i, (gene, count) in enumerate(q, 1):
-            if i % 1000 == 0:
-                print(i)
+        for gene, count in tqdm(
+            session.query(Gene, db.func.count('*')).join(SNP, Gene.snps_by_target).filter(
+                SNP.fdr_class.in_(['0.01', '0.05', '0.1'])).group_by(Gene),
+            total=q.count()
+        ):
             gene.eqtl_snps_count010 = count
         session.commit()
         for gene in Gene.query.filter(Gene.eqtl_snps_count010.is_(None)):
@@ -629,9 +622,10 @@ if __name__ == '__main__':
     if PROMOTER_GENE_COUNT:
         print('Updating promoter snp count')
         q = session.query(Gene, db.func.count('*')).join(SNP, Gene.proximal_promoter_snps).group_by(Gene)
-        for i, (gene, count) in enumerate(q, 1):
-            if i % 1000 == 0:
-                print(i)
+        for gene, count in tqdm(
+            session.query(Gene, db.func.count('*')).join(SNP, Gene.proximal_promoter_snps).group_by(Gene),
+            total=q.count()
+        ):
             gene.snps_count = count
         session.commit()
         for gene in Gene.query.filter(Gene.snps_count.is_(None)):
@@ -642,9 +636,11 @@ if __name__ == '__main__':
     if PROMOTER_GENE_COUNT_010:
         print('Updating promoter snp count 010')
         q = session.query(Gene, db.func.count('*')).join(SNP, Gene.proximal_promoter_snps).filter(SNP.fdr_class.in_(['0.01', '0.05', '0.1'])).group_by(Gene)
-        for i, (gene, count) in enumerate(q, 1):
-            if i % 1000 == 0:
-                print(i)
+        for gene, count in tqdm(
+            session.query(Gene, db.func.count('*')).join(SNP, Gene.proximal_promoter_snps).filter(
+                SNP.fdr_class.in_(['0.01', '0.05', '0.1'])).group_by(Gene),
+            total=q.count()
+        ):
             gene.snps_count010 = count
         session.commit()
         for gene in Gene.query.filter(Gene.snps_count010.is_(None)):
