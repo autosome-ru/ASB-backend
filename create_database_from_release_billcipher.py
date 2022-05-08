@@ -468,7 +468,6 @@ if __name__ == '__main__':
                     continue
                 exp.bad_group = bad_group
                 exps.append(exp)
-                print(exp)
         session.add_all(exps + bad_groups)
         session.commit()
         session.close()
@@ -506,7 +505,7 @@ if __name__ == '__main__':
                             orientation=True if orient == '+' else False if orient == '-' else None, snps_count=len(snps),
                             proximal_promoter_snps=snps)
                 if gene_id in genes_ids:
-                    print(gene_id, chrom, start_pos, end_pos)
+                    # print(gene_id, chrom, start_pos, end_pos)
                     continue
                 genes.append(gene)
                 genes_ids.add(gene_id)
