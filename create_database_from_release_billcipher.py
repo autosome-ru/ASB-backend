@@ -445,7 +445,7 @@ if __name__ == '__main__':
     if BAD_GROUP:
         print('Loading BAD groups')
         with open(os.path.join(release_path, 'release_stats', 'badmaps_dict.json')) as f:
-            cell_lines_dict = json.loads(f.readline())
+            cell_lines_dict = json.load(f)
         exps = []
         bad_groups = []
         for key, value in tqdm(cell_lines_dict.items()):
