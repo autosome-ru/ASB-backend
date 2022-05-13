@@ -464,9 +464,8 @@ def get_rs_ids_from_vcf(data):
     all_snps = filtered_data.agg('_'.join, axis=1)
     for chromosome in data[0].unique():
         if chromosome not in chromosomes:
-            if 'chr' + str(chromosome) in chromosomes:
-                fixed_chromosome = 'chr' + chromosome
-            else:
+            fixed_chromosome = f'chr{chromosome}'
+            if fixed_chromosome not in chromosomes:
                 continue
                 # raise ConvError('chromosome: {}'.format(chr))
         try:
