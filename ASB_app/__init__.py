@@ -45,7 +45,6 @@ CORS(app)
 logger = app.logger
 journaldHandler = journal.JournalHandler()
 logger.addHandler(journaldHandler)
-logger.setLevel(app.config['LOGGER_LEVEL'])
 
 naming_convention = {
     "ix": 'ix_%(column_0_label)s',
