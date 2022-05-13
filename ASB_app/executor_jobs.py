@@ -5,7 +5,7 @@ import re
 from datetime import datetime
 from ASB_app import logger, executor
 from ASB_app.constants import stats_dict, tf_stats_dict, cl_stats_dict, chr_stats_dict, chromosomes, max_nrows, \
-    max_comments
+    max_comments, nucleotides
 from ASB_app.service import ananastra_service
 from ASB_app.utils import pack, process_row, group_concat_distinct_sep
 from ASB_app.utils.statistics import get_stats_dict, get_corresponding_fdr_classes
@@ -470,8 +470,12 @@ def get_rs_ids_from_vcf(data):
                 # raise ConvError('chromosome: {}'.format(chr))
         try:
             tuples = [(int(position), ref.upper(), alt.upper())
-                      for index, (position, ref, alt)
-                      in data.loc[data[0] == chromosome, [1, 3, 4]].iterrows()]
+                      for index, (position, ref, alt_str)
+                      in data.loc[data[0] == chromosome,
+                                  [1, 3, 4]].iterrows()
+                      for alt in alt_str.split(',')
+                      if alt in nucleotides]
+
         except ValueError as e:
             raise ConvError('position: {}'.format(e.args[0]))
         for snps_chunk in divide_query(lambda poss: get_rs_ids_by_chr_pos_query(fixed_chromosome, poss), tuples,
