@@ -1,6 +1,6 @@
 import os
 from logging.config import dictConfig
-
+from systemd import journal
 from flask import Flask, Blueprint
 from flask_migrate import Migrate
 from flask_restplus import Api
@@ -43,6 +43,8 @@ app = Flask(__name__)
 app.config.from_object(Config)
 CORS(app)
 logger = app.logger
+journaldHandler = journal.JournalHandler()
+logger.addHandler(journaldHandler)
 logger.setLevel(app.config['LOGGER_LEVEL'])
 
 naming_convention = {
