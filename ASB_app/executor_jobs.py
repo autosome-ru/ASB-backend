@@ -459,7 +459,8 @@ def get_rs_ids_from_vcf(data):
     if len(data.columns) < 5:
         raise ConvError('number of columns in a VCF file.')
     snps = []
-    all_snps = data[[0, 1, 3, 4]].nunique()
+    all_snps = data[[0, 1, 3, 4]].drop_duplicates()
+    all_snps = data[[0, 1, 3, 4]].agg('_'.join, axis=1)
     for chromosome in data[0].unique():
         if chromosome not in chromosomes:
             if 'chr' + str(chromosome) in chromosomes:
@@ -480,7 +481,7 @@ def get_rs_ids_from_vcf(data):
                                        tuples, chunk_size=3000):
             snps += snps_chunk
     found_snps = set((x.chromosome, x.position, x.ref, x.alt) for x in snps)
-    return list(set(x.rs_id for x in snps)), ['_'.join(map(str, x)) for x in all_snps - found_snps]
+    return list(set(x.rs_id for x in snps)), all_snps[~all_snps.isin({'_'.join(x) for x in found_snps})].tolist()
 
 
 def get_snps_from_interval(interval_str):
