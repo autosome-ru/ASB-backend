@@ -426,8 +426,8 @@ def modify_counts(asb_data, counts=None, top=False):
         if len(counts_list) > 7:
             counts_list = [{'name': x['name'], 'count': x['asbs'],
                             'background_count': x['expected_asbs'] + x['asbs']} for x in counts_list[:6]] + [
-                {'name': 'Other', 'count': sum(x['asbs'] for x in counts_list[6:]),
-                 'background_count': sum(x['asbs'] + x['expected_asbs'] for x in counts_list[6:])}]
+                              {'name': 'Other', 'count': sum(x['asbs'] for x in counts_list[6:]),
+                               'background_count': sum(x['asbs'] + x['expected_asbs'] for x in counts_list[6:])}]
         else:
             counts_list = [{'name': x['name'], 'count': x['asbs'],
                             'background_count': x['expected_asbs'] + x['asbs']} for x in counts_list]
@@ -465,7 +465,7 @@ def get_rs_ids_from_vcf(data):
     for chromosome in data[0].unique():
         if chromosome not in chromosomes:
             if 'chr' + str(chromosome) in chromosomes:
-                chromosome = 'chr' + chromosome
+                fixed_chromosome = 'chr' + chromosome
             else:
                 continue
                 # raise ConvError('chromosome: {}'.format(chr))
@@ -475,15 +475,16 @@ def get_rs_ids_from_vcf(data):
                       in data.loc[data[0] == chromosome, [1, 3, 4]].iterrows()]
         except ValueError as e:
             raise ConvError('position: {}'.format(e.args[0]))
-        for snps_chunk in divide_query(lambda poss: get_rs_ids_by_chr_pos_query(chromosome, poss), tuples,
+        for snps_chunk in divide_query(lambda poss: get_rs_ids_by_chr_pos_query(fixed_chromosome, poss), tuples,
                                        chunk_size=3000):
             snps += snps_chunk
-        for snps_chunk in divide_query(lambda poss: get_rs_ids_by_chr_pos_query(chromosome, poss, candidates=True),
-                                       tuples, chunk_size=3000):
+        for snps_chunk in divide_query(
+                lambda poss: get_rs_ids_by_chr_pos_query(fixed_chromosome, poss, candidates=True),
+                tuples, chunk_size=3000):
             snps += snps_chunk
     found_snps = set((x.chromosome, x.position, x.ref, x.alt) for x in snps)
-    return list(set(x.rs_id for x in snps)),\
-           all_snps[~all_snps.isin({'_'.join(x) for x in found_snps})].tolist(),\
+    return list(set(x.rs_id for x in snps)), \
+           all_snps[~all_snps.isin({'_'.join(x) for x in found_snps})].tolist(), \
            unique_submitted_snps_count
 
 
@@ -724,7 +725,8 @@ def process_snp_file(ticket_id, fdr_class='0.05', background='WG'):
         common_header_2 = ['PEAK_CALLS', 'MEAN_BAD', 'LOG10_FDR_REF', 'LOG10_FDR_ALT',
                            'EFFECT_SIZE_REF', 'EFFECT_SIZE_ALT']
         common_header_3 = ['GTEX_EQTL', 'EBI', 'PHEWAS', 'FINEMAPPING', 'GRASP', 'CLINVAR', 'GTEX_EQTL_TARGET_GENES']
-        cl_header = common_header_1 + ['CELL_TYPE'] + ['CELL_TYPE_GTRD_ID'] + common_header_2 + ['SUPPORTING_TFS'] + common_header_3
+        cl_header = common_header_1 + ['CELL_TYPE'] + ['CELL_TYPE_GTRD_ID'] + common_header_2 + [
+            'SUPPORTING_TFS'] + common_header_3
         tf_header = common_header_1 + ['TRANSCRIPTION_FACTOR'] + ['TF_UNIPROT_AC'] + common_header_2 + \
                     ['MOTIF_LOG_P_REF', 'MOTIF_LOG_P_ALT', 'MOTIF_LOG2_FC', 'MOTIF_POSITION',
                      'MOTIF_ORIENTATION', 'MOTIF_CONCORDANCE', 'SUPPORTING_CELL_TYPES'] + common_header_3
@@ -1090,7 +1092,7 @@ def process_snp_file(ticket_id, fdr_class='0.05', background='WG'):
                 negatives = len([cand for cand in negatives_list if cand.ag_id == ag_id])
                 negatives_rs = len(set(cand.rs_id for cand in negatives_list if cand.ag_id == ag_id))
                 expected_asbs = ag_stats_dict[str(ag_id)][fdr_class][
-                                       'expected_{}_asbs'.format(level.lower())] - asbs
+                                    'expected_{}_asbs'.format(level.lower())] - asbs
                 expected_asbs_rs = ag_stats_dict[str(ag_id)][fdr_class][
                                        'expected_{}_asbs_rs'.format(level.lower())] - asbs_rs
                 expected_negatives_rs = ag_stats_dict[str(ag_id)]['1']['total_{}_candidates_rs'.format(level.lower())] - \
