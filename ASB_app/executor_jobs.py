@@ -460,7 +460,6 @@ def get_rs_ids_from_vcf(data):
         raise ConvError('number of columns in a VCF file.')
     snps = []
     all_snps = data[[0, 1, 3, 4]].drop_duplicates().agg('_'.join, axis=1)
-    print(len(all_snps))
     for chromosome in data[0].unique():
         if chromosome not in chromosomes:
             if 'chr' + str(chromosome) in chromosomes:
@@ -481,7 +480,6 @@ def get_rs_ids_from_vcf(data):
                                        tuples, chunk_size=3000):
             snps += snps_chunk
     found_snps = set((x.chromosome, x.position, x.ref, x.alt) for x in snps)
-    print(len(found_snps))
     return list(set(x.rs_id for x in snps)), all_snps[~all_snps.isin({'_'.join(x) for x in found_snps})].tolist()
 
 
@@ -709,6 +707,7 @@ def process_snp_file(ticket_id, fdr_class='0.05', background='WG'):
             else:
                 unique_submitted_snps_count = data[0].nunique()
                 rs_ids, not_found = get_rs_ids_from_list(data[0].unique())
+                print(len(not_found))
 
         if not status or (submitted_snps_count > max_nrows and ticket.user_id != 'adminas'):
             update_ticket_status(ticket,
