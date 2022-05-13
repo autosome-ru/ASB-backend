@@ -461,7 +461,7 @@ def get_rs_ids_from_vcf(data):
     snps = []
     filtered_data = data[[0, 1, 3, 4]].drop_duplicates()
     unique_submitted_snps_count = len(filtered_data.index)
-    all_snps = filtered_data.agg('_'.join, axis=1)
+    all_snps = filtered_data.agg(lambda x: '_'.join(map(str, x)), axis=1)
     for chromosome in data[0].unique():
         if chromosome not in chromosomes:
             fixed_chromosome = f'chr{chromosome}'
@@ -483,7 +483,7 @@ def get_rs_ids_from_vcf(data):
             snps += snps_chunk
     found_snps = set((x.chromosome, x.position, x.ref, x.alt) for x in snps)
     return list(set(x.rs_id for x in snps)), \
-           all_snps[~all_snps.isin({'_'.join(x) for x in found_snps})].tolist(), \
+           all_snps[~all_snps.isin({'_'.join(map(str, x)) for x in found_snps})].tolist(), \
            unique_submitted_snps_count
 
 
