@@ -459,7 +459,7 @@ def get_rs_ids_from_vcf(data):
     if len(data.columns) < 5:
         raise ConvError('number of columns in a VCF file.')
     snps = []
-    all_snps = data[[0, 1, 3, 4]].unique()
+    all_snps = data[[0, 1, 3, 4]].nunique()
     for chromosome in data[0].unique():
         if chromosome not in chromosomes:
             if 'chr' + str(chromosome) in chromosomes:
@@ -705,7 +705,7 @@ def process_snp_file(ticket_id, fdr_class='0.05', background='WG'):
                     change_status_on_fail = True
                     raise
             else:
-                unique_submitted_snps_count = len(data[0].unique())
+                unique_submitted_snps_count = data[0].nunique()
                 rs_ids, not_found = get_rs_ids_from_list(data[0].unique())
 
         if not status or (submitted_snps_count > max_nrows and ticket.user_id != 'adminas'):
