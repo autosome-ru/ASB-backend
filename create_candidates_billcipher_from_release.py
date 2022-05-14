@@ -7,7 +7,7 @@ from ASB_app.constants import chromosomes
 from ASB_app.models import CandidateSNP, CandidateRS, CandidateTFRS, CandidateCLRS, PositionHash, LDIslandsInfo
 from ASB_app.utils.statistics import get_fdr_class, get_es_class
 
-current_release = releases.ReleaseZanthar
+current_release = releases.ReleaseBillCipher
 session = current_release.session
 db = current_release.db
 
