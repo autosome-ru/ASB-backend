@@ -5,7 +5,7 @@ import re
 from datetime import datetime
 from ASB_app import logger, executor
 from ASB_app.constants import stats_dict, tf_stats_dict, cl_stats_dict, chr_stats_dict, chromosomes, max_nrows, \
-    max_comments
+    max_comments, nucleotides
 from ASB_app.service import ananastra_service
 from ASB_app.utils import pack, process_row, group_concat_distinct_sep
 from ASB_app.utils.statistics import get_stats_dict, get_corresponding_fdr_classes
@@ -426,8 +426,8 @@ def modify_counts(asb_data, counts=None, top=False):
         if len(counts_list) > 7:
             counts_list = [{'name': x['name'], 'count': x['asbs'],
                             'background_count': x['expected_asbs'] + x['asbs']} for x in counts_list[:6]] + [
-                {'name': 'Other', 'count': sum(x['asbs'] for x in counts_list[6:]),
-                 'background_count': sum(x['asbs'] + x['expected_asbs'] for x in counts_list[6:])}]
+                              {'name': 'Other', 'count': sum(x['asbs'] for x in counts_list[6:]),
+                               'background_count': sum(x['asbs'] + x['expected_asbs'] for x in counts_list[6:])}]
         else:
             counts_list = [{'name': x['name'], 'count': x['asbs'],
                             'background_count': x['expected_asbs'] + x['asbs']} for x in counts_list]
@@ -459,28 +459,36 @@ def get_rs_ids_from_vcf(data):
     if len(data.columns) < 5:
         raise ConvError('number of columns in a VCF file.')
     snps = []
-    all_snps = data[[0, 1, 3, 4]].unique()
+    filtered_data = data[[0, 1, 3, 4]].drop_duplicates()
+    unique_submitted_snps_count = len(filtered_data.index)
+    all_snps = filtered_data.agg(lambda x: '_'.join(map(str, x)), axis=1)
     for chromosome in data[0].unique():
         if chromosome not in chromosomes:
-            if 'chr' + str(chromosome) in chromosomes:
-                chromosome = 'chr' + chromosome
-            else:
+            fixed_chromosome = f'chr{chromosome}'
+            if fixed_chromosome not in chromosomes:
                 continue
                 # raise ConvError('chromosome: {}'.format(chr))
         try:
             tuples = [(int(position), ref.upper(), alt.upper())
-                      for index, (position, ref, alt)
-                      in data.loc[data[0] == chromosome, [1, 3, 4]].iterrows()]
+                      for index, (position, ref, alt_str)
+                      in data.loc[data[0] == chromosome,
+                                  [1, 3, 4]].iterrows()
+                      for alt in alt_str.split(',')
+                      if alt in nucleotides]
+
         except ValueError as e:
             raise ConvError('position: {}'.format(e.args[0]))
-        for snps_chunk in divide_query(lambda poss: get_rs_ids_by_chr_pos_query(chromosome, poss), tuples,
+        for snps_chunk in divide_query(lambda poss: get_rs_ids_by_chr_pos_query(fixed_chromosome, poss), tuples,
                                        chunk_size=3000):
             snps += snps_chunk
-        for snps_chunk in divide_query(lambda poss: get_rs_ids_by_chr_pos_query(chromosome, poss, candidates=True),
-                                       tuples, chunk_size=3000):
+        for snps_chunk in divide_query(
+                lambda poss: get_rs_ids_by_chr_pos_query(fixed_chromosome, poss, candidates=True),
+                tuples, chunk_size=3000):
             snps += snps_chunk
     found_snps = set((x.chromosome, x.position, x.ref, x.alt) for x in snps)
-    return list(set(x.rs_id for x in snps)), ['_'.join(map(str, x)) for x in all_snps - found_snps]
+    return list(set(x.rs_id for x in snps)), \
+           all_snps[~all_snps.isin({'_'.join(map(str, x)) for x in found_snps})].tolist(), \
+           unique_submitted_snps_count
 
 
 def get_snps_from_interval(interval_str):
@@ -693,8 +701,7 @@ def process_snp_file(ticket_id, fdr_class='0.05', background='WG'):
             submitted_snps_count = len(data.index)
             if len(data.columns) != 1:
                 try:
-                    rs_ids, not_found = get_rs_ids_from_vcf(data)
-                    unique_submitted_snps_count = len(rs_ids)
+                    rs_ids, not_found, unique_submitted_snps_count = get_rs_ids_from_vcf(data)
                 except ConvError as e:
                     update_ticket_status(ticket,
                                          'Processing failed: the file must contain a single SNP rs-ID on each line or be '
@@ -705,7 +712,7 @@ def process_snp_file(ticket_id, fdr_class='0.05', background='WG'):
                     change_status_on_fail = True
                     raise
             else:
-                unique_submitted_snps_count = len(data[0].unique())
+                unique_submitted_snps_count = data[0].nunique()
                 rs_ids, not_found = get_rs_ids_from_list(data[0].unique())
 
         if not status or (submitted_snps_count > max_nrows and ticket.user_id != 'adminas'):
@@ -721,7 +728,8 @@ def process_snp_file(ticket_id, fdr_class='0.05', background='WG'):
         common_header_2 = ['PEAK_CALLS', 'MEAN_BAD', 'LOG10_FDR_REF', 'LOG10_FDR_ALT',
                            'EFFECT_SIZE_REF', 'EFFECT_SIZE_ALT']
         common_header_3 = ['GTEX_EQTL', 'EBI', 'PHEWAS', 'FINEMAPPING', 'GRASP', 'CLINVAR', 'GTEX_EQTL_TARGET_GENES']
-        cl_header = common_header_1 + ['CELL_TYPE'] + ['CELL_TYPE_GTRD_ID'] + common_header_2 + ['SUPPORTING_TFS'] + common_header_3
+        cl_header = common_header_1 + ['CELL_TYPE'] + ['CELL_TYPE_GTRD_ID'] + common_header_2 + [
+            'SUPPORTING_TFS'] + common_header_3
         tf_header = common_header_1 + ['TRANSCRIPTION_FACTOR'] + ['TF_UNIPROT_AC'] + common_header_2 + \
                     ['MOTIF_LOG_P_REF', 'MOTIF_LOG_P_ALT', 'MOTIF_LOG2_FC', 'MOTIF_POSITION',
                      'MOTIF_ORIENTATION', 'MOTIF_CONCORDANCE', 'SUPPORTING_CELL_TYPES'] + common_header_3
@@ -1087,7 +1095,7 @@ def process_snp_file(ticket_id, fdr_class='0.05', background='WG'):
                 negatives = len([cand for cand in negatives_list if cand.ag_id == ag_id])
                 negatives_rs = len(set(cand.rs_id for cand in negatives_list if cand.ag_id == ag_id))
                 expected_asbs = ag_stats_dict[str(ag_id)][fdr_class][
-                                       'expected_{}_asbs'.format(level.lower())] - asbs
+                                    'expected_{}_asbs'.format(level.lower())] - asbs
                 expected_asbs_rs = ag_stats_dict[str(ag_id)][fdr_class][
                                        'expected_{}_asbs_rs'.format(level.lower())] - asbs_rs
                 expected_negatives_rs = ag_stats_dict[str(ag_id)]['1']['total_{}_candidates_rs'.format(level.lower())] - \

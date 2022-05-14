@@ -1,6 +1,7 @@
 import os
 from logging.config import dictConfig
-
+import sys
+import logging
 from flask import Flask, Blueprint
 from flask_migrate import Migrate
 from flask_restplus import Api
@@ -43,7 +44,12 @@ app = Flask(__name__)
 app.config.from_object(Config)
 CORS(app)
 logger = app.logger
-logger.setLevel(app.config['LOGGER_LEVEL'])
+formatter = logging.Formatter(fmt="%(asctime)s %(name)s.%(levelname)s: %(message)s", datefmt="%Y.%m.%d %H:%M:%S")
+
+# this logs to stdout and I think it is flushed immediately
+handler = logging.StreamHandler(stream=sys.stdout)
+handler.setFormatter(formatter)
+logger.addHandler(handler)
 
 naming_convention = {
     "ix": 'ix_%(column_0_label)s',
