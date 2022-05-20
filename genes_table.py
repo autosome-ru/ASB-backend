@@ -107,8 +107,8 @@ if __name__ == '__main__':
             else:
                 q_dict[(gene.gene_id, snp.rs_id, snp.alt)] = [gene.gene_name, gene.gene_id, snp.chromosome, snp.position,
                                         'rs' + str(snp.rs_id), snp.ref, snp.alt,
-                                        snp.position - gene.start_pos if gene.orientation
-                                        else gene.end_pos - snp.position, ag.name,
+                                        gene.start_pos - snp.position if gene.orientation
+                                        else snp.position - gene.end_pos, ag.name,
                                         '{} ({})'.format(*(('ref', snp.ref) if agsnp.log_p_value_ref > agsnp.log_p_value_alt else ('alt', snp.alt))),
                                         max(agsnp.log_p_value_ref, agsnp.log_p_value_alt),
                                         agsnp.es_ref if agsnp.log_p_value_ref > agsnp.log_p_value_alt else agsnp.es_alt,
