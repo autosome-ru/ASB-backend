@@ -106,7 +106,7 @@ if __name__ == '__main__':
                                         'rs' + str(snp.rs_id), snp.ref, snp.alt,
                                         'N/A' if gene.start_pos == 1 and gene.end_pos == 1
                                         else snp.position - gene.start_pos if gene.orientation
-                                        else gene.end - snp.position, ag.name,
+                                        else gene.end_pos - snp.position, ag.name,
                                         '{} ({})'.format(*(('ref', snp.ref) if agsnp.log_p_value_ref > agsnp.log_p_value_alt else ('alt', snp.alt))),
                                         max(agsnp.log_p_value_ref, agsnp.log_p_value_alt),
                                         agsnp.es_ref if agsnp.log_p_value_ref > agsnp.log_p_value_alt else agsnp.es_alt,
