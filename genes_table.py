@@ -3,10 +3,10 @@ import sys
 
 from ASB_app import *
 
-from ASB_app.releases import ReleaseSusan
+from ASB_app.releases import ReleaseBillCipher
 import numpy as np
 
-release = ReleaseSusan
+release = ReleaseBillCipher
 Gene = release.Gene
 SNP = release.SNP
 TFSNP = release.TranscriptionFactorSNP
@@ -102,8 +102,8 @@ if __name__ == '__main__':
             if (gene.gene_id, snp.rs_id, snp.alt) in q_dict:
                 q_dict[(gene.gene_id, snp.rs_id, snp.alt)][-1].add(other_name)
             else:
-                q_dict[(gene.gene_id, snp.rs_id, snp.alt)] = [gene.gene_name, snp.chromosome, snp.position,
-                                        'rs' + str(snp.rs_id), snp.ref, snp.alt, ag.name,
+                q_dict[(gene.gene_id, snp.rs_id, snp.alt)] = [gene.gene_name, gene.gene_id, snp.chromosome, snp.position,
+                                        'rs' + str(snp.rs_id), snp.ref, snp.alt, snp.position - gene.start_pos, ag.name,
                                         '{} ({})'.format(*(('ref', snp.ref) if agsnp.log_p_value_ref > agsnp.log_p_value_alt else ('alt', snp.alt))),
                                         max(agsnp.log_p_value_ref, agsnp.log_p_value_alt),
                                         agsnp.es_ref if agsnp.log_p_value_ref > agsnp.log_p_value_alt else agsnp.es_alt,
@@ -111,19 +111,21 @@ if __name__ == '__main__':
 
     all_keys = list(set(promoter_dict.keys()) | set(target_dict.keys()))
 
-    with open(os.path.expanduser('~/{}_genes_all.tsv'.format('tf' if AG == TF else 'cl')), 'w') as out:
+    with open(os.path.expanduser('~/{}_genes_all_{}.tsv'.format('tf' if AG == TF else 'cl', release.name)), 'w') as out:
         out.write(
             '\t'.join(
                 map(str, [
                     'Gene_name',
+                    'Gene_id'
                     'Chromosome',
                     'Position',
                     'rs_ID',
                     'Ref',
                     'Alt',
-                    'TF' if AG == TF else 'Cells',
+                    'Distance_to_TSS',
+                    'TF' if AG == TF else 'Cell_type',
                     'Preferred_allele',
-                    'Log10_p_value',
+                    'Log10_FDR',
                     'Effect_size(log2)',
                     'Supporting_{}'.format('TFs' if AG == CL else 'Cell_types'),
                     'eQTL',
