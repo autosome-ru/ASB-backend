@@ -99,13 +99,15 @@ if __name__ == '__main__':
     for i, (q, q_dict) in enumerate(((q_promoter, promoter_dict), (q_target, target_dict))):
         print(i)
         for (gene, snp, agsnp, ag, other_name) in q:
+            if gene.start_pos == 1 and gene.end_pos == 1:
+                # if GENE_ID is not in gencode v35, but gene is a GTEX eQTL target
+                continue
             if (gene.gene_id, snp.rs_id, snp.alt) in q_dict:
                 q_dict[(gene.gene_id, snp.rs_id, snp.alt)][-1].add(other_name)
             else:
                 q_dict[(gene.gene_id, snp.rs_id, snp.alt)] = [gene.gene_name, gene.gene_id, snp.chromosome, snp.position,
                                         'rs' + str(snp.rs_id), snp.ref, snp.alt,
-                                        'N/A' if gene.start_pos == 1 and gene.end_pos == 1
-                                        else snp.position - gene.start_pos if gene.orientation
+                                        snp.position - gene.start_pos if gene.orientation
                                         else gene.end_pos - snp.position, ag.name,
                                         '{} ({})'.format(*(('ref', snp.ref) if agsnp.log_p_value_ref > agsnp.log_p_value_alt else ('alt', snp.alt))),
                                         max(agsnp.log_p_value_ref, agsnp.log_p_value_alt),
