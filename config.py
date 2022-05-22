@@ -9,6 +9,7 @@ class Config(object):
         'susan': 'mysql://adastra:pass=ADASTRA880@localhost:3306/adastra_susan?charset=utf8',
         'zanthar': 'mysql://adastra:pass=ADASTRA880@localhost:3306/adastra_zanthar?charset=utf8',
         'candidates_zanthar': 'mysql://adastra:pass=ADASTRA880@localhost:3306/adastra_candidates_zanthar?charset=utf8',
+        'candidates_billcipher': 'mysql://adastra:pass=ADASTRA880@localhost:3306/adastra_candidates_billcipher?charset=utf8',
         'billcipher': 'mysql://adastra:pass=ADASTRA880@localhost:3306/adastra_billcipher?charset=utf8',
         'tickets': 'mysql://adastra:pass=ADASTRA880@localhost:3306/adastra_tickets?charset=utf8',
     }

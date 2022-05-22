@@ -4,7 +4,7 @@ from ASB_app.constants import nucleotides, chromosomes, fdr_classes, es_classes,
 from ASB_app.releases import current_release
 
 db = current_release.db
-
+cnadidates_release_key = 'candidates_billcipher'
 
 class Ticket(db.Model):
     __tablename__ = 'tickets'
@@ -34,7 +34,7 @@ class GenomePolymorphismLocation(db.Model):
 
 class CandidateSNP(GenomePolymorphismLocation):
     __tablename__ = 'candidate_snps'
-    __bind_key__ = 'candidates_zanthar'
+    __bind_key__ = cnadidates_release_key
     __table_args__ = (
         db.PrimaryKeyConstraint('chromosome', 'position', 'alt', 'ag_level', 'ag_id'),
         db.Index('rs_index', 'rs_id'),
@@ -57,7 +57,7 @@ class CandidateSNP(GenomePolymorphismLocation):
 
 class CandidateRS(db.Model):
     __tablename__ = 'candidate_rs_snps'
-    __bind_key__ = 'candidates_zanthar'
+    __bind_key__ = cnadidates_release_key
     __table_args__ = (
         db.PrimaryKeyConstraint('rs_id'),
     )
@@ -74,7 +74,7 @@ class CandidateRS(db.Model):
 
 class CandidateTFRS(db.Model):
     __tablename__ = 'candidate_tf_rs_snps'
-    __bind_key__ = 'candidates_zanthar'
+    __bind_key__ = cnadidates_release_key
     __table_args__ = (
         db.PrimaryKeyConstraint('rs_id'),
     )
@@ -91,7 +91,7 @@ class CandidateTFRS(db.Model):
 
 class CandidateCLRS(db.Model):
     __tablename__ = 'candidate_cl_rs_snps'
-    __bind_key__ = 'candidates_zanthar'
+    __bind_key__ = cnadidates_release_key
     __table_args__ = (
         db.PrimaryKeyConstraint('rs_id'),
     )
@@ -108,7 +108,7 @@ class CandidateCLRS(db.Model):
 
 class PositionHash(db.Model):
     __tablename__ = 'position_hash'
-    __bind_key__ = 'candidates_zanthar'
+    __bind_key__ = cnadidates_release_key
 
     rs_id = db.Column(db.Integer, primary_key=True)
     position_hash = db.Column(db.BigInteger, index=True, unique=True)
@@ -116,7 +116,7 @@ class PositionHash(db.Model):
 
 class LDIslandsInfo(db.Model):
     __tablename__ = 'ld_islands'
-    __bind_key__ = 'candidates_zanthar'
+    __bind_key__ = cnadidates_release_key
 
     rs_id = db.Column(db.Integer, primary_key=True)
     ld_eur = db.Column(db.SmallInteger, index=True)
