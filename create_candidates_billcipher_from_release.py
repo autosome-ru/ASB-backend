@@ -211,7 +211,7 @@ if __name__ == '__main__':
             island_num = {}
             num = 0
             num_rs = {}
-            with open(os.path.join('D:\Sashok\Desktop\ANANASTRA', file)) as f:
+            with open(os.path.join(os.path.expanduser('~/PARAMETERS/ananstra_LD'), file)) as f:
                 for line in f:
                     line = line.strip('\n').split('\t')
                     rs = int(line[0][2:])
