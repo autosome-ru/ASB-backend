@@ -61,7 +61,7 @@ def place_hill_on_svg(figure, hill_svg, x, y, h, w):
 
 
 def place_concordance_on_svg(figure, concordance, x, y, h, w):
-    concordance_svg = os.path.expanduser('~/letters/{}.svg'.format(concordance))
+    concordance_svg = os.path.expanduser('~/PARAMETERS/letters/{}.svg'.format(concordance))
     place_drawing_on_svg(figure, concordance_svg, x, y, h, w, conc_self_width, concordance_sizes[concordance])
 
 
@@ -101,7 +101,7 @@ def get_scientific_text(n):
 if __name__ == '__main__':
     name_dict = dict()
 
-    for file_name in os.listdir(os.path.expanduser('~/pcm/')):
+    for file_name in os.listdir(os.path.expanduser('~/PARAMETERS/pcm/')):
         tf_name = file_name.split('.')[0]
         if tf_name in name_dict:
             print('Бросаем корабль!')
@@ -148,24 +148,24 @@ if __name__ == '__main__':
     concordance_w = conc_self_width * concordance_scale
 
     letter_svgs = {
-        'A': os.path.expanduser('~/letters/lettarA_path.svg'),
-        'C': os.path.expanduser('~/letters/lettarC_path.svg'),
-        'G': os.path.expanduser('~/letters/lettarG_path.svg'),
-        'T': os.path.expanduser('~/letters/lettarT_path.svg'),
+        'A': os.path.expanduser('~/PARAMETERS/letters/lettarA_path.svg'),
+        'C': os.path.expanduser('~/PARAMETERS/letters/lettarC_path.svg'),
+        'G': os.path.expanduser('~/PARAMETERS/letters/lettarG_path.svg'),
+        'T': os.path.expanduser('~/PARAMETERS/letters/lettarT_path.svg'),
     }
 
     black_letter_svgs = {
-        'A': os.path.expanduser('~/letters/lettarA_path_black.svg'),
-        'C': os.path.expanduser('~/letters/lettarC_path_black.svg'),
-        'G': os.path.expanduser('~/letters/lettarG_path_black.svg'),
-        'T': os.path.expanduser('~/letters/lettarT_path_black.svg'),
+        'A': os.path.expanduser('~/PARAMETERS/letters/lettarA_path_black.svg'),
+        'C': os.path.expanduser('~/PARAMETERS/letters/lettarC_path_black.svg'),
+        'G': os.path.expanduser('~/PARAMETERS/letters/lettarG_path_black.svg'),
+        'T': os.path.expanduser('~/PARAMETERS/letters/lettarT_path_black.svg'),
     }
 
     hill_svgs = {
-        'A': os.path.expanduser('~/letters/hill_A.svg'),
-        'C': os.path.expanduser('~/letters/hill_C.svg'),
-        'G': os.path.expanduser('~/letters/hill_G.svg'),
-        'T': os.path.expanduser('~/letters/hill_T.svg'),
+        'A': os.path.expanduser('~/PARAMETERS/letters/hill_A.svg'),
+        'C': os.path.expanduser('~/PARAMETERS/letters/hill_C.svg'),
+        'G': os.path.expanduser('~/PARAMETERS/letters/hill_G.svg'),
+        'T': os.path.expanduser('~/PARAMETERS/letters/hill_T.svg'),
     }
 
     get_revcomp = {
@@ -195,7 +195,7 @@ if __name__ == '__main__':
 
             pcm_filename = name_dict[tf.name]
 
-            pcm_path = os.path.expanduser('~/pcm/{}'.format(pcm_filename))
+            pcm_path = os.path.expanduser('~/PARAMETERS/pcm/{}'.format(pcm_filename))
 
             context = ' ' * 20 + (''.join([get_revcomp[x] for x in snp.context[::-1]]) if draw_revcomp else snp.context) + ' ' * 20
             # print(context)
@@ -241,7 +241,7 @@ if __name__ == '__main__':
 
             # print(motif_context, pos_in_motif)
 
-            place_letter_on_svg(fig, os.path.expanduser('~/letters/rect.svg'), (pos_in_motif + concordance_indent) * unit_width, 0, (1 + full_gap + text_h/2 + snp_gap/2 + snp_text_h) * unit_height, unit_width)
+            place_letter_on_svg(fig, os.path.expanduser('~/PARAMETERS/letters/rect.svg'), (pos_in_motif + concordance_indent) * unit_width, 0, (1 + full_gap + text_h/2 + snp_gap/2 + snp_text_h) * unit_height, unit_width)
 
             for pos, pack in enumerate(heights[::-1] if revcomp else heights):
                 pos += add_letters + concordance_indent
@@ -266,8 +266,8 @@ if __name__ == '__main__':
 
             for pos in range(m-1, -1, -1):
                 pos += add_letters + concordance_indent
-                place_dna_on_svg(fig, os.path.expanduser('~/letters/dna_grey.svg'), (pos - 13/120)*unit_width, (1 + full_gap + text_h + indent + hill_gap + ref_height) * unit_height, dna_h*unit_height, unit_width*(1 + 13/60))
-                place_dna_on_svg(fig, os.path.expanduser('~/letters/dna_grey.svg'), (pos - 13/120)*unit_width, (1 + full_gap + text_h + indent + hill_gap + ref_height + strands_h - dna_h) * unit_height, dna_h*unit_height, unit_width*(1 + 13/60))
+                place_dna_on_svg(fig, os.path.expanduser('~/PARAMETERS/letters/dna_grey.svg'), (pos - 13/120)*unit_width, (1 + full_gap + text_h + indent + hill_gap + ref_height) * unit_height, dna_h*unit_height, unit_width*(1 + 13/60))
+                place_dna_on_svg(fig, os.path.expanduser('~/PARAMETERS/letters/dna_grey.svg'), (pos - 13/120)*unit_width, (1 + full_gap + text_h + indent + hill_gap + ref_height + strands_h - dna_h) * unit_height, dna_h*unit_height, unit_width*(1 + 13/60))
 
             text_x = pos_in_motif + 1 + concordance_indent
             letter_text = pos_in_motif + 1 - 0.05
@@ -301,8 +301,8 @@ if __name__ == '__main__':
             conc_label_space = 0.1
 
             place_concordance_on_svg(fig, tf_snp.motif_concordance, conc_label_space*unit_width, (1/2 +(1/2 + full_gap + text_h + indent + hill_gap + strands_h/2 + ref_height)/2)*unit_height - concordance_h[tf_snp.motif_concordance]/2, concordance_h[tf_snp.motif_concordance], concordance_w)
-            place_letter_on_svg(fig, os.path.expanduser('~/letters/rect2.svg'), conc_label_space*2*unit_width+concordance_w, (1/2 + bracket_thick/600/2) * unit_height, (1/2 + full_gap + text_h + indent + hill_gap + strands_h/2 + ref_height - bracket_thick/600)*unit_height, bracket_thick/300*unit_width)
-            place_letter_on_svg(fig, os.path.expanduser('~/letters/rect2.svg'), conc_label_space*2*unit_width+concordance_w, (1/2 - bracket_thick/600/2) * unit_height, bracket_thick/600*unit_height, (add_letters + concordance_indent - 3*conc_label_space)*unit_width - concordance_w)
-            place_letter_on_svg(fig, os.path.expanduser('~/letters/rect2.svg'), conc_label_space*2*unit_width+concordance_w, (1 + full_gap + text_h + indent + hill_gap + strands_h/2 + ref_height - bracket_thick/600/2) * unit_height, bracket_thick/600*unit_height, (add_letters + concordance_indent - 3*conc_label_space)*unit_width - concordance_w)
+            place_letter_on_svg(fig, os.path.expanduser('~/PARAMETERS/letters/rect2.svg'), conc_label_space*2*unit_width+concordance_w, (1/2 + bracket_thick/600/2) * unit_height, (1/2 + full_gap + text_h + indent + hill_gap + strands_h/2 + ref_height - bracket_thick/600)*unit_height, bracket_thick/300*unit_width)
+            place_letter_on_svg(fig, os.path.expanduser('~/PARAMETERS/letters/rect2.svg'), conc_label_space*2*unit_width+concordance_w, (1/2 - bracket_thick/600/2) * unit_height, bracket_thick/600*unit_height, (add_letters + concordance_indent - 3*conc_label_space)*unit_width - concordance_w)
+            place_letter_on_svg(fig, os.path.expanduser('~/PARAMETERS/letters/rect2.svg'), conc_label_space*2*unit_width+concordance_w, (1 + full_gap + text_h + indent + hill_gap + strands_h/2 + ref_height - bracket_thick/600/2) * unit_height, bracket_thick/600*unit_height, (add_letters + concordance_indent - 3*conc_label_space)*unit_width - concordance_w)
 
             fig.save('~/adastra_images/{}/{}_{}_{}{}.svg'.format(current_release.name, tf.name, snp.rs_id, snp.alt, '_revcomp' if draw_revcomp else ''))
