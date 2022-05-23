@@ -177,7 +177,7 @@ if __name__ == '__main__':
         phs = []
         rs_ids = set()
         for cand in CandidateSNP.query:
-            if CandidateSNP.rs_id in rs_ids:
+            if cand.rs_id in rs_ids:
                 continue
             else:
                 phs.append(
@@ -186,7 +186,7 @@ if __name__ == '__main__':
                         position_hash=chromosomes.index(cand.chromosome) * 10 ** 9 + cand.position
                     )
                 )
-                rs_ids.add(CandidateSNP.rs_id)
+                rs_ids.add(cand.rs_id)
         session.add_all(phs)
         session.commit()
         session.close()
