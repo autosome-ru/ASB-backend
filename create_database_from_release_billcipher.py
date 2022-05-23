@@ -68,6 +68,8 @@ PROMOTER_GENE_COUNT_010 = 1
 SET_NONE_TO_ZERO = 1
 CHECK_NONE = 1
 
+# Gene name in tfs is not updated
+
 
 release_path = os.path.expanduser('~/adastra/DataChipBillCipher0501')
 parameters_path = os.path.expanduser('~/Configs/')
@@ -391,10 +393,11 @@ if __name__ == '__main__':
             line = file.readline()
             while line:
                 line = line.strip('\n')
-                if line.startswith('>') and line[-3:] == 'ref' and line not in used:
+                if line.startswith('>') and line not in used:
+                    # '> rs000000@A'
                     used.add(line)
-                    alt = line.split(';')[-1].split('_')[0]
-                    rs = int(line.split(';')[0][3:])
+                    rs, alt = line[2:].strip('\n').split('@')
+                    rs = int(rs[2:])
                     snp = SNP.query.filter(SNP.rs_id == rs, SNP.alt == alt).one_or_none()
                     context = file.readline().strip('\n')
                     if snp:
