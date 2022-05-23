@@ -4,7 +4,7 @@ import pandas as pd
 from ASB_app.releases import ReleaseZanthar as r
 
 if __name__ == '__main__':
-    uniprot_conv = pd.read_table('~/Desktop/gene_names.tab')
+    uniprot_conv = pd.read_table('~/PARAMETERS/gene_names.tab')
     tfs = []
     for index, row in uniprot_conv.iterrows():
         tf = r.TranscriptionFactor.query.filter(
