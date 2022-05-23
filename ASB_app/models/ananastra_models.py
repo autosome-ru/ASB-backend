@@ -4,7 +4,7 @@ from ASB_app.constants import nucleotides, chromosomes, fdr_classes, es_classes,
 from ASB_app.releases import current_release
 
 db = current_release.db
-cnadidates_release_key = 'candidates_zanthar'
+cnadidates_release_key = 'candidates_billcipher'
 
 class Ticket(db.Model):
     __tablename__ = 'tickets'
