@@ -259,7 +259,7 @@ if __name__ == '__main__':
                 else:
                     if not asb_is_ref:
                         ref_height, alt_height = alt_height, ref_height
-                    place_hill_on_svg(fig, hill_svgs[letter], (concordance_indent + add_letters)*unit_width, (1 + full_gap + text_h + indent + hill_gap) * unit_height, ref_height * unit_height, hill_width * unit_width)
+                    place_hill_on_svg(fig, hill_svgs[letter.upper()], (concordance_indent + add_letters)*unit_width, (1 + full_gap + text_h + indent + hill_gap) * unit_height, ref_height * unit_height, hill_width * unit_width)
                     place_hill_on_svg(fig, hill_svgs[alt], (concordance_indent + add_letters)*unit_width, (1 + full_gap + strands_h + alt_height + ref_height + text_h + indent + hill_gap) * unit_height, -alt_height * unit_height, hill_width * unit_width)
                     place_letter_on_svg(fig, letter_svgs[letter], (pos + (1 - snp_text_width) / 2 + concordance_indent) * unit_width, (1 + full_gap + text_h/2 - snp_text_h - snp_gap/2) * unit_height, snp_text_h * unit_height, snp_text_width * unit_width)
                     place_letter_on_svg(fig, letter_svgs[alt], (pos + (1 - snp_text_width) / 2 + concordance_indent) * unit_width, (1 + full_gap + text_h/2 + snp_gap/2) * unit_height, snp_text_h * unit_height, snp_text_width * unit_width)
