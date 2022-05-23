@@ -248,7 +248,7 @@ if __name__ == '__main__':
                 current_height = 0
                 for letter, height in renorm(pack):
                     # Draw letter with offset of pos*unit_width, current_height*unit_height and height of height*unit_height
-                    place_letter_on_svg(fig, letter_svgs[get_revcomp[letter] if revcomp else letter], pos*unit_width, (1-current_height - height)*unit_height, height*unit_height, unit_width)
+                    place_letter_on_svg(fig, letter_svgs[(get_revcomp[letter] if revcomp else letter).upper()], pos*unit_width, (1-current_height - height)*unit_height, height*unit_height, unit_width)
                     current_height += height
 
             for pos, letter in enumerate(motif_context):
