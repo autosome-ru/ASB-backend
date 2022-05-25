@@ -197,7 +197,8 @@ if __name__ == '__main__':
 
             pcm_path = os.path.expanduser('~/PARAMETERS/pcm/{}'.format(pcm_filename))
 
-            context = ' ' * 20 + (''.join([get_revcomp[x] for x in snp.context[::-1]]) if draw_revcomp else snp.context) + ' ' * 20
+            trimmed_snp_context = snp.context if len(snp.context) == 49 else snp.context[(len(snp.context) - 49) // 2:-(len(snp.context) - 49) // 2]
+            context = ' ' * 20 + (''.join([get_revcomp[x] for x in trimmed_snp_context[::-1]]) if draw_revcomp else trimmed_snp_context) + ' ' * 20
             # print(context)
             alt = get_revcomp[snp.alt] if draw_revcomp else snp.alt
             pos_in_motif = tf_snp.motif_position
