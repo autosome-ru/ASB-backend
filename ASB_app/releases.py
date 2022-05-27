@@ -16,16 +16,16 @@ class ReleaseSoos(Release):
     full_version = '1.6'
 
 
-class ReleaseSusan(Release):
-    name = 'susan'
-    version = '3'
-    full_version = '3.5'
-
-
-class ReleaseZanthar(Release):
-    name = 'zanthar'
-    version = '4'
-    full_version = '4.0'
+# class ReleaseSusan(Release):
+#     name = 'susan'
+#     version = '3'
+#     full_version = '3.5'
+#
+#
+# class ReleaseZanthar(Release):
+#     name = 'zanthar'
+#     version = '4'
+#     full_version = '4.0'
 
 
 class ReleaseBillCipher(Release):
