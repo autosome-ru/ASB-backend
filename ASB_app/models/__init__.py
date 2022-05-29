@@ -8,5 +8,5 @@ for release in Release.__subclasses__():
     release.db.create_all(release.name)
     release.session.commit()
 
-current_release.db.create_all('candidates_zanthar')
+current_release.db.create_all(cnadidates_release_key)
 current_release.db.create_all('tickets')
