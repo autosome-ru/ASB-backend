@@ -394,14 +394,16 @@ if __name__ == '__main__':
             while line:
                 line = line.strip('\n')
                 if line.startswith('>') and line not in used:
-                    # '> rs000000@A'
+                    # '> rs000000@A@ref'
                     used.add(line)
-                    rs, alt = line[2:].strip('\n').split('@')
-                    rs = int(rs[2:])
-                    snp = SNP.query.filter(SNP.rs_id == rs, SNP.alt == alt).one_or_none()
+                    rs, alt, allele = line[2:].strip('\n').split('@')
                     context = file.readline().strip('\n')
-                    if snp:
-                        snp.context = context
+                    if allele == 'alt':
+                        # '> rs000000@G@alt'
+                        rs = int(rs[2:])
+                        snp = SNP.query.filter(SNP.rs_id == rs, SNP.alt == alt).one_or_none()
+                        if snp:
+                            snp.context = context
                 line = file.readline()
         session.commit()
 
