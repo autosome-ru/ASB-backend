@@ -71,7 +71,7 @@ CHECK_NONE = 1
 # Gene name in tfs is not updated
 
 
-release_path = os.path.expanduser('~/adastra/DataChipBillCipher0501')
+release_path = os.path.expanduser('~/adastra/DataChipBillCipher0626')
 parameters_path = os.path.expanduser('~/Configs/')
 
 conv_bad = dict(zip(
