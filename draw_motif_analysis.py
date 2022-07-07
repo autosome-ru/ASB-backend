@@ -201,6 +201,7 @@ if __name__ == '__main__':
             context = ' ' * 20 + (''.join([get_revcomp[x] for x in trimmed_snp_context[::-1]]) if draw_revcomp else trimmed_snp_context) + ' ' * 20
             # print(context)
             alt = get_revcomp[snp.alt] if draw_revcomp else snp.alt
+            ref = get_revcomp[snp.ref] if draw_revcomp else snp.ref
             pos_in_motif = tf_snp.motif_position
             motif_pref = 1/np.power(10, tf_snp.motif_log_p_ref)
             motif_palt = 1/np.power(10, tf_snp.motif_log_p_alt)
@@ -260,10 +261,10 @@ if __name__ == '__main__':
                 else:
                     if not asb_is_ref:
                         ref_height, alt_height = alt_height, ref_height
-                    place_hill_on_svg(fig, hill_svgs[letter.upper()], (concordance_indent + add_letters)*unit_width, (1 + full_gap + text_h + indent + hill_gap) * unit_height, ref_height * unit_height, hill_width * unit_width)
+                    place_hill_on_svg(fig, hill_svgs[ref], (concordance_indent + add_letters)*unit_width, (1 + full_gap + text_h + indent + hill_gap) * unit_height, ref_height * unit_height, hill_width * unit_width)
                     place_hill_on_svg(fig, hill_svgs[alt], (concordance_indent + add_letters)*unit_width, (1 + full_gap + strands_h + alt_height + ref_height + text_h + indent + hill_gap) * unit_height, -alt_height * unit_height, hill_width * unit_width)
                     place_letter_on_svg(fig, letter_svgs[letter.upper()], (pos + (1 - snp_text_width) / 2 + concordance_indent) * unit_width, (1 + full_gap + text_h/2 - snp_text_h - snp_gap/2) * unit_height, snp_text_h * unit_height, snp_text_width * unit_width)
-                    place_letter_on_svg(fig, letter_svgs[alt], (pos + (1 - snp_text_width) / 2 + concordance_indent) * unit_width, (1 + full_gap + text_h/2 + snp_gap/2) * unit_height, snp_text_h * unit_height, snp_text_width * unit_width)
+                    place_letter_on_svg(fig, letter_svgs[ref], (pos + (1 - snp_text_width) / 2 + concordance_indent) * unit_width, (1 + full_gap + text_h/2 + snp_gap/2) * unit_height, snp_text_h * unit_height, snp_text_width * unit_width)
 
             for pos in range(m-1, -1, -1):
                 pos += add_letters + concordance_indent

@@ -43,7 +43,7 @@ CL_SNP = 0
 HASH = 0
 LD = 0
 
-release_path = os.path.expanduser('~/adastra/DataChipBillCipher0501/')
+release_path = os.path.expanduser('~/adastra/DataChipBillCipher0626/')
 parameters_path = os.path.expanduser('~/Configs/')
 
 conv_bad = dict(zip(
