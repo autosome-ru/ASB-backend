@@ -21,7 +21,8 @@ for release in Release.__subclasses__():
     if int(release.version) >= 3:
         search_parser.add_argument('fdr', help='FDR threshold', choices=fdr_choices)
         search_parser.add_argument('es', help='Effect size threshold', choices=es_choices)
-    search_parser.add_argument('cell_types', action='split', help='Comma-separated list of cell types, search SNPs ASB for every cell type scpecified')
+    search_parser.add_argument('cell_types', type=lambda value: value.split('@'),
+                               help='"@" separated list of cell types, search SNPs ASB for every cell type scpecified')
     search_parser.add_argument('transcription_factors', action='split', help='Comma-separated list of cell types, search SNPs ASB for every cell type scpecified')
     search_parser.add_argument('chromosome', choices=chromosomes, help='Search only SNPs on the specified chromosome')
     search_parser.add_argument('start', type=inputs.positive, help='Search SNPs in interval from specified position, Requires "chromosome" and "end", 1-based')
