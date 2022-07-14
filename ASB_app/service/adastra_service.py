@@ -37,18 +37,20 @@ class ReleaseService:
             return tuple()
 
     def get_release_name(self):
-        return self.release.name if self.release.name != 'billcipher' else 'bill-cipher'
+        rname = self.release.name if self.release.name != 'billcipher' else 'bill-cipher'
+        print(rname)
+        return f'https://adastra.autosome.org/{rname}'
 
 
     def generate_tf_link(self, tf_name):
-        return 'https://adastra.autosome.ru/{}/search/advanced?tf={}'.format(self.get_release_name(), tf_name)
+        return '{}/search/advanced?tf={}'.format(self.get_release_name(), tf_name)
 
     def generate_snp_name(self, snp):
         return 'rs{0.rs_id}:{0.ref}>{0.alt}'.format(snp)
 
     def generate_snp_link(self, snp):
         rname = self.get_release_name()
-        return 'https://adastra.autosome.ru/{0}/snps/rs{1.rs_id}/{1.alt}'.format(rname, snp)
+        return '{0}/snps/rs{1.rs_id}/{1.alt}'.format(rname, snp)
 
     def get_tf_links(self):
         return [{'name': tf.name, 'link': self.generate_tf_link(tf.name)} for tf in
