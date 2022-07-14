@@ -31,7 +31,7 @@ class ReleaseSoos(Release):
 class ReleaseBillCipher(Release):
     name = 'billcipher'
     version = '5'
-    full_version = '5.0'
+    full_version = '5.1'
 
 
 def get_release_by_version(version):
