@@ -593,6 +593,11 @@ if __name__ == '__main__':
 
     if REDO_CONCORDANCE:
         print('Rereading motif columns')
+        def to_type(val, typ):
+            if val == '' or val == '.':
+                return None
+            else:
+                return typ(val)
         float_field = ['motif_log_pref', 'motif_log_palt', 'motif_fc']
         int_field = ['motif_pos']
         for tf in tqdm(TranscriptionFactor.query.all(), position=0):
@@ -604,22 +609,6 @@ if __name__ == '__main__':
                                                                x['pos'],
                                                                x['alt']])),
                                                  axis=1)
-
-            for index, row in tf_pval_df.iterrows():
-                row['motif_orient'] = {'+': True, '-': False, '': None}[row['motif_orient']]
-                row['motif_conc'] = None if row['motif_conc'] in ('None', '') else row['motif_conc']
-
-                for field in float_field:
-                    if row[field] == '' or row[field] == '.':
-                        row[field] = None
-                    else:
-                        row[field] = float(row[field])
-                for field in int_field:
-                    if row[field] == '' or row[field] == '.':
-                        row[field] = None
-                    else:
-                        row[field] = int(row[field])
-
             groups = tf_pval_df.groupby('key')
             for tf_snp, snp in tqdm(session.query(
                     TranscriptionFactorSNP, SNP
@@ -629,12 +618,12 @@ if __name__ == '__main__':
             ).filter(TranscriptionFactorSNP.tf_id == tf.tf_id).all(), position=1, leave=False):
                 key = '@'.join(map(str, [snp.chromosome, snp.position, snp.alt]))
                 snp_df = groups.get_group(key)
-                tf_snp.motif_log_p_ref = snp_df['motif_log_pref'].tolist()[0]
-                tf_snp.motif_log_p_alt = snp_df['motif_log_palt'].tolist()[0]
-                tf_snp.motif_log_2_fc = snp_df['motif_fc'].tolist()[0]
-                tf_snp.motif_position = snp_df['motif_pos'].tolist()[0]
-                tf_snp.motif_orientation = snp_df['motif_orient'].tolist()[0]
-                tf_snp.motif_concordance = snp_df['motif_conc'].tolist()[0]
+                tf_snp.motif_log_p_ref = to_type(snp_df['motif_log_pref'].tolist()[0], float)
+                tf_snp.motif_log_p_alt = to_type(snp_df['motif_log_palt'].tolist()[0], float)
+                tf_snp.motif_log_2_fc = to_type(snp_df['motif_fc'].tolist()[0], float)
+                tf_snp.motif_position = to_type(snp_df['motif_pos'].tolist()[0], int)
+                tf_snp.motif_orientation = {'+': True, '-': False, '': None}[snp_df['motif_orient'].tolist()[0]]
+                tf_snp.motif_concordance = None if snp_df['motif_conc'].tolist()[0] in ('None', '') else snp_df['motif_conc'].tolist()[0]
                 edited_snps.append(tf_snp)
             session.commit()
 
