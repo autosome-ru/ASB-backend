@@ -614,7 +614,7 @@ if __name__ == '__main__':
                         row[field] = None
                     else:
                         row[field] = float(row[field])
-                for field in int_fields:
+                for field in int_field:
                     if row[field] == '' or row[field] == '.':
                         row[field] = None
                     else:
