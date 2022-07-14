@@ -44,29 +44,32 @@ current_release.Gene
 
 tr = 0.25
 
-EXP = 1
-TF = 1
-CL = 1
-PHEN = 1
-TF_DICT = 1
-CL_DICT = 1
-CONTEXT = 1
-CONTROLS = 1
-BAD_GROUP = 1
-GENES = 1
-TARGET_GENES = 1
+EXP = 0
+TF = 0
+CL = 0
+PHEN = 0
+TF_DICT = 0
+CL_DICT = 0
+CONTEXT = 0
+CONTROLS = 0
+BAD_GROUP = 0
+GENES = 0
+TARGET_GENES = 0
 PROMOTER_GENES = 0  # not needed at first time
-TARGET_GENE_SNP_COUNT = 1
+TARGET_GENE_SNP_COUNT = 0
+
+REDO_CONCORDANCE = 1
+
 UPDATE_CONCORDANCE = 1  # Don't forget to change current_release in releases.py
-UPDATE_PHEN_COUNT = 1
+UPDATE_PHEN_COUNT = 0
 UPDATE_HAS_CONCORDANCE = 1
-UPDATE_BEST_P_VALUE = 1
-UPDATE_BEST_ES = 1
-PROMOTER_GENE_COUNT = 1
-TARGET_GENE_COUNT_010 = 1
-PROMOTER_GENE_COUNT_010 = 1
-SET_NONE_TO_ZERO = 1
-CHECK_NONE = 1
+UPDATE_BEST_P_VALUE = 0
+UPDATE_BEST_ES = 0
+PROMOTER_GENE_COUNT = 0
+TARGET_GENE_COUNT_010 = 0
+PROMOTER_GENE_COUNT_010 = 0
+SET_NONE_TO_ZERO = 0
+CHECK_NONE = 0
 
 # Gene name in tfs is not updated
 
@@ -587,6 +590,54 @@ if __name__ == '__main__':
             gene.eqtl_snps_count = 0
         session.commit()
         session.close()
+
+    if REDO_CONCORDANCE:
+        print('Rereading motif columns')
+        float_field = ['motif_log_pref', 'motif_log_palt', 'motif_fc']
+        int_field = ['motif_pos']
+        for tf in tqdm(TranscriptionFactor.query.all(), level=0):
+            edited_snps = []
+            tf_pval_df = pd.read_table(os.path.join(release_path, 'TF_P-values', tf.name + '.tsv'))
+            tf_pval_df['key'] = tf_pval_df.apply(lambda x:
+                                                 '@'.join(map(str,
+                                                              [x['#chr'],
+                                                               x['pos'],
+                                                               x['alt']])),
+                                                 axis=1)
+
+            for index, row in tf_pval_df.iterrows():
+                row['motif_orient'] = {'+': True, '-': False, '': None}[row['motif_orient']]
+                row['motif_conc'] = None if row['motif_conc'] in ('None', '') else row['motif_conc']
+
+                for field in float_field:
+                    if row[field] == '' or row[field] == '.':
+                        row[field] = None
+                    else:
+                        row[field] = float(row[field])
+                for field in int_fields:
+                    if row[field] == '' or row[field] == '.':
+                        row[field] = None
+                    else:
+                        row[field] = int(row[field])
+
+            groups = tf_pval_df.groupby('key')
+            for tf_snp, snp in tqdm(session.query(
+                    TranscriptionFactorSNP, SNP
+            ).join(
+                SNP,
+                TranscriptionFactorSNP.snp
+            ).filter(TranscriptionFactorSNP.tf_id == tf.tf_id).all(), level=1, leave=False):
+                key = '@'.join(map(str, [snp.chromosome, snp.position, snp.alt]))
+                snp_df = groups.get_group(key)
+                tf_snp.motif_log_p_ref = snp_df['motif_log_pref'].tolist()[0]
+                tf_snp.motif_log_p_alt = snp_df['motif_log_palt'].tolist()[0]
+                tf_snp.motif_log_2_fc = snp_df['motif_fc'].tolist()[0]
+                tf_snp.motif_position = snp_df['motif_pos'].tolist()[0]
+                tf_snp.motif_orientation = snp_df['motif_orient'].tolist()[0]
+                tf_snp.motif_concordance = snp_df['motif_conc'].tolist()[0]
+                edited_snps.append(tf_snp)
+            session.commit()
+
 
     if UPDATE_CONCORDANCE:
         print('Updating motif concordance')
