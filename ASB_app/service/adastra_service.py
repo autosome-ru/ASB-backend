@@ -38,7 +38,6 @@ class ReleaseService:
 
     def get_release_name(self):
         rname = self.release.name if self.release.name != 'billcipher' else 'bill-cipher'
-        print(rname)
         return f'https://adastra.autosome.org/{rname}'
 
 
