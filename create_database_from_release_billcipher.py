@@ -595,7 +595,7 @@ if __name__ == '__main__':
         print('Rereading motif columns')
         float_field = ['motif_log_pref', 'motif_log_palt', 'motif_fc']
         int_field = ['motif_pos']
-        for tf in tqdm(TranscriptionFactor.query.all(), level=0):
+        for tf in tqdm(TranscriptionFactor.query.all(), position=0):
             edited_snps = []
             tf_pval_df = pd.read_table(os.path.join(release_path, 'TF_P-values', tf.name + '.tsv'))
             tf_pval_df['key'] = tf_pval_df.apply(lambda x:
@@ -626,7 +626,7 @@ if __name__ == '__main__':
             ).join(
                 SNP,
                 TranscriptionFactorSNP.snp
-            ).filter(TranscriptionFactorSNP.tf_id == tf.tf_id).all(), level=1, leave=False):
+            ).filter(TranscriptionFactorSNP.tf_id == tf.tf_id).all(), position=1, leave=False):
                 key = '@'.join(map(str, [snp.chromosome, snp.position, snp.alt]))
                 snp_df = groups.get_group(key)
                 tf_snp.motif_log_p_ref = snp_df['motif_log_pref'].tolist()[0]
