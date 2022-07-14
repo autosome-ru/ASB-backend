@@ -612,7 +612,7 @@ if __name__ == '__main__':
                                                                x['pos'],
                                                                x['alt']])),
                                                  axis=1)
-            groups = tf_pval_df.groupby('key')
+            tf_pval_df = tf_pval_df.set_index('key')
             for tf_snp, snp in tqdm(session.query(
                     TranscriptionFactorSNP, SNP
             ).join(
@@ -620,7 +620,7 @@ if __name__ == '__main__':
                 TranscriptionFactorSNP.snp
             ).filter(TranscriptionFactorSNP.tf_id == tf.tf_id).all(), position=1, leave=False):
                 key = '@'.join(map(str, [snp.chromosome, snp.position, snp.alt]))
-                snp_df = groups.get_group(key)
+                snp_df = tf_pval_df.loc[key]
                 tf_snp.motif_log_p_ref = to_type(snp_df['motif_log_pref'].tolist()[0], float)
                 tf_snp.motif_log_p_alt = to_type(snp_df['motif_log_palt'].tolist()[0], float)
                 tf_snp.motif_log_2_fc = to_type(snp_df['motif_fc'].tolist()[0], float)
