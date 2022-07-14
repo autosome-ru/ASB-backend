@@ -622,8 +622,9 @@ if __name__ == '__main__':
                 tf_snp.motif_log_p_alt = to_type(snp_df['motif_log_palt'].tolist()[0], float)
                 tf_snp.motif_log_2_fc = to_type(snp_df['motif_fc'].tolist()[0], float)
                 tf_snp.motif_position = to_type(snp_df['motif_pos'].tolist()[0], int)
-                tf_snp.motif_orientation = {'+': True, '-': False, '': None, np.nan: None}[snp_df['motif_orient'].tolist()[0]]
-                tf_snp.motif_concordance = None if snp_df['motif_conc'].tolist()[0] in ('None', '', np.nan) else snp_df['motif_conc'].tolist()[0]
+                tf_snp.motif_orientation = {'+': True, '-': False}.get(snp_df['motif_orient'].tolist()[0])
+                conc = snp_df['motif_conc'].tolist()[0]
+                tf_snp.motif_concordance = None if conc in ('None', '') or pd.isna(conc) else conc
                 edited_snps.append(tf_snp)
             session.commit()
 
