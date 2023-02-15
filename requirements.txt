@@ -50,5 +50,5 @@ tqdm==4.64.0
 traitlets==4.3.3
 tzlocal==2.1
 wcwidth==0.1.8
-Werkzeug==0.16.0
+Werkzeug==2.2.3
 zipp==3.6.0
