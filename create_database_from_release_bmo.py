@@ -91,7 +91,7 @@ if __name__ == '__main__':
             if not line.strip():
                 continue
             try:
-                key, value = line.strip().split()
+                key, value = line.strip().split('\t')
             except:
                 print(line)
             cl_dict_reverse[value] = key
