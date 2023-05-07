@@ -283,35 +283,10 @@ for release in Release.__subclasses__():
                 except ParsingError:
                     api.abort(400)
 
-    if release.name != 'dnase':
-        @browse_nsp.route('/tf')
-        @set_release_service(release_service)
-        class TransctiptionFactorBrowse(Resource, PaginationMixin):
-            BaseEntity = release_service.TranscriptionFactor
-            used_release = release
-
-            @api.marshal_with(release_serializers.transcription_factor_browse_model)
-            @api.expect(browse_parser)
-            def get(self):
-                """
-                Get the list of transcription factors available in the database
-                """
-                args = browse_parser.parse_args()
-                filters = (self.BaseEntity.aggregated_snps_count > 0, )
-                filter_exp = args.pop('regexp', None)
-                if filter_exp is not None:
-                    filters += (self.BaseEntity.name.like(filter_exp), )
-                result = self.paginate(args,
-                                       extra_filters=filters,
-                                       default_order_clauses=(desc(self.BaseEntity.aggregated_snps_count), ))
-                total = self.items_count(extra_filters=filters)
-                return {'results': result, 'total': total}
-
-
-    @browse_nsp.route('/cl')
+    @browse_nsp.route('/atac')
     @set_release_service(release_service)
-    class CellLineBrowse(Resource, PaginationMixin):
-        BaseEntity = release_service.CellLine
+    class AtacBrowse(Resource, PaginationMixin):
+        BaseEntity = release_service.Atac
         used_release = release
 
         @api.marshal_with(release_serializers.cell_line_browse_model)
@@ -331,6 +306,51 @@ for release in Release.__subclasses__():
             total = self.items_count(extra_filters=filters)
             return {'results': result, 'total': total}
 
+    @browse_nsp.route('/dnase')
+    @set_release_service(release_service)
+    class AtacBrowse(Resource, PaginationMixin):
+        BaseEntity = release_service.Dnase
+        used_release = release
+
+        @api.marshal_with(release_serializers.cell_line_browse_model)
+        @api.expect(browse_parser)
+        def get(self):
+            """
+            Get the list of cell types available in the database
+            """
+            args = browse_parser.parse_args()
+            filters = (self.BaseEntity.aggregated_snps_count > 0, )
+            filter_exp = args.pop('regexp', None)
+            if filter_exp is not None:
+                filters += (self.BaseEntity.name.like(filter_exp), )
+            result = self.paginate(args,
+                                   extra_filters=filters,
+                                   default_order_clauses=(desc(self.BaseEntity.aggregated_snps_count), ))
+            total = self.items_count(extra_filters=filters)
+            return {'results': result, 'total': total}
+
+    @browse_nsp.route('/faire')
+    @set_release_service(release_service)
+    class AtacBrowse(Resource, PaginationMixin):
+        BaseEntity = release_service.Faire
+        used_release = release
+
+        @api.marshal_with(release_serializers.cell_line_browse_model)
+        @api.expect(browse_parser)
+        def get(self):
+            """
+            Get the list of cell types available in the database
+            """
+            args = browse_parser.parse_args()
+            filters = (self.BaseEntity.aggregated_snps_count > 0, )
+            filter_exp = args.pop('regexp', None)
+            if filter_exp is not None:
+                filters += (self.BaseEntity.name.like(filter_exp), )
+            result = self.paginate(args,
+                                   extra_filters=filters,
+                                   default_order_clauses=(desc(self.BaseEntity.aggregated_snps_count), ))
+            total = self.items_count(extra_filters=filters)
+            return {'results': result, 'total': total}
 
     @browse_nsp.route('/total')
     @api.hide
