@@ -2,7 +2,13 @@ class TranscriptionFactor:
     pass
 
 
-class CellLine:
+class Dnase:
+    pass
+
+class Atac:
+    pass
+
+class Faire:
     pass
 
 
@@ -18,11 +24,15 @@ class SNP:
     pass
 
 
-class TranscriptionFactorSNP:
+class DnaseSNP:
     pass
 
 
-class CellLineSNP:
+class AtacSNP:
+    pass
+
+
+class FaireSNP:
     pass
 
 

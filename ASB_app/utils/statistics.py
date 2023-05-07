@@ -9,16 +9,11 @@ current_release = releases.current_release
 
 default_fdr_tr = 0.05
 
-if current_release.name != 'dnase':
-    TranscriptionFactor, TranscriptionFactorSNP, CellLine, CellLineSNP, \
-    SNP, ExpSNP, Phenotype, PhenotypeSNPCorrespondence, Gene, Experiment = \
-        current_release.TranscriptionFactor, current_release.TranscriptionFactorSNP, current_release.CellLine, current_release.CellLineSNP, \
-        current_release.SNP, current_release.ExpSNP, current_release.Phenotype, current_release.PhenotypeSNPCorrespondence, current_release.Gene, current_release.Experiment
-else:
-    CellLine, CellLineSNP, \
-    SNP, ExpSNP, Phenotype, PhenotypeSNPCorrespondence, Gene, Experiment = \
-        current_release.CellLine, current_release.CellLineSNP, \
-        current_release.SNP, current_release.ExpSNP, current_release.Phenotype, current_release.PhenotypeSNPCorrespondence, current_release.Gene, current_release.Experiment
+
+CellLine, CellLineSNP, \
+SNP, ExpSNP, Phenotype, PhenotypeSNPCorrespondence, Gene, Experiment = \
+    current_release.CellLine, current_release.CellLineSNP, \
+    current_release.SNP, current_release.ExpSNP, current_release.Phenotype, current_release.PhenotypeSNPCorrespondence, current_release.Gene, current_release.Experiment
 
 
 def get_fdr_filters(alternative, fdr, snp_class):
@@ -94,8 +89,6 @@ def get_stats_dict(fdrs, level='ALL'):
         ag_ids = [None]
     elif level == 'CHR':
         ag_ids = list(chromosomes)
-    elif level == 'TF':
-        ag_ids = [x.tf_id for x in TranscriptionFactor.query]
     elif level == 'CL':
         ag_ids = [x.cl_id for x in CellLine.query]
     else:
@@ -178,7 +171,6 @@ def collect_ananastra_stats(fdrs=fdr_choices, level=None):
         with open(ananastra_stats_file, 'w') as f:
             json.dump({
                 'chr_stats_dict': get_stats_dict(fdrs, level='CHR'),
-                'tf_stats_dict': get_stats_dict(fdrs, level='TF'),
                 'cl_stats_dict': get_stats_dict(fdrs, level='CL'),
                 'stats_dict': get_stats_dict(fdrs),
             }, f, indent=2)
