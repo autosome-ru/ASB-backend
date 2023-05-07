@@ -121,7 +121,7 @@ if __name__ == '__main__':
                                  align=row['ALIGNS'],
                                  geo_gse=row['GEO'] if row['GEO'] != '' and not pd.isna(row['GEO']) else None,
                                  encode=row['ENCODE'] if row['ENCODE'] != '' and not pd.isna(row['ENCODE']) else None,
-                                 cl_id=int(row['CELL_ID']))
+                                 **{f'{param}_id': int(row['CELL_ID'])})
 
                 exps.append(exp)
 
