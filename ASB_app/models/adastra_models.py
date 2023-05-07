@@ -331,7 +331,6 @@ for release in Release.__subclasses__():
                                                   ['snps.chromosome', 'snps.position', 'snps.alt']),
                           db.UniqueConstraint('chromosome', 'position', 'alt', 'cl_id',
                                               name='atac_unique_mutation'),
-                          db.Index('atac_id_index', 'cl_id'),
                           db.Index('ix_atac_snps_best_p_value', 'best_p_value'),
                           db.Index('ix_atac_snps_fdr_class', 'fdr_class'),
                           db.Index('ix_atac_snps_best_es', 'best_es'),
@@ -339,7 +338,7 @@ for release in Release.__subclasses__():
                           )
 
         cl_snp_id = db.Column(db.Integer, primary_key=True)
-        cl_id = db.Column(db.Integer, db.ForeignKey('atac.cl_id'), nullable=False)
+        cl_id = db.Column(db.Integer, db.ForeignKey('atac.cl_id'), nullable=False, index=False)
 
         snp = db.relationship('SNP', back_populates='atac_aggregated_snps')
         cell_line = db.relationship('Atac', backref='atac_aggregated_snps')
@@ -392,13 +391,11 @@ for release in Release.__subclasses__():
         start_pos = db.Column(db.Integer, nullable=False)
         end_pos = db.Column(db.Integer, nullable=False)
         orientation = db.Column(db.Boolean, nullable=False)
-        if int(release.version) >= 3:
-            snps_count = db.Column(db.Integer)
-            snps_count010 = db.Column(db.Integer)
-            eqtl_snps_count = db.Column(db.Integer)
-            eqtl_snps_count010 = db.Column(db.Integer)
-        else:
-            snps_count = db.Column(db.Integer)
+
+        snps_count = db.Column(db.Integer)
+        snps_count010 = db.Column(db.Integer)
+        eqtl_snps_count = db.Column(db.Integer)
+        eqtl_snps_count010 = db.Column(db.Integer)
 
         snps_by_target = db.relationship(
             'SNP',
