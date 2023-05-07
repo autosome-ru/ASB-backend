@@ -46,20 +46,20 @@ current_release.Gene
 
 tr = 0.25
 
-EXP = 0
-FAIRE = 0
-DNASE = 0
-ATAC = 0
+EXP = 1
+FAIRE = 1
+DNASE = 1
+ATAC = 1
 PHEN = 0
-FAIRE_DICT = 0
-ATAC_DICT = 0
-DNASE_DICT = 0
+FAIRE_DICT = 1
+ATAC_DICT = 1
+DNASE_DICT = 1
 
 CONTEXT = 0
-BAD_GROUP = 0
-GENES = 0
+BAD_GROUP = 1
+GENES = 1
 TARGET_GENES = 0
-PROMOTER_GENES = 0  # not needed at first time
+PROMOTER_GENES = 1  # not needed at first time
 TARGET_GENE_SNP_COUNT = 0
 
 # Don't forget to change current_release in releases.py
