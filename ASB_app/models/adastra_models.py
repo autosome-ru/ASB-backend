@@ -145,15 +145,12 @@ for release in Release.__subclasses__():
     class Experiment(db.Model):
         __tablename__ = 'experiments'
         __bind_key__ = release.name
-        __table_args__ = (
-            db.Index('align_index', 'align'),
-        )
         exp_id = db.Column(db.String(10), primary_key=True)
-        align = db.Column(db.String(13), nullable=False)
+        align = db.Column(db.String(13), nullable=False, index=True)
 
-        dnase_id = db.Column(db.Integer, db.ForeignKey('Dnase.cl_id'))
-        atac_id = db.Column(db.Integer, db.ForeignKey('Atac.cl_id'))
-        faire_id = db.Column(db.Integer, db.ForeignKey('Faire.cl_id'))
+        dnase_id = db.Column(db.Integer, db.ForeignKey('dnase.cl_id'))
+        atac_id = db.Column(db.Integer, db.ForeignKey('atac.cl_id'))
+        faire_id = db.Column(db.Integer, db.ForeignKey('faire.cl_id'))
         geo_gse = db.Column(db.String(26))
         encode = db.Column(db.String(30))
 
