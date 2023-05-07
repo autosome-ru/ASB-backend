@@ -191,7 +191,7 @@ if __name__ == '__main__':
                     'best_es': max_es,
                     'fdr_class': get_fdr_class(-np.log10(min_pv)),
                     'es_class': get_es_class(max_es),
-                    'es_ref': row['es_mean_ref'],
+                    'es_ref': None if pd.isna(row['es_mean_ref']) else row['es_mean_ref'],
                     'es_alt': None if pd.isna(row['es_mean_alt']) else row['es_mean_alt'],
                     'is_asb': min_pv <= 0.1,
                     'mean_bad': row['mean_bad'],
