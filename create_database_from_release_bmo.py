@@ -93,7 +93,7 @@ if __name__ == '__main__':
             try:
                 key, value = line.strip().split()
             except:
-                print(line, key, value)
+                print(line)
             cl_dict_reverse[value] = key
             cl_dict[key] = value
 
