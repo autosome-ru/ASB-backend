@@ -102,6 +102,9 @@ if __name__ == '__main__':
             print('Loading experiments')
             table = pd.read_table(f'/home/abramov/metadata_{param}.tsv')
 
+            table2 = pd.read_table('/home/abramov/Configs' + {'faire': 'faire+header.txt', 'atac': 'master-atac.txt', 'dnase': 'master-dnase.txt'}[param])
+
+            table = table.merge(table2)
             counter = 1
             exps = []
             cls = []
