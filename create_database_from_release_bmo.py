@@ -280,7 +280,7 @@ if __name__ == '__main__':
                     if not ag_snp:
                         continue
 
-                    ag_snp_id = getattr(ag_snp, f'{param}_snp_id')
+                    ag_snp_id = ag_snp.cl_snp_id
 
                     parameters_list = [dict(zip(
                         value.keys(),
