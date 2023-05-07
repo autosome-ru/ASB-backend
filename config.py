@@ -5,7 +5,7 @@ dir = pathlib.Path(__file__).parent.absolute()
 
 class Config(object):
     SQLALCHEMY_BINDS = {
-        'soos': 'mysql://adastra:pass=ADASTRA880@localhost:3306/udacha_bmo?charset=utf8',
+        'bmo': 'mysql://adastra:pass=ADASTRA880@localhost:3306/udacha_bmo?charset=utf8',
         # 'susan': 'mysql://adastra:pass=ADASTRA880@localhost:3306/adastra_susan?charset=utf8',
         # 'zanthar': 'mysql://adastra:pass=ADASTRA880@localhost:3306/adastra_zanthar?charset=utf8',
         # 'candidates_zanthar': 'mysql://adastra:pass=ADASTRA880@localhost:3306/adastra_candidates_zanthar?charset=utf8',
