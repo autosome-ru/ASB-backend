@@ -13,6 +13,7 @@ __all__ = []
 for release in Release.__subclasses__():
     db = release.db
 
+
     class Faire(db.Model):
         __tablename__ = 'faire'
         __bind_key__ = release.name
@@ -55,6 +56,7 @@ for release in Release.__subclasses__():
 
         def __repr__(self):
             return '<CellLine #{0.cl_id}, {0.name}>'.format(self)
+
 
     class Atac(db.Model):
         __tablename__ = 'atac'
@@ -99,6 +101,7 @@ for release in Release.__subclasses__():
         def __repr__(self):
             return '<CellLine #{0.cl_id}, {0.name}>'.format(self)
 
+
     class Dnase(db.Model):
         __tablename__ = 'dnase'
         __bind_key__ = release.name
@@ -141,6 +144,7 @@ for release in Release.__subclasses__():
 
         def __repr__(self):
             return '<CellLine #{0.cl_id}, {0.name}>'.format(self)
+
 
     class Experiment(db.Model):
         __tablename__ = 'experiments'
@@ -236,9 +240,15 @@ for release in Release.__subclasses__():
         ref = db.Column(db.Enum(*nucleotides), nullable=False)
         rs_id = db.Column(db.Integer, nullable=False)
 
-        cl_aggregated_snps = db.relationship('CellLineSNP',
-                                             order_by='CellLineSNP.best_p_value.desc()',
-                                             back_populates='snp')
+        faire_aggregated_snps = db.relationship('FaireSNP',
+                                                order_by='FaireSNP.best_p_value.desc()',
+                                                back_populates='snp')
+        atac_aggregated_snps = db.relationship('AtacSNP',
+                                                order_by='AtacSNP.best_p_value.desc()',
+                                                back_populates='snp')
+        dnase_aggregated_snps = db.relationship('DnaseSNP',
+                                                order_by='DnaseSNP.best_p_value.desc()',
+                                                back_populates='snp')
 
         has_clinvar_associations = db.Column(db.Boolean)
         has_phewas_associations = db.Column(db.Boolean)
@@ -275,6 +285,7 @@ for release in Release.__subclasses__():
         best_es = db.Column(db.Float)
         es_class = db.Column(db.Enum(*es_classes))
 
+
     class FaireSNP(AggregatedSNP):
         __tablename__ = 'faire_snps'
         __bind_key__ = release.name
@@ -298,6 +309,7 @@ for release in Release.__subclasses__():
         def __repr__(self):
             return '<CellLineSNP #{0.cl_snp_id} at {0.chromosome} {0.position} {0.alt}>'.format(self)
 
+
     class DnaseSNP(AggregatedSNP):
         __tablename__ = 'dnase_snps'
         __bind_key__ = release.name
@@ -320,6 +332,7 @@ for release in Release.__subclasses__():
 
         def __repr__(self):
             return '<CellLineSNP #{0.cl_snp_id} at {0.chromosome} {0.position} {0.alt}>'.format(self)
+
 
     class AtacSNP(AggregatedSNP):
         __tablename__ = 'atac_snps'
