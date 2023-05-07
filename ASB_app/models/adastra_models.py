@@ -304,7 +304,7 @@ for release in Release.__subclasses__():
         cl_id = db.Column(db.Integer, db.ForeignKey('faire.cl_id'), nullable=False)
 
         snp = db.relationship('SNP', back_populates='faire_aggregated_snps')
-        cell_line = db.relationship('Faire', backref='faire_aggregated_snps')
+        cell_line = db.relationship('Faire', backref='cl_aggregated_snps')
 
         def __repr__(self):
             return '<CellLineSNP #{0.cl_snp_id} at {0.chromosome} {0.position} {0.alt}>'.format(self)
@@ -328,7 +328,7 @@ for release in Release.__subclasses__():
         cl_id = db.Column(db.Integer, db.ForeignKey('dnase.cl_id'), nullable=False)
 
         snp = db.relationship('SNP', back_populates='dnase_aggregated_snps')
-        cell_line = db.relationship('Dnase', backref='dnase_aggregated_snps')
+        cell_line = db.relationship('Dnase', backref='cl_aggregated_snps')
 
         def __repr__(self):
             return '<CellLineSNP #{0.cl_snp_id} at {0.chromosome} {0.position} {0.alt}>'.format(self)
@@ -351,7 +351,7 @@ for release in Release.__subclasses__():
         cl_id = db.Column(db.Integer, db.ForeignKey('atac.cl_id'), nullable=False, index=False)
 
         snp = db.relationship('SNP', back_populates='atac_aggregated_snps')
-        cell_line = db.relationship('Atac', backref='atac_aggregated_snps')
+        cell_line = db.relationship('Atac', backref='cl_aggregated_snps')
 
         def __repr__(self):
             return '<CellLineSNP #{0.cl_snp_id} at {0.chromosome} {0.position} {0.alt}>'.format(self)
