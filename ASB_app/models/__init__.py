@@ -7,6 +7,3 @@ from ASB_app.releases import Release, current_release
 for release in Release.__subclasses__():
     release.db.create_all(release.name)
     release.session.commit()
-
-current_release.db.create_all(cnadidates_release_key)
-current_release.db.create_all('tickets')
