@@ -19,6 +19,7 @@ class ReleaseService:
         self.release = release
 
         for model in abstract_models:
+            print(release.__dict__)
             setattr(self, model.__name__, getattr(release, model.__name__))
 
     def get_filters_by_fdr(self, fdr):
