@@ -103,7 +103,7 @@ if __name__ == '__main__':
             table = pd.read_table(f'/home/abramov/metadata_{param}.tsv')
 
             table2 = pd.read_table('/home/abramov/Configs/' + {'faire': 'faire+header.txt', 'atac': 'master-atac.txt', 'dnase': 'master-dnase.txt'}[param])
-            print(len(table2.index), len(table.index), len(table.merge(table2).index))
+            print(param, len(table2.index), len(table.index), len(table.merge(table2).index))
             table = table.merge(table2)
             counter = 1
             exps = []
