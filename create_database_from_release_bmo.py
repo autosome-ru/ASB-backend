@@ -88,6 +88,8 @@ if __name__ == '__main__':
     cl_dict_reverse = {}
     with open('/home/abramov/udacha_v1_id2name.tsv') as file:
         for line in file:
+            if not line.strip():
+                continue
             key, value = line.strip().split()
             cl_dict_reverse[value] = key
             cl_dict[key] = value
