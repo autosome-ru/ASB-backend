@@ -34,7 +34,7 @@ class Release:
 #     full_version = '5.1'
 
 class ReleaseBmo(Release):
-    name = 'meepo'
+    name = 'bmo'
     version = '1'
     full_version = '1.0'
 
