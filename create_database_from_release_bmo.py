@@ -149,8 +149,8 @@ if __name__ == '__main__':
             snps = []
             header = []
             for index, row in tqdm(df.iterrows(), leave=False, total=len(df.index)):
-                row['fdrp_bh_ref'] = row['ref_comb_pval']
-                row['fdrp_bh_alt'] = row['alt_comb_pval']
+                row['fdrp_bh_ref'] = row['ref_fdr_comb_pval']
+                row['fdrp_bh_alt'] = row['alt_fdr_comb_pval']
                 row['es_mean_ref'] = row['ref_comb_es']
                 row['es_mean_alt'] = row['alt_comb_es']
 
@@ -172,7 +172,7 @@ if __name__ == '__main__':
                     mutation = SNP(
                         rs_id=row['ID'],
                         chromosome=row['#chr'],
-                        position=row['pos'],
+                        position=row['end'],
                         ref=row['ref'],
                         alt=row['alt'],
                     )
