@@ -231,10 +231,14 @@ def update_gene_snps_count():
 
 
 def update_best_p_value():
-    q = session.query(SNP, db.func.greatest(db.func.coalesce(db.func.max(TranscriptionFactorSNP.best_p_value), 0),
-                                            db.func.coalesce(db.func.max(CellLineSNP.best_p_value), 0))) \
-        .join(TranscriptionFactorSNP, SNP.tf_aggregated_snps, isouter=True) \
-        .join(CellLineSNP, SNP.cl_aggregated_snps, isouter=True) \
+    q = session.query(SNP, db.func.greatest(
+            db.func.coalesce(db.func.max(AtacSNP.best_p_value), 0),
+            db.func.coalesce(db.func.max(DnaseSNP.best_p_value), 0),
+            db.func.coalesce(db.func.max(FaireSNP.best_p_value), 0)
+    )) \
+        .join(FaireSNP, SNP.faire_aggregated_snps, isouter=True) \
+        .join(AtacSNP, SNP.atac_aggregated_snps, isouter=True) \
+        .join(DnaseSNP, SNP.dnase_aggregated_snps, isouter=True) \
         .group_by(SNP)
     for i, (snp, best_p) in enumerate(q, 1):
         if i % 50000 == 1:
@@ -246,11 +250,13 @@ def update_best_p_value():
 
 def update_best_es():
     q = session.query(SNP, db.func.greatest(
-        db.func.coalesce(db.func.max(TranscriptionFactorSNP.best_es), -1000),
-        db.func.coalesce(db.func.max(CellLineSNP.best_es), -1000))
-    ) \
-        .join(TranscriptionFactorSNP, SNP.tf_aggregated_snps, isouter=True) \
-        .join(CellLineSNP, SNP.cl_aggregated_snps, isouter=True) \
+        db.func.coalesce(db.func.max(AtacSNP.best_es), -1000),
+        db.func.coalesce(db.func.max(DnaseSNP.best_es), -1000),
+        db.func.coalesce(db.func.max(FaireSNP.best_es), -1000),
+    )) \
+        .join(FaireSNP, SNP.faire_aggregated_snps, isouter=True) \
+        .join(AtacSNP, SNP.atac_aggregated_snps, isouter=True) \
+        .join(DnaseSNP, SNP.dnase_aggregated_snps, isouter=True) \
         .group_by(SNP)
     for i, (snp, best_es) in enumerate(q, 1):
         if i % 50000 == 1:
