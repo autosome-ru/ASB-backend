@@ -47,7 +47,7 @@ current_release.Gene
 tr = 0.25
 
 EXP = 0
-FAIRE = 1
+FAIRE = 0
 DNASE = 0
 ATAC = 0
 PHEN = 0
