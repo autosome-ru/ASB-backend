@@ -46,7 +46,7 @@ current_release.Gene
 
 tr = 0.25
 
-EXP = 1
+EXP = 0
 FAIRE = 1
 DNASE = 1
 ATAC = 1
@@ -131,7 +131,7 @@ if __name__ == '__main__':
 
     for param in ['faire'] * FAIRE + ['dnase'] * DNASE + ['atac'] * ATAC:
         print('Loading {} ASBs'.format(param))
-        pv_path = f'/home/safronov/Projects/UDACHA/release_BMO/{param}'
+        pv_path = f'/home/safronov/Projects/UDACHA/release_BMO/{param}/'
         for file in tqdm(sorted(os.listdir(pv_path))):
             df = pd.read_table(pv_path + file)
             name = file.replace('.tsv', '')
