@@ -231,8 +231,10 @@ if __name__ == '__main__':
 
     for param in ['faire'] * FAIRE_DICT + ['dnase'] * DNASE_DICT + ['atac'] * ATAC_DICT:
         print('Loading {} experiment snps'.format(param))
-        pv_path = f'/home/safronov/Projects/UDACHA/release_BMO/raw_{param}'
+        pv_path = f'/home/safronov/Projects/UDACHA/release_BMO/raw_{param}/'
         for file in tqdm(sorted(os.listdir(pv_path))):
+            if file.startswith('.'):
+                continue
             name = cl_dict_reverse[file]
             wd = f'{pv_path}/{name}'
             AgrClass = agr_class_dict[param]
