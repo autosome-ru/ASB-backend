@@ -297,7 +297,7 @@ for release in Release.__subclasses__():
             return '<CellLineSNP #{0.cl_snp_id} at {0.chromosome} {0.position} {0.alt}>'.format(self)
 
     class DnaseSNP(AggregatedSNP):
-        __tablename__ = 'faire_snps'
+        __tablename__ = 'dnase_snps'
         __bind_key__ = release.name
         __table_args__ = (db.ForeignKeyConstraint(['chromosome', 'position', 'alt'],
                                                   ['snps.chromosome', 'snps.position', 'snps.alt']),
