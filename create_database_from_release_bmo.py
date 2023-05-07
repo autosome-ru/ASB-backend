@@ -86,7 +86,7 @@ snp_class_dict = {'dnase': DnaseSNP, 'faire': FaireSNP, 'atac': AtacSNP}
 if __name__ == '__main__':
     cl_dict = {}
     cl_dict_reverse = {}
-    with open('/home/sabramov/udacha_v1_id2name.tsv') as file:
+    with open('/home/abramov/udacha_v1_id2name.tsv') as file:
         for line in file:
             key, value = line.strip().split()
             cl_dict_reverse[value] = key
