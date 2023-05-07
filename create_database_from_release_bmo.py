@@ -111,7 +111,7 @@ if __name__ == '__main__':
             used_tf_names = {}
             used_cl_ids = set()
 
-            for index, row in tqdm(table.iterrows(), total=len(table.index)):
+            for index, row in tqdm(table.drop_duplicates(subset='#EXP').iterrows(), total=len(table.index)):
                 ### CELL ID IS MISSING
                 if row['CELL_ID'] not in used_cl_ids:
                     cls.append(agr_class_dict[param](cl_id=int(row['CELL_ID']), name=row['CELLS']))
