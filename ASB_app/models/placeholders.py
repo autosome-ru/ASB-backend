@@ -58,25 +58,15 @@ class GeneSNPCorrespondence:
 
 abstract_models = [
     TranscriptionFactor,
-    CellLine,
+    Atac,
+    Dnase,
+    Faire,
     Experiment,
     ExpSNP,
     SNP,
-    TranscriptionFactorSNP,
-    CellLineSNP,
-    Phenotype,
-    PhenotypeSNPCorrespondence,
-    BADGroup,
-    Gene,
-    GeneSNPCorrespondence,
-]
-
-abstract_models_dnase = [
-    CellLine,
-    Experiment,
-    ExpSNP,
-    SNP,
-    CellLineSNP,
+    AtacSNP,
+    DnaseSNP,
+    FaireSNP,
     Phenotype,
     PhenotypeSNPCorrespondence,
     BADGroup,
