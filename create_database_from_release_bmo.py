@@ -247,10 +247,11 @@ if __name__ == '__main__':
             df_l = pd.concat(cdf_list)
             content = {}
             # Ugly hack
+            vals = ['aligns', 'ref_count', 'alt_count', 'ref_pval', 'alt_pval', 'bad']
             for index, row in df_l.iterrows():
                 key = '\t'.join(map(str, [row['#chr'], row['end'], row['id'], row['ref'], row['alt']]))
-                val = {x: row[x] for x in ['aligns', 'ref_count', 'alt_count', 'ref_pval', 'alt_pval', 'bad']}
-                content.setdefault(key, []).append(val)
+                for x in vals:
+                    content.setdefault(key, {}).setdefault(x, []).append(row[x])
             ag = AgrClass.query.filter(AgrClass.name == name).one()
             ag_id = ag.cl_id
 
