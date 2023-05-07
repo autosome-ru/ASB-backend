@@ -236,7 +236,7 @@ if __name__ == '__main__':
             if file.startswith('.'):
                 continue
             name = cl_dict_reverse[file]
-            wd = f'{pv_path}/{name}'
+            wd = f'{pv_path}/{name}/'
             AgrClass = agr_class_dict[param]
             SNPClass = snp_class_dict[param]
             cdf_list = []
