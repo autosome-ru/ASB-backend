@@ -35,7 +35,7 @@ for release in Release.__subclasses__():
 
         cl_aggregated_snps005 = db.relationship(
             'CellLineSNP',
-            primaryjoin='(CellLine.cl_id == CellLineSNP.cl_id) & (CellLineSNP.best_p_value >= {})'.format(
+            primaryjoin='(Faire.cl_id == FaireSNP.cl_id) & (FaireSNP.best_p_value >= {})'.format(
                 -np.log10(0.05))
         )
 
@@ -44,8 +44,8 @@ for release in Release.__subclasses__():
             return db.func.count(FaireSNP.cl_snp_id)
 
         cl_aggregated_snps010 = db.relationship(
-            'CellLineSNP',
-            primaryjoin='(CellLine.cl_id == CellLineSNP.cl_id) & (CellLineSNP.best_p_value >= {})'.format(
+            'FaireSNP',
+            primaryjoin='(Faire.cl_id == FaireSNP.cl_id) & (FaireSNP.best_p_value >= {})'.format(
                 -np.log10(0.1))
         )
 
@@ -65,7 +65,7 @@ for release in Release.__subclasses__():
 
         non_input_experiments = db.relationship(
             'Experiment',
-            primaryjoin='Experiment.atac_id == CellLine.cl_id'
+            primaryjoin='Experiment.atac_id == Atac.cl_id'
         )
 
         @aggregated('cl_aggregated_snps', db.Column(db.Integer))
