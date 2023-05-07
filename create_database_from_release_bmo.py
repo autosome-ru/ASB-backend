@@ -90,7 +90,10 @@ if __name__ == '__main__':
         for line in file:
             if not line.strip():
                 continue
-            key, value = line.strip().split()
+            try:
+                key, value = line.strip().split()
+            except:
+                print(line, key, value)
             cl_dict_reverse[value] = key
             cl_dict[key] = value
 
