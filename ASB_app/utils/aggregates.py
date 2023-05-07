@@ -15,18 +15,12 @@ db = current_release.db
 
 chunk_size = 10000
 
-if current_release.name != 'dnase':
-    TranscriptionFactorSNP, CellLineSNP, TranscriptionFactor, CellLine, Phenotype, SNP, \
-    PhenotypeSNPCorrespondence, Experiment, Gene = \
-        current_release.TranscriptionFactorSNP, current_release.CellLineSNP, current_release.TranscriptionFactor, \
-        current_release.CellLine, current_release.Phenotype, current_release.SNP, current_release.PhenotypeSNPCorrespondence, \
-        current_release.Experiment, current_release.Gene
-else:
-    CellLineSNP, CellLine, Phenotype, SNP, \
-    PhenotypeSNPCorrespondence, Experiment, Gene = \
-        current_release.CellLineSNP, \
-        current_release.CellLine, current_release.Phenotype, current_release.SNP, current_release.PhenotypeSNPCorrespondence, \
-        current_release.Experiment, current_release.Gene
+FaireSNP, Faire, DnaseSNP, Dnase, AtacSNP, Atac, Phenotype, SNP, \
+PhenotypeSNPCorrespondence, Experiment, Gene = current_release.FaireSNP, current_release.Faire, \
+    current_release.DnaseSNP, current_release.Dnase, \
+    current_release.AtacSNP, current_release.Atac, \
+    current_release.Phenotype, current_release.SNP, current_release.PhenotypeSNPCorrespondence, \
+    current_release.Experiment, current_release.Gene
 
 
 class TsvDialect:
@@ -40,7 +34,7 @@ class TsvDialect:
 
 
 def update_aggregated_fields(
-        mappers=(CellLineSNP) if current_release.name == 'dnase' else (TranscriptionFactorSNP, CellLineSNP)):
+        mappers=(AtacSNP, FaireSNP, DnaseSNP)):
     """
     Updates all columns with @aggregated decorator, depending on mappers
     :param mappers: list of db.Model subclasses
@@ -53,8 +47,9 @@ def update_aggregated_fields(
         max_count = chunk_size
         while count > 0:
             print(count)
-            objects = cls.query.order_by({TranscriptionFactorSNP: TranscriptionFactorSNP.tf_id,
-                                          CellLineSNP: CellLineSNP.cl_id,
+            objects = cls.query.order_by({AtacSNP: AtacSNP.cl_id,
+                                          DnaseSNP: DnaseSNP.cl_id,
+                                          FaireSNP: FaireSNP.cl_id,
                                           Phenotype: Phenotype.phenotype_id}
                                          [cls]).offset(offset).limit(max_count).all()
             manager.construct_aggregate_queries(session, ...)  # Второй параметр не используется
@@ -65,7 +60,7 @@ def update_aggregated_fields(
 
 
 def update_aggregated_snp_count():
-    for cls in [TranscriptionFactor, CellLine]:
+    for snp_ne_obyect, cls in [(AtacSNP, Atac), (FaireSNP, Faire), (DnaseSNP, Dnase)]:
         objects = []
         query = cls.query
         count = cls.query.count()
@@ -74,14 +69,9 @@ def update_aggregated_snp_count():
         while count > 0:
             print(count)
             for item in query.offset(offset).limit(max_count):
-                if cls == TranscriptionFactor:
-                    objects.append(TranscriptionFactorSNP.query.filter(
-                        TranscriptionFactorSNP.tf_id == item.tf_id
-                    ).first())
-                elif cls == CellLine:
-                    objects.append(CellLineSNP.query.filter(
-                        CellLineSNP.cl_id == item.cl_id
-                    ).first())
+                objects.append(snp_ne_obyect.query.filter(
+                    snp_ne_obyect.cl_id == item.cl_id
+                ).first())
             manager.construct_aggregate_queries(session, ...)  # Второй параметр не используется
             session.commit()
             session.close()
@@ -90,7 +80,7 @@ def update_aggregated_snp_count():
 
 
 def update_experiments_count():
-    for cls in [TranscriptionFactor, CellLine]:
+    for cls in [AtacSNP, FaireSNP, DnaseSNP]:
         objects = []
         query = cls.query
         count = cls.query.count()
@@ -98,58 +88,14 @@ def update_experiments_count():
         max_count = chunk_size
         while count > 0:
             for item in query.offset(offset).limit(max_count):
-                if cls == TranscriptionFactor:
-                    objects.append(Experiment.query.filter(
-                        Experiment.tf_id == item.tf_id
-                    ).first())
-                    print(objects[-1])
-                elif cls == CellLine:
-                    objects.append(Experiment.query.filter(
-                        Experiment.cl_id == item.cl_id
-                    ).first())
+                objects.append(Experiment.query.filter(
+                    Experiment.cl_id == item.cl_id
+                ).first())
             manager.construct_aggregate_queries(session, ...)  # Второй параметр не используется
             session.commit()
             session.close()
             offset += max_count
             count -= max_count
-
-
-def update_motif_concordance():
-    query = TranscriptionFactorSNP.query
-    count = query.count()
-    offset = 0
-    max_count = chunk_size * 100
-    while count > 0:
-        print(count)
-        for snp in query.offset(offset).limit(max_count):
-            if snp.motif_log_p_ref:
-                snp.motif_log_2_fc = (snp.motif_log_p_alt - snp.motif_log_p_ref) / np.log10(2)
-                # passes_fdr_filters = snp.best_p_value >= 1 + np.log10(2)  # 0.05
-                passes_motif_filters = ((snp.motif_log_p_ref >= 3 + np.log10(2)) or
-                                        (snp.motif_log_p_alt >= 3 + np.log10(2)))  # 0.0005
-            else:
-                assert not snp.motif_log_p_alt
-                assert not snp.motif_log_2_fc
-                continue
-            if not passes_motif_filters:
-                snp.motif_concordance = 'No Hit'
-                snp.motif_log_2_fc = None
-                continue
-
-            snp.motif_log_2_fc = (snp.motif_log_p_alt - snp.motif_log_p_ref) / np.log10(2)
-
-            if abs((snp.motif_log_p_alt - snp.motif_log_p_ref) / np.log10(2)) >= 2:
-                snp.motif_concordance = 'Concordant' if (snp.motif_log_p_alt - snp.motif_log_p_ref) * \
-                                                        (snp.log_p_value_alt - snp.log_p_value_ref) > 0 \
-                    else 'Discordant'
-            else:
-                snp.motif_concordance = 'Weak Concordant' if (snp.motif_log_p_alt - snp.motif_log_p_ref) * \
-                                                             (snp.log_p_value_alt - snp.log_p_value_ref) > 0 \
-                    else 'Weak Discordant'
-        session.commit()
-        session.close()
-        offset += max_count
-        count -= max_count
 
 
 def update_phenotype_associations():
@@ -175,48 +121,27 @@ def update_phenotype_associations():
         count -= max_count
 
 
-def update_has_concordance():
-    q = session.query(SNP, db.func.coalesce(TranscriptionFactorSNP.tf_snp_id)).join(
-        TranscriptionFactorSNP,
-        (SNP.chromosome == TranscriptionFactorSNP.chromosome) &
-        (SNP.position == TranscriptionFactorSNP.position) &
-        (SNP.alt == TranscriptionFactorSNP.alt)
-    ).filter(
-        TranscriptionFactorSNP.motif_concordance.in_({'Concordant', 'Weak Concordant'})
-    ).group_by(SNP, db.func.coalesce(TranscriptionFactorSNP.tf_snp_id))
-    count = q.count()
-    print(count)
-    offset = 0
-    max_count = chunk_size
-    while count > 0:
-        print(count)
-        for snp, tf_snp_id in q.order_by(SNP.rs_id).limit(max_count).offset(offset):
-            setattr(snp, 'has_concordance', True)
-        session.commit()
-        session.close()
-        offset += max_count
-        count -= max_count
-
-
 def update_snp_best_p_value():
-    q = session.query(SNP, db.func.max(TranscriptionFactorSNP.best_p_value),
-                      db.func.max(CellLineSNP.best_p_value)).join(
-        TranscriptionFactorSNP,
+    q = session.query(SNP, db.func.max(DnaseSNP.best_p_value),
+                      db.func.max(AtacSNP.best_p_value), db.func.max(FaireSNP.best_p_value)).join(
+        DnaseSNP,
         SNP.tf_aggregated_snps,
         isouter=True,
     ).join(
-        CellLineSNP,
+        FaireSNP,
+        SNP.cl_aggregated_snps,
+        isouter=True,
+    ).join(
+        AtacSNP,
         SNP.cl_aggregated_snps,
         isouter=True,
     ).group_by(SNP)
 
-    for snp, tfsnp_bp, clsnp_bp in q:
-        if tfsnp_bp is None:
-            snp.best_p_value = clsnp_bp
-        elif clsnp_bp is None:
-            snp.best_p_value = tfsnp_bp
-        else:
-            snp.best_p_value = max(tfsnp_bp, clsnp_bp)
+    for snp, dnasebp, atacbp, fairebp in q:
+        for c in (dnasebp, atacbp, fairebp):
+            if c is not None:
+                snp.best_p_value = c
+                break
     session.commit()
 
 
@@ -320,8 +245,10 @@ def update_best_p_value():
 
 
 def update_best_es():
-    q = session.query(SNP, db.func.greatest(db.func.coalesce(db.func.max(TranscriptionFactorSNP.best_es), -1000),
-                                            db.func.coalesce(db.func.max(CellLineSNP.best_es), -1000))) \
+    q = session.query(SNP, db.func.greatest(
+        db.func.coalesce(db.func.max(TranscriptionFactorSNP.best_es), -1000),
+        db.func.coalesce(db.func.max(CellLineSNP.best_es), -1000))
+    ) \
         .join(TranscriptionFactorSNP, SNP.tf_aggregated_snps, isouter=True) \
         .join(CellLineSNP, SNP.cl_aggregated_snps, isouter=True) \
         .group_by(SNP)

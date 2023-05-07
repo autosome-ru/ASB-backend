@@ -2,7 +2,7 @@ import json
 
 from ASB_app import releases
 from ASB_app.constants import fdr_classes, es_classes, fdr_choices, ananastra_stats_file, chromosomes
-from ASB_app.models import CandidateSNP, CandidateRS, CandidateCLRS, CandidateTFRS
+
 import numpy as np
 
 current_release = releases.current_release
