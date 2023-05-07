@@ -189,8 +189,11 @@ for release in Release.__subclasses__():
         p_value_ref = db.Column(db.Float)
         p_value_alt = db.Column(db.Float)
         bad = db.Column(db.Enum(*bads))
-        atac_snp_id = db.Column(db.Integer, db.ForeignKey('atac_snps.cl_snp_id'))
         exp_id = db.Column(db.String(10), db.ForeignKey('experiments.exp_id'), nullable=False, index=True)
+
+        atac_snp_id = db.Column(db.Integer, db.ForeignKey('atac_snps.cl_snp_id'))
+        dnase_snp_id = db.Column(db.Integer, db.ForeignKey('dnase_snps.cl_snp_id'))
+        faire_snp_id = db.Column(db.Integer, db.ForeignKey('faire_snps.cl_snp_id'))
 
         atac_aggregated_snp = db.relationship('AtacSNP', backref='exp_snps_atac')
         dnase_aggregated_snp = db.relationship('DnaseSNP', backref='exp_snps_dnase')
