@@ -160,7 +160,9 @@ for release in Release.__subclasses__():
         bad_group_id = db.Column(db.Integer, db.ForeignKey('bad_groups.bad_group_id'))
 
         bad_group = db.relationship('BADGroup', backref='experiments')
-        cell_line = db.relationship('CellLine', backref='experiments')
+        faire = db.relationship('Faire', backref='experiments')
+        dnase = db.relationship('Dnase', backref='experiments')
+        atac = db.relationship('Atac', backref='experiments')
 
         def __repr__(self):
             return '<Experiment #{0.exp_id}>'.format(self)
