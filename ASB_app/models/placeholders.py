@@ -57,16 +57,15 @@ class GeneSNPCorrespondence:
 
 
 abstract_models = [
-    TranscriptionFactor,
-    Atac,
-    Dnase,
     Faire,
+    FaireSNP,
+    Dnase,
+    DnaseSNP,
+    Atac,
+    AtacSNP,
     Experiment,
     ExpSNP,
     SNP,
-    AtacSNP,
-    DnaseSNP,
-    FaireSNP,
     Phenotype,
     PhenotypeSNPCorrespondence,
     BADGroup,
