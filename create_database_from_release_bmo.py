@@ -114,7 +114,7 @@ if __name__ == '__main__':
             for index, row in tqdm(table.iterrows(), total=len(table.index)):
                 ### CELL ID IS MISSING
                 if row['CELL_ID'] not in used_cl_ids:
-                    cls.append(agr_class_dict[param](name=row['CELLS']))
+                    cls.append(agr_class_dict[param](cl_id=int(row['CELL_ID']), name=row['CELLS']))
                     used_cl_ids.add(row['CELL_ID'])
 
                 exp = Experiment(exp_id=row['#EXP'],
