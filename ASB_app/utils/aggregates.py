@@ -241,8 +241,6 @@ def update_best_p_value():
         .join(DnaseSNP, SNP.dnase_aggregated_snps, isouter=True) \
         .group_by(SNP)
     for i, (snp, best_p) in enumerate(q, 1):
-        if i % 50000 == 1:
-            print(i)
         snp.best_p_value = best_p
         snp.fdr_class = get_fdr_class(best_p)
     session.commit()
@@ -259,8 +257,6 @@ def update_best_es():
         .join(DnaseSNP, SNP.dnase_aggregated_snps, isouter=True) \
         .group_by(SNP)
     for i, (snp, best_es) in enumerate(q, 1):
-        if i % 50000 == 1:
-            print(i)
         snp.best_es = None if best_es == -1000 else best_es
         snp.es_class = get_es_class(best_es)
     session.commit()
@@ -295,4 +291,3 @@ def update_gene_promoter_snp_correspondence():
 
 def update_all():
     update_phenotype_associations()
-    update_has_concordance()
