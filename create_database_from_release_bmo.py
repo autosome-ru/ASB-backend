@@ -46,9 +46,9 @@ current_release.Gene
 
 tr = 0.25
 
-EXP = 1
-FAIRE = 1
-DNASE = 1
+EXP = 0
+FAIRE = 0
+DNASE = 0
 ATAC = 1
 PHEN = 0
 FAIRE_DICT = 1
@@ -135,6 +135,7 @@ if __name__ == '__main__':
         pv_path = f'/home/safronov/Projects/UDACHA/release_BMO/{param}/'
         for file in tqdm(sorted(os.listdir(pv_path))):
             df = pd.read_table(pv_path + file)
+            df = df[df['fdr_comb_pval'] <= tr]
             name = file.replace('.tsv', '')
             name = cl_dict_reverse[name]
             AgrClass = agr_class_dict[param]
@@ -156,8 +157,8 @@ if __name__ == '__main__':
                 row['es_mean_alt'] = row['alt_comb_es']
 
                 min_pv = min(
-                    row['ref_fdr_comb_pval'] if row['ref_fdr_comb_pval'] else 1,
-                    row['alt_fdr_comb_pval'] if row['alt_fdr_comb_pval'] else 1,
+                    row['ref_fdr_comb_pval'] if not pd.isna(row['ref_fdr_comb_pval']) else 1,
+                    row['alt_fdr_comb_pval'] if not pd.isna(row['alt_fdr_comb_pval']) else 1,
                 )
 
                 if min_pv > tr:
