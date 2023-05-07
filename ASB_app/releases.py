@@ -35,7 +35,7 @@ class Release:
 
 class ReleaseBmo(Release):
     name = 'bmo'
-    version = '1'
+    version = '5'
     full_version = '1.0'
 
 
