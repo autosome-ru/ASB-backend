@@ -79,8 +79,8 @@ release_path = os.path.expanduser('~/adastra/DataChipBillCipher0626')
 parameters_path = os.path.expanduser('~/Configs/')
 
 conv_bad = dict(zip(
-    (1, 4 / 3, 3 / 2, 2, 5 / 2, 3, 4, 5, 6),
-    ('1', '4/3', '3/2', '2', '5/2', '3', '4', '5', '6')
+    (1, 4 / 3, 3 / 2, 2, 5 / 2, 3, 4, 5, 6, 1.33333),
+    ('1', '4/3', '3/2', '2', '5/2', '3', '4', '5', '6', '4/3')
 ))
 agr_class_dict = {'dnase': Dnase, 'faire': Faire, 'atac': Atac}
 snp_class_dict = {'dnase': DnaseSNP, 'faire': FaireSNP, 'atac': AtacSNP}
