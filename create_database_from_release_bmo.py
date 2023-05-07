@@ -274,7 +274,7 @@ if __name__ == '__main__':
                         SNPClass.chromosome == chromosome,
                         SNPClass.position == position,
                         SNPClass.alt == alt,
-                        getattr(SNPClass, {'TF': 'tf_id', 'CL': 'cl_id'}[param]) == ag_id,
+                        getattr(SNPClass, 'cl_id') == ag_id,
                     ).first()
 
                     if not ag_snp:
