@@ -278,8 +278,6 @@ for release in Release.__subclasses__():
         es_ref = db.Column(db.Float)
         es_alt = db.Column(db.Float)
         mean_bad = db.Column(db.Float)
-        peak_calls = db.Column(db.Integer)
-        peak_callers = db.Column(db.Integer)
         best_p_value = db.Column(db.Float)
         fdr_class = db.Column(db.Enum(*fdr_classes))
         best_es = db.Column(db.Float)
