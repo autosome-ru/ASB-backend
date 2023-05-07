@@ -164,7 +164,7 @@ if __name__ == '__main__':
                     continue
 
                 max_es = max(x for x in (row['ref_comb_es'],
-                                         row['alt_comb_es']) if x is not None)
+                                         row['alt_comb_es']) if not pd.isna(x))
 
                 row['ID'] = int(row['id'][row['id'].rfind('rs') + 2:])
                 mutation = SNP.query.filter((SNP.rs_id == row['ID']) &
@@ -188,7 +188,7 @@ if __name__ == '__main__':
                     'log_p_value_ref': -np.log10(row['fdrp_bh_ref']) if row['fdrp_bh_ref'] != 0 else 310,
                     'log_p_value_alt': -np.log10(row['fdrp_bh_alt']) if row['fdrp_bh_alt'] != 0 else 310,
                     'best_p_value': -np.log10(min_pv),
-                    'best_es': max_es,
+                    'best_es': None if pd.isna(max_es) else max_es,
                     'fdr_class': get_fdr_class(-np.log10(min_pv)),
                     'es_class': get_es_class(max_es),
                     'es_ref': None if pd.isna(row['es_mean_ref']) else row['es_mean_ref'],
