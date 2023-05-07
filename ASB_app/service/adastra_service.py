@@ -1,6 +1,6 @@
 from sqlalchemy.orm import aliased
 
-from ASB_app.models import abstract_models, abstract_models_dnase
+from ASB_app.models import abstract_models
 from ASB_app.utils.aggregates import db_name_property_dict, TsvDialect
 from sqlalchemy import not_, or_
 import csv
@@ -17,12 +17,9 @@ from ASB_app.utils.statistics import get_corresponding_fdr_classes, get_correspo
 class ReleaseService:
     def __init__(self, release):
         self.release = release
-        if release.name != 'dnase':
-            for model in abstract_models:
-                setattr(self, model.__name__, getattr(release, model.__name__))
-        else:
-            for model in abstract_models_dnase:
-                setattr(self, model.__name__, getattr(release, model.__name__))
+
+        for model in abstract_models:
+            setattr(self, model.__name__, getattr(release, model.__name__))
 
     def get_filters_by_fdr(self, fdr):
         if int(self.release.version) >= 3:
