@@ -34,7 +34,7 @@ for release in Release.__subclasses__():
             return db.func.count(Experiment.exp_id)
 
         cl_aggregated_snps005 = db.relationship(
-            'CellLineSNP',
+            'FaireSNP',
             primaryjoin='(Faire.cl_id == FaireSNP.cl_id) & (FaireSNP.best_p_value >= {})'.format(
                 -np.log10(0.05))
         )
