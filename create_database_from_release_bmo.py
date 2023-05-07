@@ -46,14 +46,14 @@ current_release.Gene
 
 tr = 0.25
 
-EXP = 0
-FAIRE = 0
-DNASE = 0
-ATAC = 1
+EXP = 1
+FAIRE = 1
+DNASE = 1
+ATAC = 0
 PHEN = 0
-FAIRE_DICT = 0
-ATAC_DICT = 1
-DNASE_DICT = 0
+FAIRE_DICT = 1
+DNASE_DICT = 1
+ATAC_DICT = 0
 
 CONTEXT = 0
 BAD_GROUP = 1
@@ -157,8 +157,8 @@ if __name__ == '__main__':
                 row['es_mean_alt'] = row['alt_comb_es']
 
                 min_pv = min(
-                    row['ref_fdr_comb_pval'] if not pd.isna(row['ref_fdr_comb_pval']) else 1,
-                    row['alt_fdr_comb_pval'] if not pd.isna(row['alt_fdr_comb_pval']) else 1,
+                    row['fdrp_bh_ref'] if not pd.isna(row['fdrp_bh_ref']) else 1,
+                    row['fdrp_bh_alt'] if not pd.isna(row['fdrp_bh_alt']) else 1,
                 )
 
                 if min_pv > tr:
@@ -174,7 +174,7 @@ if __name__ == '__main__':
                     mutation = SNP(
                         rs_id=row['ID'],
                         chromosome=row['#chr'],
-                        position=row['end'],
+                        position=int(row['end']),
                         ref=row['ref'],
                         alt=row['alt'],
                     )
