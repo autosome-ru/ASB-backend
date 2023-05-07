@@ -1,7 +1,7 @@
 from ASB_app import *
 from ASB_app import constants
 from ASB_app.models import *
-from ASB_app.utils.aggregates import update_motif_concordance, update_has_concordance, update_phenotype_associations, \
+from ASB_app.utils.aggregates import update_phenotype_associations, \
     update_best_p_value, update_best_es
 import os
 import json
