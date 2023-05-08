@@ -87,7 +87,7 @@ snp_class_dict = {'dnase': DnaseSNP, 'faire': FaireSNP, 'atac': AtacSNP}
 if __name__ == '__main__':
     cl_dict = {}
     cl_dict_reverse = {}
-    with open(f'{release_path}/metadata/celnames.tsv ') as file:
+    with open(f'{release_path}/metadata/celnames.tsv') as file:
         for line in file:
             if not line.strip():
                 continue
