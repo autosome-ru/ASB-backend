@@ -149,8 +149,8 @@ for release in Release.__subclasses__():
     class Experiment(db.Model):
         __tablename__ = 'experiments'
         __bind_key__ = release.name
-        exp_id = db.Column(db.String(10), primary_key=True)
-        align = db.Column(db.String(13), nullable=False, index=True)
+        exp_id = db.Column(db.String(13), primary_key=True)
+        align = db.Column(db.String(16), nullable=False, index=True)
 
         dnase_id = db.Column(db.Integer, db.ForeignKey('dnase.cl_id'))
         atac_id = db.Column(db.Integer, db.ForeignKey('atac.cl_id'))
@@ -190,7 +190,7 @@ for release in Release.__subclasses__():
         p_value_ref = db.Column(db.Float)
         p_value_alt = db.Column(db.Float)
         bad = db.Column(db.Enum(*bads))
-        exp_id = db.Column(db.String(10), db.ForeignKey('experiments.exp_id'), nullable=False, index=True)
+        exp_id = db.Column(db.String(13), db.ForeignKey('experiments.exp_id'), nullable=False, index=True)
 
         atac_snp_id = db.Column(db.Integer, db.ForeignKey('atac_snps.cl_snp_id'))
         dnase_snp_id = db.Column(db.Integer, db.ForeignKey('dnase_snps.cl_snp_id'))
