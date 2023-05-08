@@ -46,13 +46,13 @@ current_release.Gene
 
 tr = 0.25
 
-EXP = 1
-FAIRE = 1
-DNASE = 1
+EXP = 0
+FAIRE = 0
+DNASE = 0
 ATAC = 0
 PHEN = 0
-FAIRE_DICT = 1
-DNASE_DICT = 1
+FAIRE_DICT = 0
+DNASE_DICT = 0
 ATAC_DICT = 0
 
 CONTEXT = 0
