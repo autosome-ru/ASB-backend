@@ -162,7 +162,9 @@ class ReleaseSerializers:
 
         self.aggregated_snp_model_full = api.inherit('Aggregated SNP (with exp snps)', self.aggregated_snp_model, {
             'mean_bad': fields.Float,
-            'exp_snps': fields.List(fields.Nested(self.exp_snp_model))
+            'exp_snps_atac': fields.List(fields.Nested(self.exp_snp_model)),
+            'exp_snps_dnase': fields.List(fields.Nested(self.exp_snp_model)),
+            'exp_snps_faire': fields.List(fields.Nested(self.exp_snp_model))
         })
 
         self.tf_snp_model_full = api.inherit('Transcription Factor SNP (with exp snps)', self.aggregated_snp_model_full, {
