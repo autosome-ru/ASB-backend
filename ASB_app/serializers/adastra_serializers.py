@@ -116,8 +116,9 @@ class ReleaseSerializers:
         })
 
         self.rs_snp_model = api.inherit('rs-SNP info for search', self.genome_polymorphism_location_model, {
-            'tf_aggregated_snps': fields.List(fields.Nested(self.tf_snp_model)),
-            'cl_aggregated_snps': fields.List(fields.Nested(self.cl_snp_model)),
+            'dnase_aggregated_snps': fields.List(fields.Nested(self.cl_snp_model)),
+            'atac_aggregated_snps': fields.List(fields.Nested(self.cl_snp_model)),
+            'faire_aggregated_snps': fields.List(fields.Nested(self.cl_snp_model)),
             'has_concordance': fields.Boolean,
         })
 
@@ -186,8 +187,9 @@ class ReleaseSerializers:
         })
 
         self.rs_snp_model_full = api.inherit('Complete rs-SNP info (with exp snps)', self.genome_polymorphism_location_model, {
-            'tf_aggregated_snps': fields.List(fields.Nested(self.tf_snp_model_full)),
-            'cl_aggregated_snps': fields.List(fields.Nested(self.cl_snp_model_full)),
+            'atac_aggregated_snps': fields.List(fields.Nested(self.cl_snp_model_full)),
+            'dnase_aggregated_snps': fields.List(fields.Nested(self.cl_snp_model_full)),
+            'faire_aggregated_snps': fields.List(fields.Nested(self.cl_snp_model_full)),
             'phenotypes': fields.List(fields.Nested(self.phenotype_model))
         })
 

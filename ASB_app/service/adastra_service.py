@@ -17,6 +17,10 @@ from ASB_app.utils.statistics import get_corresponding_fdr_classes, get_correspo
 class ReleaseService:
     def __init__(self, release):
         self.release = release
+        self.what_for = ('dnase', 'atac', 'faire')
+        self.filter_object_keys = {x: x for x in self.what_for}
+        self.aggregation_classes = {'dnase': self.Dnase, 'faire': self.Faire, 'atac': self.Atac}
+        self.aggregation_snp_classes = {'dnase': self.DnaseSNP, 'faire': self.FaireSNP, 'atac': self.AtacSNP}
 
         for model in abstract_models:
             setattr(self, model.__name__, getattr(release, model.__name__))
@@ -70,20 +74,11 @@ class ReleaseService:
         ).one()
 
     def get_aggregated_snp(self, chromosome, position, alt, ag_level, ag_name):
-        if not ag_level in ('TF', 'CL'):
+        if ag_level not in self.what_for:
             raise ValueError(ag_level)
-        AgSNPClass = {
-            'TF': self.TranscriptionFactorSNP,
-            'CL': self.CellLineSNP,
-        }[ag_level]
-        AgClass = {
-            'TF': self.TranscriptionFactor,
-            'CL': self.CellLine,
-        }[ag_level]
-        ag_attr = {
-            'TF': 'tf_id',
-            'CL': 'cl_id',
-        }[ag_level]
+        AgSNPClass = self.aggregation_snp_classes[ag_level]
+        AgClass = self.aggregation_classes[ag_level]
+        ag_attr = 'cl_id'
         ag_snp = AgSNPClass.query.filter(
             (AgSNPClass.chromosome == chromosome) &
             (AgSNPClass.position == position) &
@@ -99,8 +94,9 @@ class ReleaseService:
     @staticmethod
     def format_header(header):
         format_dict = {
-            'transcription_factor.name': 'transcription_factor',
-            'cell_line.name': 'cell_type'
+            'dnase.name': 'dnase.cell_type',
+            'atac.name': 'atac.cell_type',
+            'faire.name': 'faire.cell_type'
         }
         if header in format_dict:
             return format_dict[header]
@@ -149,93 +145,31 @@ class ReleaseService:
 
     def construct_advanced_filters(self, filters_object):
         filters = []
-        if int(self.release.version) >= 3:
-            if not filters_object['fdr']:
-                filters_object['fdr'] = default_fdr_tr(int(self.release.version))
-            if not filters_object['es']:
-                filters_object['es'] = default_es_tr(int(self.release.version))
-            if filters_object['transcription_factors']:
-                filters += [self.SNP.tf_aggregated_snps.any(
-                    (self.TranscriptionFactorSNP.tf_id == getattr(self.TranscriptionFactor.query.filter(
-                        self.TranscriptionFactor.name == tf_name
-                    ).one_or_none(), 'tf_id', None)) &
-                    (self.TranscriptionFactorSNP.fdr_class.in_(get_corresponding_fdr_classes(filters_object['fdr']))) &
-                    (self.TranscriptionFactorSNP.es_class.in_(get_corresponding_es_classes(filters_object['es']))))
-                    for tf_name in filters_object['transcription_factors']]
+        if not filters_object['fdr']:
+            filters_object['fdr'] = default_fdr_tr(int(self.release.version))
+        if not filters_object['es']:
+            filters_object['es'] = default_es_tr(int(self.release.version))
+        if filters_object['transcription_factors']:
+            filters += [self.SNP.tf_aggregated_snps.any(
+                (self.TranscriptionFactorSNP.tf_id == getattr(self.TranscriptionFactor.query.filter(
+                    self.TranscriptionFactor.name == tf_name
+                ).one_or_none(), 'tf_id', None)) &
+                (self.TranscriptionFactorSNP.fdr_class.in_(get_corresponding_fdr_classes(filters_object['fdr']))) &
+                (self.TranscriptionFactorSNP.es_class.in_(get_corresponding_es_classes(filters_object['es']))))
+                for tf_name in filters_object['transcription_factors']]
 
-            if filters_object['cell_types']:
-                filters += [self.SNP.cl_aggregated_snps.any(
-                    (self.CellLineSNP.cl_id == getattr(self.CellLine.query.filter(
-                        self.CellLine.name == cl_name
-                    ).one_or_none(), 'cl_id', None)) &
-                    (self.CellLineSNP.fdr_class.in_(get_corresponding_fdr_classes(filters_object['fdr']))) &
-                    (self.CellLineSNP.es_class.in_(get_corresponding_es_classes(filters_object['es']))))
-                    for cl_name in filters_object['cell_types']]
+        if filters_object['cell_types']:
+            filters += [self.SNP.cl_aggregated_snps.any(
+                (self.CellLineSNP.cl_id == getattr(self.CellLine.query.filter(
+                    self.CellLine.name == cl_name
+                ).one_or_none(), 'cl_id', None)) &
+                (self.CellLineSNP.fdr_class.in_(get_corresponding_fdr_classes(filters_object['fdr']))) &
+                (self.CellLineSNP.es_class.in_(get_corresponding_es_classes(filters_object['es']))))
+                for cl_name in filters_object['cell_types']]
 
-            if not filters_object['transcription_factors'] and not filters_object['cell_types']:
-                filters += self.get_filters_by_fdr(filters_object['fdr']) + \
-                           self.get_filters_by_es(filters_object['es'])
-
-            if filters_object['motif_concordance']:
-                search_null = False
-                if 'None' in filters_object['motif_concordance']:
-                    search_null = True
-                    filters_object['motif_concordance'] = [x for x in filters_object['motif_concordance'] if
-                                                           x != 'None']
-                if filters_object['transcription_factors']:
-                    filters += [self.SNP.tf_aggregated_snps.any(
-                        (self.TranscriptionFactorSNP.motif_concordance.in_(filters_object['motif_concordance']) |
-                         (self.TranscriptionFactorSNP.motif_concordance.is_(None) if search_null else False)) &
-                        self.TranscriptionFactorSNP.transcription_factor.has(
-                            self.TranscriptionFactor.name.in_(filters_object['transcription_factors'])
-                        ) & (self.TranscriptionFactorSNP.fdr_class.in_(
-                            get_corresponding_fdr_classes(filters_object['fdr'])))
-                        & (self.TranscriptionFactorSNP.es_class.in_(
-                            get_corresponding_es_classes(filters_object['es'])))
-                    )]
-                else:
-                    filters += [self.SNP.tf_aggregated_snps.any(
-                        (self.TranscriptionFactorSNP.motif_concordance.in_(filters_object['motif_concordance']) |
-                         (self.TranscriptionFactorSNP.motif_concordance.is_(None) if search_null else False)) &
-                        (self.TranscriptionFactorSNP.fdr_class.in_(
-                            get_corresponding_fdr_classes(filters_object['fdr']))) &
-                        (self.TranscriptionFactorSNP.es_class.in_(
-                            get_corresponding_es_classes(filters_object['es'])))
-                    ) | (~self.SNP.tf_aggregated_snps.any() if search_null else False)]
-        else:
-            if filters_object['transcription_factors']:
-                filters += [self.SNP.tf_aggregated_snps.any(
-                    self.TranscriptionFactorSNP.tf_id == getattr(self.TranscriptionFactor.query.filter(
-                        self.TranscriptionFactor.name == tf_name
-                    ).one_or_none(), 'tf_id', None))
-                    for tf_name in filters_object['transcription_factors']]
-
-            if filters_object['cell_types']:
-                filters += [self.SNP.cl_aggregated_snps.any(
-                    self.CellLineSNP.cl_id == getattr(self.CellLine.query.filter(
-                        self.CellLine.name == cl_name
-                    ).one_or_none(), 'cl_id', None))
-                    for cl_name in filters_object['cell_types']]
-
-            if filters_object['motif_concordance']:
-                search_null = False
-                if 'None' in filters_object['motif_concordance']:
-                    search_null = True
-                    filters_object['motif_concordance'] = [x for x in filters_object['motif_concordance'] if
-                                                           x != 'None']
-                if filters_object['transcription_factors']:
-                    filters += [self.SNP.tf_aggregated_snps.any(
-                        (self.TranscriptionFactorSNP.motif_concordance.in_(filters_object['motif_concordance']) |
-                         (self.TranscriptionFactorSNP.motif_concordance.is_(None) if search_null else False)) &
-                        self.TranscriptionFactorSNP.transcription_factor.has(
-                            self.TranscriptionFactor.name.in_(filters_object['transcription_factors'])
-                        )
-                    )]
-                else:
-                    filters += [self.SNP.tf_aggregated_snps.any(
-                        self.TranscriptionFactorSNP.motif_concordance.in_(filters_object['motif_concordance']) |
-                        (self.TranscriptionFactorSNP.motif_concordance.is_(None) if search_null else False)
-                    ) | (~self.SNP.tf_aggregated_snps.any() if search_null else False)]
+        if not filters_object['transcription_factors'] and not filters_object['cell_types']:
+            filters += self.get_filters_by_fdr(filters_object['fdr']) + \
+                       self.get_filters_by_es(filters_object['es'])
 
         if filters_object['chromosome']:
             if not filters_object['start'] or not filters_object['end']:
@@ -268,10 +202,10 @@ class ReleaseService:
             if not filters_object['es']:
                 filters_object['es'] = default_es_tr(int(self.release.version))
 
-        for what_for in ('TF', 'CL'):
-            aggregation_class = {'TF': self.TranscriptionFactor, 'CL': self.CellLine}[what_for]
-            aggregated_snp_class = {'TF': self.TranscriptionFactorSNP, 'CL': self.CellLineSNP}[what_for]
-            id_field = {'TF': 'tf_id', 'CL': 'cl_id'}[what_for]
+        for what_for in self.what_for:
+            aggregation_class = self.aggregation_classes[what_for]
+            aggregated_snp_class = self.aggregation_snp_classes[what_for]
+            id_field = 'cl_id'
             agr_snp_class_alias = aliased(aggregated_snp_class)
             agr_class_alias = aliased(aggregation_class)
             query_args.append(self.release.db.func.group_concat(agr_class_alias.name.distinct()))
@@ -306,11 +240,11 @@ class ReleaseService:
                     )
                 ]
 
-        for what_for in ('TF', 'CL'):
-            filter_object_key = {'TF': 'transcription_factors', 'CL': 'cell_types'}[what_for]
-            aggregation_class = {'TF': self.TranscriptionFactor, 'CL': self.CellLine}[what_for]
-            aggregated_snp_class = {'TF': self.TranscriptionFactorSNP, 'CL': self.CellLineSNP}[what_for]
-            id_field = {'TF': 'tf_id', 'CL': 'cl_id'}[what_for]
+        for what_for in self.what_for:
+            filter_object_key = self.filter_object_keys[what_for]
+            aggregation_class = self.aggregation_classes[what_for]
+            aggregated_snp_class = self.aggregation_snp_classes[what_for]
+            id_field = 'cl_id'
             if filters_object[filter_object_key]:
                 for name in filters_object[filter_object_key]:
                     aliases[name] = aliased(aggregated_snp_class)
@@ -322,7 +256,7 @@ class ReleaseService:
                         (aliases[name],
                          (getattr(
                              aliases[name],
-                             {'TF': 'tf_id', 'CL': 'cl_id'}[what_for]
+                             'cl_id'
                          ) == aggregation_id) &
                          (aliases[name].chromosome == self.SNP.chromosome) &
                          (aliases[name].position == self.SNP.position) &
@@ -379,14 +313,14 @@ class ReleaseService:
             if not filters_object['es']:
                 filters_object['es'] = default_es_tr(int(self.release.version))
 
-        for what_for in ('TF', 'CL'):
-            aggregation_class = {'TF': self.TranscriptionFactor, 'CL': self.CellLine}[what_for]
-            aggregated_snp_class = {'TF': self.TranscriptionFactorSNP, 'CL': self.CellLineSNP}[what_for]
-            id_field = {'TF': 'tf_id', 'CL': 'cl_id'}[what_for]
+        for what_for in self.what_for:
+            aggregation_class = self.aggregation_classes[what_for]
+            aggregated_snp_class = self.aggregation_snp_classes[what_for]
+            id_field = 'cl_id'
             agr_snp_class_alias = aliased(aggregated_snp_class)
             agr_class_alias = aliased(aggregation_class)
             query_args.append(self.release.db.func.group_concat(agr_class_alias.name.distinct()))
-            headers.append('{}-ASBs'.format({'TF': 'TF', 'CL': 'Cell type'}[what_for]))
+            headers.append('{}-ASBs'.format(self.filter_object_keys[what_for]))
 
             if int(self.release.version) >= 3:
                 join_tuples += [
@@ -417,11 +351,11 @@ class ReleaseService:
                     )
                 ]
 
-        for what_for in ('TF', 'CL'):
-            filter_object_key = {'TF': 'transcription_factors', 'CL': 'cell_types'}[what_for]
-            aggregation_class = {'TF': self.TranscriptionFactor, 'CL': self.CellLine}[what_for]
-            aggregated_snp_class = {'TF': self.TranscriptionFactorSNP, 'CL': self.CellLineSNP}[what_for]
-            id_field = {'TF': 'tf_id', 'CL': 'cl_id'}[what_for]
+        for what_for in self.what_for:
+            filter_object_key = self.filter_object_keys[what_for]
+            aggregation_class = self.aggregation_classes[what_for]
+            aggregated_snp_class = self.aggregation_snp_classes[what_for]
+            id_field = 'cl_id'
             if filters_object[filter_object_key]:
                 for name in filters_object[filter_object_key]:
                     aliases[name] = aliased(aggregated_snp_class)
@@ -433,7 +367,7 @@ class ReleaseService:
                         (aliases[name],
                          (getattr(
                              aliases[name],
-                             {'TF': 'tf_id', 'CL': 'cl_id'}[what_for]
+                             'cl_id'
                          ) == aggregation_id) &
                          (aliases[name].chromosome == self.SNP.chromosome) &
                          (aliases[name].position == self.SNP.position) &
@@ -478,7 +412,7 @@ class ReleaseService:
         )
 
     def get_hints(self, what_for, in_str, used_options):
-        cls = {'TF': self.TranscriptionFactor, 'CL': self.CellLine}[what_for]
+        cls = self.aggregation_classes[what_for]
         if int(self.release.version) >= 3:
             filters = (((cls.name.like(in_str),) if in_str else ()) +
                        ((not_(cls.name.in_(used_options)),) if used_options else ()) +

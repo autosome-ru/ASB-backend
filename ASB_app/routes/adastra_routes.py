@@ -29,15 +29,15 @@ def get_api_page():
     return render_template('api_page.html', releases=[release for release in Release.__subclasses__()])
 
 
-@app.route('/sitemap/v<version>/tfs', strict_slashes=False)
-def get_tf_page(version):
-    try:
-        url_release = get_release_by_version(version)
-    except ReleaseNotFound as e:
-        return {'message': '{}'.format(e)}, 404
-    release_service = ReleaseService(url_release)
-    return render_template('tf_page.html', tfs=release_service.get_tf_links(), release_name=url_release.name)
-
+# @app.route('/sitemap/v<version>/tfs', strict_slashes=False)
+# def get_tf_page(version):
+#     try:
+#         url_release = get_release_by_version(version)
+#     except ReleaseNotFound as e:
+#         return {'message': '{}'.format(e)}, 404
+#     release_service = ReleaseService(url_release)
+#     return render_template('tf_page.html', tfs=release_service.get_tf_links(), release_name=url_release.name)
+#
 
 @app.route('/sitemap/v<version>/snps', strict_slashes=False)
 @app.route('/sitemap/v<version>/snps/<int:page>', strict_slashes=False)
@@ -81,10 +81,10 @@ for release in Release.__subclasses__():
                 api.abort(404)
 
 
-    @snp_nsp.route('/tf_aggregated')
+    @snp_nsp.route('/atac_aggregated')
     @set_release_service(release_service)
-    class TFAgrSnpItem(Resource):
-        @api.marshal_with(release_serializers.tf_snp_model_full)
+    class AtacAgrSnpItem(Resource):
+        @api.marshal_with(release_serializers.cl_snp_model_full)
         @api.expect(aggregated_snp_parser)
         def get(self):
             """
@@ -93,14 +93,14 @@ for release in Release.__subclasses__():
             args = aggregated_snp_parser.parse_args()
             try:
                 return self.release_service.get_aggregated_snp(args['chromosome'], args['position'],
-                                                               args['alt'], 'TF', args['aggregation_name'])
+                                                               args['alt'], 'atac', args['aggregation_name'])
             except NoResultFound:
                 api.abort(404)
 
 
-    @snp_nsp.route('/cl_aggregated')
+    @snp_nsp.route('/dnase_aggregated')
     @set_release_service(release_service)
-    class CLAgrSNPItem(Resource):
+    class DnaseAgrSNPItem(Resource):
         @api.marshal_with(release_serializers.cl_snp_model_full)
         @api.expect(aggregated_snp_parser)
         def get(self):
@@ -110,7 +110,24 @@ for release in Release.__subclasses__():
             args = aggregated_snp_parser.parse_args()
             try:
                 return self.release_service.get_aggregated_snp(args['chromosome'], args['position'],
-                                                               args['alt'], 'CL', args['aggregation_name'])
+                                                               args['alt'], 'dnase', args['aggregation_name'])
+            except NoResultFound:
+                api.abort(404)
+
+
+    @snp_nsp.route('/faire_aggregated')
+    @set_release_service(release_service)
+    class FaireAgrSNPItem(Resource):
+        @api.marshal_with(release_serializers.cl_snp_model_full)
+        @api.expect(aggregated_snp_parser)
+        def get(self):
+            """
+            Get individual SNPs that support a given SNP in aggregation by cell type
+            """
+            args = aggregated_snp_parser.parse_args()
+            try:
+                return self.release_service.get_aggregated_snp(args['chromosome'], args['position'],
+                                                               args['alt'], 'faire', args['aggregation_name'])
             except NoResultFound:
                 api.abort(404)
 
