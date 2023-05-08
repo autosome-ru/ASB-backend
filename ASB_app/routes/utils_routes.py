@@ -21,7 +21,7 @@ def set_utils_service(utils_service):
 
 for release in Release.__subclasses__():
     api = release.api
-    utils_nsp = api.namespace('ADASTRA utils', path='/utils', description='SNP annotation utils')
+    utils_nsp = api.namespace('UDACHA utils', path='/utils', description='SNP annotation utils')
 
     utils_service = UtilsService(release)
 
