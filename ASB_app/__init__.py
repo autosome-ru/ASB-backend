@@ -63,8 +63,8 @@ for release in Release.__subclasses__():
     blueprint = Blueprint('api_{}'.format(release.name), __name__, url_prefix='/api/v{}'.format(release.version))
     new_api = Api(blueprint,
                   version=release.full_version,
-                  title='ADASTRA - API',
-                  description='ADASTRA API (release {})'.format(release.name.capitalize()),
+                  title='UDACHA - API',
+                  description='UDACHA API (release {})'.format(release.name.capitalize()),
                   )
 
     setattr(release, 'api', new_api)

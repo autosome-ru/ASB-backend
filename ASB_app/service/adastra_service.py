@@ -39,7 +39,7 @@ class ReleaseService:
 
     def get_release_name(self):
         rname = self.release.name if self.release.name != 'billcipher' else 'bill-cipher'
-        return f'https://adastra.autosome.org/{rname}'
+        return f'https://udacha.autosome.org/{rname}'
 
 
     def generate_tf_link(self, tf_name):
