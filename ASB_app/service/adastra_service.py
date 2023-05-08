@@ -151,7 +151,7 @@ class ReleaseService:
             filters_object['es'] = default_es_tr(int(self.release.version))
 
         if filters_object['atac']:
-            filters += [self.SNP.cl_aggregated_snps.any(
+            filters += [self.SNP.atac_aggregated_snps.any(
                 (self.AtacSNP.cl_id == getattr(self.Atac.query.filter(
                     self.Atac.name == cl_name
                 ).one_or_none(), 'cl_id', None)) &
@@ -160,7 +160,7 @@ class ReleaseService:
                 for cl_name in filters_object['atac']]
 
         if filters_object['dnase']:
-            filters += [self.SNP.cl_aggregated_snps.any(
+            filters += [self.SNP.dnase_aggregated_snps.any(
                 (self.DnaseSNP.cl_id == getattr(self.Dnase.query.filter(
                     self.Dnase.name == cl_name
                 ).one_or_none(), 'cl_id', None)) &
@@ -169,7 +169,7 @@ class ReleaseService:
                 for cl_name in filters_object['dnase']]
 
         if filters_object['faire']:
-            filters += [self.SNP.cl_aggregated_snps.any(
+            filters += [self.SNP.faire_aggregated_snps.any(
                 (self.FaireSNP.cl_id == getattr(self.Faire.query.filter(
                     self.Faire.name == cl_name
                 ).one_or_none(), 'cl_id', None)) &
