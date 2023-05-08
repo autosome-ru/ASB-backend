@@ -378,27 +378,36 @@ for release in Release.__subclasses__():
             return self.release_service.get_overall_statistics()
 
 
-    if release.name != 'dnase':
-        @search_nsp.route('/tf/hint')
-        @api.hide
-        @set_release_service(release_service)
-        class TranscriptionFactorHint(Resource):
-            @api.expect(used_hints_parser)
-            @api.marshal_list_with(release_serializers.transcription_factor_model)
-            def get(self):
-                args = used_hints_parser.parse_args()
-                return self.release_service.get_hints('TF', args.get('search', ''), args.get('options', []))
-
-
-    @search_nsp.route('/cl/hint')
+    @search_nsp.route('/dnase/hint')
     @api.hide
     @set_release_service(release_service)
-    class CellLineHint(Resource):
+    class DnaseHint(Resource):
+        @api.expect(used_hints_parser)
+        @api.marshal_list_with(release_serializers.transcription_factor_model)
+        def get(self):
+            args = used_hints_parser.parse_args()
+            return self.release_service.get_hints('dnase', args.get('search', ''), args.get('options', []))
+
+
+    @search_nsp.route('/atac/hint')
+    @api.hide
+    @set_release_service(release_service)
+    class AtacHint(Resource):
         @api.expect(used_hints_parser)
         @api.marshal_list_with(release_serializers.cell_line_model)
         def get(self):
             args = used_hints_parser.parse_args()
-            return self.release_service.get_hints('CL', args.get('search', ''), args.get('options', []))
+            return self.release_service.get_hints('atac', args.get('search', ''), args.get('options', []))
+
+    @search_nsp.route('/faire/hint')
+    @api.hide
+    @set_release_service(release_service)
+    class FaireHint(Resource):
+        @api.expect(used_hints_parser)
+        @api.marshal_list_with(release_serializers.cell_line_model)
+        def get(self):
+            args = used_hints_parser.parse_args()
+            return self.release_service.get_hints('faire', args.get('search', ''), args.get('options', []))
 
 
     @search_nsp.route('/gene_name/hint')

@@ -423,16 +423,10 @@ class ReleaseService:
 
     def get_hints(self, what_for, in_str, used_options):
         cls = self.aggregation_classes[what_for]
-        if int(self.release.version) >= 3:
-            filters = (((cls.name.like(in_str),) if in_str else ()) +
-                       ((not_(cls.name.in_(used_options)),) if used_options else ()) +
-                       (cls.aggregated_snps_count010,))
-            return cls.query.filter(*filters).order_by(cls.aggregated_snps_count010.desc()).limit(3).all()
-        else:
-            filters = (((cls.name.like(in_str),) if in_str else ()) +
-                       ((not_(cls.name.in_(used_options)),) if used_options else ()) +
-                       (cls.aggregated_snps_count,))
-            return cls.query.filter(*filters).order_by(cls.aggregated_snps_count.desc()).limit(3).all()
+        filters = (((cls.name.like(in_str),) if in_str else ()) +
+                   ((not_(cls.name.in_(used_options)),) if used_options else ()) +
+                   (cls.aggregated_snps_count010,))
+        return cls.query.filter(*filters).order_by(cls.aggregated_snps_count010.desc()).limit(3).all()
 
     def get_gene_locus(self, gene, offset=5000):
         if int(self.release.version) >= 3:
