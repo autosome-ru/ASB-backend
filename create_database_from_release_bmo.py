@@ -46,16 +46,16 @@ current_release.Gene
 
 tr = 0.25
 
-EXP = 0
-FAIRE = 0
-DNASE = 0
-ATAC = 0
+EXP = 1
+FAIRE = 1
+DNASE = 1
+ATAC = 1
 PHEN = 0
-FAIRE_DICT = 0
-DNASE_DICT = 0
-ATAC_DICT = 0
+FAIRE_DICT = 1
+DNASE_DICT = 1
+ATAC_DICT = 1
 
-CONTEXT = 0
+CONTEXT = 1
 BAD_GROUP = 1
 GENES = 1
 TARGET_GENES = 0
@@ -75,7 +75,7 @@ CHECK_NONE = 1
 # Gene name in tfs is not updated
 
 
-release_path = os.path.expanduser('~/adastra/DataChipBillCipher0626')
+release_path = '/home/safronov/Projects/UDACHA/release_IceKing/'
 parameters_path = os.path.expanduser('~/Configs/')
 
 conv_bad = dict(zip(
@@ -87,7 +87,7 @@ snp_class_dict = {'dnase': DnaseSNP, 'faire': FaireSNP, 'atac': AtacSNP}
 if __name__ == '__main__':
     cl_dict = {}
     cl_dict_reverse = {}
-    with open('/home/abramov/udacha_v1_id2name.tsv') as file:
+    with open(f'{release_path}/metadata/celnames.tsv ') as file:
         for line in file:
             if not line.strip():
                 continue
@@ -101,11 +101,7 @@ if __name__ == '__main__':
     if EXP:
         for param in ['faire'] * FAIRE + ['dnase'] * DNASE + ['atac'] * ATAC:
             print('Loading experiments')
-            table = pd.read_table(f'/home/abramov/metadata_{param}.tsv')
-
-            table2 = pd.read_table('/home/abramov/Configs/' + {'faire': 'faire+header.txt', 'atac': 'master-atac.txt', 'dnase': 'master-dnase.txt'}[param])
-            print(param, len(table2.index), len(table.index), len(table.merge(table2).index))
-            table = table.merge(table2)
+            table = pd.read_table(f'{release_path}/metadata/metadata_{param}.tsv')
             counter = 1
             exps = []
             cls = []
@@ -132,7 +128,7 @@ if __name__ == '__main__':
 
     for param in ['faire'] * FAIRE + ['dnase'] * DNASE + ['atac'] * ATAC:
         print('Loading {} ASBs'.format(param))
-        pv_path = f'/home/safronov/Projects/UDACHA/release_BMO/{param}/'
+        pv_path = f'{release_path}/{param}/'
         for file in tqdm(sorted(os.listdir(pv_path))):
             df = pd.read_table(pv_path + file)
             df = df[df['fdr_comb_pval'] <= tr]
@@ -232,7 +228,7 @@ if __name__ == '__main__':
 
     for param in ['faire'] * FAIRE_DICT + ['dnase'] * DNASE_DICT + ['atac'] * ATAC_DICT:
         print('Loading {} experiment snps'.format(param))
-        pv_path = f'/home/safronov/Projects/UDACHA/release_BMO/raw_{param}/'
+        pv_path = f'{release_path}/raw_{param}/'
         for file in tqdm(sorted(os.listdir(pv_path))):
             if file.startswith('.'):
                 continue
@@ -323,31 +319,29 @@ if __name__ == '__main__':
                 session.close()
                 processed += chunk_size
 
-    # if CONTEXT:
-    #     print('Loading SNP context')
-    #     used = set()
-    #     with open(os.path.join(release_path, 'Sarus', 'all_tfs.fasta')) as file:
-    #         line = file.readline()
-    #         while line:
-    #             line = line.strip('\n')
-    #             if line.startswith('>') and line not in used:
-    #                 # '> rs000000@A@ref'
-    #                 used.add(line)
-    #                 rs, alt, allele = line[2:].strip('\n').split('@')
-    #                 context = file.readline().strip('\n')
-    #                 if allele == 'alt':
-    #                     # '> rs000000@G@alt'
-    #                     rs = int(rs[2:])
-    #                     snp = SNP.query.filter(SNP.rs_id == rs, SNP.alt == alt).one_or_none()
-    #                     if snp:
-    #                         snp.context = context
-    #             line = file.readline()
-    #     session.commit()
+    if CONTEXT:
+        print('Loading SNP context')
+        used = {}
+        context_df = pd.read_table('/home/safronov/Projects/UDACHA/release_IceKing/metadata/flanks.tsv')
+        for index, row in context_df.iterrows():
+            rs_id = row['id']
+            left = row['leftFlank25bp']
+            right = row['rightFlank25bp']
+            if rs_id not in used:
+                context = file.readline().strip('\n')
+                rs = int(rs_id[2:])
+                snps = SNP.query.filter(SNP.rs_id == rs).all()
+                for snp in snps:
+                    snp.context = context
+                used[rs_id] = left + right
+            else:
+                assert used[rs_id] == left + right
+        session.commit()
 
     if BAD_GROUP:
         for param in ['faire'] * FAIRE + ['dnase'] * DNASE + ['atac'] * ATAC:
             print('Loading BAD groups')
-            with open(f'/home/safronov/Projects/UDACHA/meta_info/badmaps_dicts/badmaps_dict_{param}.json') as f:
+            with open(f'{release_path}/metadata/badmaps_dict_gse_corrrected_{param}.json') as f:
                 cell_lines_dict = json.load(f)
             exps = []
             bad_groups = []
