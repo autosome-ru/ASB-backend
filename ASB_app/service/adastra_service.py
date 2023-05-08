@@ -149,25 +149,35 @@ class ReleaseService:
             filters_object['fdr'] = default_fdr_tr(int(self.release.version))
         if not filters_object['es']:
             filters_object['es'] = default_es_tr(int(self.release.version))
-        if filters_object['transcription_factors']:
-            filters += [self.SNP.tf_aggregated_snps.any(
-                (self.TranscriptionFactorSNP.tf_id == getattr(self.TranscriptionFactor.query.filter(
-                    self.TranscriptionFactor.name == tf_name
-                ).one_or_none(), 'tf_id', None)) &
-                (self.TranscriptionFactorSNP.fdr_class.in_(get_corresponding_fdr_classes(filters_object['fdr']))) &
-                (self.TranscriptionFactorSNP.es_class.in_(get_corresponding_es_classes(filters_object['es']))))
-                for tf_name in filters_object['transcription_factors']]
 
-        if filters_object['cell_types']:
+        if filters_object['atac']:
             filters += [self.SNP.cl_aggregated_snps.any(
-                (self.CellLineSNP.cl_id == getattr(self.CellLine.query.filter(
-                    self.CellLine.name == cl_name
+                (self.AtacSNP.cl_id == getattr(self.Atac.query.filter(
+                    self.Atac.name == cl_name
                 ).one_or_none(), 'cl_id', None)) &
-                (self.CellLineSNP.fdr_class.in_(get_corresponding_fdr_classes(filters_object['fdr']))) &
-                (self.CellLineSNP.es_class.in_(get_corresponding_es_classes(filters_object['es']))))
-                for cl_name in filters_object['cell_types']]
+                (self.AtacSNP.fdr_class.in_(get_corresponding_fdr_classes(filters_object['fdr']))) &
+                (self.AtacSNP.es_class.in_(get_corresponding_es_classes(filters_object['es']))))
+                for cl_name in filters_object['atac']]
 
-        if not filters_object['transcription_factors'] and not filters_object['cell_types']:
+        if filters_object['dnase']:
+            filters += [self.SNP.cl_aggregated_snps.any(
+                (self.DnaseSNP.cl_id == getattr(self.Dnase.query.filter(
+                    self.Dnase.name == cl_name
+                ).one_or_none(), 'cl_id', None)) &
+                (self.DnaseSNP.fdr_class.in_(get_corresponding_fdr_classes(filters_object['fdr']))) &
+                (self.DnaseSNP.es_class.in_(get_corresponding_es_classes(filters_object['es']))))
+                for cl_name in filters_object['dnase']]
+
+        if filters_object['faire']:
+            filters += [self.SNP.cl_aggregated_snps.any(
+                (self.FaireSNP.cl_id == getattr(self.Faire.query.filter(
+                    self.Faire.name == cl_name
+                ).one_or_none(), 'cl_id', None)) &
+                (self.FaireSNP.fdr_class.in_(get_corresponding_fdr_classes(filters_object['fdr']))) &
+                (self.FaireSNP.es_class.in_(get_corresponding_es_classes(filters_object['es']))))
+                for cl_name in filters_object['faire']]
+
+        if not filters_object['dnase'] and not filters_object['atac'] and not filters_object['faire']:
             filters += self.get_filters_by_fdr(filters_object['fdr']) + \
                        self.get_filters_by_es(filters_object['es'])
 
