@@ -19,11 +19,11 @@ class ReleaseService:
         self.release = release
         self.what_for = ('dnase', 'atac', 'faire')
         self.filter_object_keys = {x: x for x in self.what_for}
-        self.aggregation_classes = {'dnase': self.Dnase, 'faire': self.Faire, 'atac': self.Atac}
-        self.aggregation_snp_classes = {'dnase': self.DnaseSNP, 'faire': self.FaireSNP, 'atac': self.AtacSNP}
 
         for model in abstract_models:
             setattr(self, model.__name__, getattr(release, model.__name__))
+        self.aggregation_classes = {'dnase': self.Dnase, 'faire': self.Faire, 'atac': self.Atac}
+        self.aggregation_snp_classes = {'dnase': self.DnaseSNP, 'faire': self.FaireSNP, 'atac': self.AtacSNP}
 
     def get_filters_by_fdr(self, fdr):
         if int(self.release.version) >= 3:
