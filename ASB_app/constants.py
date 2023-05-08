@@ -3,7 +3,7 @@ import os
 
 import pathlib
 
-ananastra_stats_file = os.path.join(pathlib.Path(__file__).parent.absolute(), 'ananastra_constants.json')
+ananastra_stats_file = os.path.join(pathlib.Path(__file__).parent.absolute(), 'stats.json')
 
 chromosomes = ('chr1', 'chr2', 'chr3', 'chr4', 'chr5', 'chr6', 'chr7', 'chr8', 'chr9', 'chr10',
                'chr11', 'chr12', 'chr13', 'chr14', 'chr15', 'chr16', 'chr17', 'chr18', 'chr19',
@@ -44,7 +44,5 @@ def read_ananastra_constants():
 ananastra_constants = read_ananastra_constants()
 
 
-stats_dict = ananastra_constants['stats_dict']
-tf_stats_dict = ananastra_constants['tf_stats_dict']
-cl_stats_dict = ananastra_constants['cl_stats_dict']
-chr_stats_dict = ananastra_constants['chr_stats_dict']
+stats_dict = ananastra_constants
+

@@ -623,4 +623,3 @@ if __name__ == '__main__':
                 ctr = cls.query.filter(getattr(cls, field).is_(None)).count()
                 if ctr > 0:
                     print('WARN: {} occasions of {}.{} = NULL'.format(ctr, cls, field))
-
