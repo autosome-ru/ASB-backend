@@ -331,7 +331,7 @@ if __name__ == '__main__':
                 rs = int(rs_id[2:])
                 snps = SNP.query.filter(SNP.rs_id == rs).all()
                 for snp in snps:
-                    context = left.lower() + f'[{snp.ref}/{snp.alt}]' + right.lower()
+                    context = (left + snp.alt + right).upper()
                     snp.context = context
                 used[rs_id] = left + right
             else:
