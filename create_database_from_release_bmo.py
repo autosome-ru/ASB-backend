@@ -46,14 +46,14 @@ current_release.Gene
 
 tr = 0.25
 
-EXP = 1
-FAIRE = 1
-DNASE = 1
-ATAC = 1
+EXP = 0
+FAIRE = 0
+DNASE = 0
+ATAC = 0
 PHEN = 0
-FAIRE_DICT = 1
-DNASE_DICT = 1
-ATAC_DICT = 1
+FAIRE_DICT = 0
+DNASE_DICT = 0
+ATAC_DICT = 0
 
 CONTEXT = 1
 BAD_GROUP = 1
@@ -328,10 +328,10 @@ if __name__ == '__main__':
             left = row['leftFlank25bp']
             right = row['rightFlank25bp']
             if rs_id not in used:
-                context = file.readline().strip('\n')
                 rs = int(rs_id[2:])
                 snps = SNP.query.filter(SNP.rs_id == rs).all()
                 for snp in snps:
+                    context = left.lower() + f'[{snp.ref}/{snp.alt}]' + right.lower()
                     snp.context = context
                 used[rs_id] = left + right
             else:
