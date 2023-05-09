@@ -323,7 +323,7 @@ if __name__ == '__main__':
         print('Loading SNP context')
         used = {}
         context_df = pd.read_table('/home/safronov/Projects/UDACHA/release_IceKing/metadata/flanks.tsv')
-        for index, row in context_df.iterrows():
+        for index, row in tqdm(context_df.iterrows(), total=len(context_df.index)):
             rs_id = row['id']
             left = row['leftFlank25bp']
             right = row['rightFlank25bp']
