@@ -328,7 +328,7 @@ if __name__ == '__main__':
             left = row['leftFlank25bp']
             right = row['rightFlank25bp']
             if rs_id not in used:
-                rs = int(rs_id[2:])
+                rs = int(rs_id[rs_id.rfind('rs') + 2:])
                 snps = SNP.query.filter(SNP.rs_id == rs).all()
                 for snp in snps:
                     context = (left + snp.alt + right).upper()
