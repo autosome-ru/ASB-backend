@@ -206,22 +206,27 @@ if __name__ == '__main__':
 
     if PHEN:
         print('Loading phenotypes')
-        table = pd.read_table(os.path.join(release_path, 'release_stats', 'phenotypes_stats.tsv'))
-        for index, row in tqdm(table.iterrows(), total=len(table.index)):
-            mutations = SNP.query.filter(SNP.rs_id == int(row['RSID'][row['RSID'].rfind('rs') + 2:])).all()
-            # if not mutations:
-                # print('No snps for ', int(row['RSID'][2:]))
-            for database in ['grasp', 'ebi', 'clinvar', 'phewas', 'finemapping', 'QTL']:
-                if str(row[database]) == 'nan':
-                    continue
-                ph_names = row[database].strip('\n').split(';')
+        for t in ['atac', 'dnase', 'faire']:
+            table = pd.read_table(f'/home/ivavlakul/udacha/_fdr_comb_pval0.1snpphclALLmpcq_IceKing{t}.tsv')
+            for index, row in tqdm(table.iterrows(), total=len(table.index)):
+                mutations = SNP.query.filter(SNP.rs_id == int(row['RSID'][row['RSID'].rfind('rs') + 2:])).all()
                 for mutation in mutations:
-                    mutation.phenotypes += [
-                        Phenotype(**{
-                            'db_name': database,
-                            'phenotype_name': name
-                        }) for name in ph_names
-                    ]
+                    data = []
+                    for database in ['grasp', 'ebi', 'clinvar', 'phewas', 'finemapping', 'QTL']:
+                        if str(row[database]) == 'nan':
+                            continue
+                        ph_names = row[database].strip('\n').split(';')
+                        data += [
+                            Phenotype(**{
+                                'db_name': database,
+                                'phenotype_name': name
+                            }) for name in ph_names
+                        ]
+                    if len(data) > 0:
+                        if len(mutation.phenotypes) != 0:
+                            assert len(data) == len(mutations.phenotypes)
+                        else:
+                            mutation.phenotypes = data
         session.commit()
 
     session.close()
@@ -602,7 +607,7 @@ if __name__ == '__main__':
     if CHECK_NONE:
         print('Performing NULL checks')
         items_dict = {
-            #Gene: ['snps_count', 'snps_count010', 'eqtl_snps_count', 'eqtl_snps_count010'],
+            Gene: ['snps_count', 'snps_count010', 'eqtl_snps_count', 'eqtl_snps_count010'],
             SNP: ['best_p_value', 'fdr_class', 'best_es', 'es_class', 'context', 'has_clinvar_associations', 'has_phewas_associations',
                   'has_ebi_associations', 'has_qtl_associations', 'has_grasp_associations',
                   'has_finemapping_associations', 'has_concordance'],
