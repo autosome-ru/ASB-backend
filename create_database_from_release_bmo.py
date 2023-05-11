@@ -209,7 +209,7 @@ if __name__ == '__main__':
     if PHEN:
         print('Loading phenotypes')
         for t in ['atac', 'dnase', 'faire']:
-            table = pd.read_table(f'/home/ivavlakul/udacha/_fdr_comb_pval0.1snpphclALLmpcq_IceKing{t}.tsv')
+            table = pd.read_table(f'/home/ivavlakul/udachaB/_fdr_comb_pval0.1snpphclALLmpcq_IceKing{t}.tsv')
             for index, row in tqdm(table.iterrows(), total=len(table.index)):
                 mutations = SNP.query.filter(SNP.rs_id == int(row['RSID'][row['RSID'].rfind('rs') + 2:])).all()
                 for mutation in mutations:
