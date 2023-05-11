@@ -227,7 +227,7 @@ if __name__ == '__main__':
                         ]
                     if len(data) > 0:
                         if len(mutation.phenotypes) != 0:
-                            assert len(data) == len(mutations.phenotypes)
+                            assert len(data) == len(mutation.phenotypes)
                         else:
                             mutation.phenotypes = data
         session.commit()
