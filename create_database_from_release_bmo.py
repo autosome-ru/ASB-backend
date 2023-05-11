@@ -214,7 +214,7 @@ if __name__ == '__main__':
                 mutations = SNP.query.filter(SNP.rs_id == int(row['RSID'][row['RSID'].rfind('rs') + 2:])).all()
                 for mutation in mutations:
                     data = []
-                    for database in ['grasp', 'ebi', 'clinvar', 'phewas', 'finemapping', 'QTL']:
+                    for database in ['grasp', 'ebi', 'clinvar', 'phewas', 'finemapping', '#qtlgenes']:
                         if str(row[database]) == 'nan':
                             continue
                         ph_names = row[database].strip('\n').split(';')
