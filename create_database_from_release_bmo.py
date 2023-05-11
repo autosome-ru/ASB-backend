@@ -211,7 +211,9 @@ if __name__ == '__main__':
         for t in ['atac', 'dnase', 'faire']:
             table = pd.read_table(f'/home/ivavlakul/udachaB/_fdr_comb_pval0.1snpphclALLmpcq_IceKing{t}.tsv')
             for index, row in tqdm(table.iterrows(), total=len(table.index)):
-                mutations = SNP.query.filter(SNP.rs_id == int(row['RSID'][row['RSID'].rfind('rs') + 2:])).all()
+                rs_id = row['RSID'][row['RSID'].rfind('rs') + 2:]
+                print(rs_id)
+                mutations = SNP.query.filter(SNP.rs_id == int(rs_id)).all()
                 for mutation in mutations:
                     data = []
                     for database in ['grasp', 'ebi', 'clinvar', 'phewas', 'finemapping', '#qtlgenes']:
