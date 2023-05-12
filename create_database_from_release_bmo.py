@@ -55,7 +55,7 @@ FAIRE_DICT = 0
 DNASE_DICT = 0
 ATAC_DICT = 0
 
-PHEN = 0
+PHEN = 1
 
 CONTEXT = 0
 BAD_GROUP = 0
@@ -448,10 +448,10 @@ if __name__ == '__main__':
             genes = []
             for index, row in tqdm(table.iterrows(), total=len(table.index)):
 
-                if str(row['QTLgenes']) in ('nan', '', 'None'):
+                if str(row['qtlgenes']) in ('nan', '', 'None'):
                     continue
                 all_target_genes = []
-                for id in row['QTLg'].strip('\n').split(';'):
+                for id in row['qtlgenes'].strip('\n').split(';'):
                     target_genes = Gene.query.filter(Gene.gene_id.like(id.split('.')[0] + '%')).all()
                     if target_genes:
                         # if len(set(g.gene_name for g in target_genes)) != 1:
