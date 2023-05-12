@@ -55,7 +55,7 @@ FAIRE_DICT = 0
 DNASE_DICT = 0
 ATAC_DICT = 0
 
-PHEN = 1
+PHEN = 0
 
 CONTEXT = 0
 BAD_GROUP = 0
@@ -215,7 +215,7 @@ if __name__ == '__main__':
                 mutations = SNP.query.filter(SNP.rs_id == int(rs_id)).all()
                 for mutation in mutations:
                     data = []
-                    for database in ['grasp', 'ebi', 'clinvar', 'phewas', 'finemapping', 'qtlgenes']:
+                    for database in ['grasp', 'ebi', 'clinvar', 'phewas', 'finemapping', 'qtltissues']:
                         if str(row[database]) == 'nan':
                             continue
                         ph_names = row[database].strip('\n').split(';')
@@ -442,32 +442,33 @@ if __name__ == '__main__':
     if TARGET_GENES:
         print('Loading target genes')
         # table = pd.read_table(os.path.join(release_path, 'release_stats', 'phenotypes_stats.tsv'))
-        table = pd.read_table(os.path.join(release_path, 'release_stats', 'phenotypes_stats.tsv'))
-        genes = []
-        for index, row in tqdm(table.iterrows(), total=len(table.index)):
-            if str(row['QTLg']) in ('nan', '', 'None'):
-                continue
+        for t in ['atac', 'dnase', 'faire']:
+            table = pd.read_table(f'/home/ivavlakul/udachaC/_fdr_comb_pval0.1snpphclALLmpcq_IceKing{t}.tsv')
+            genes = []
+            for index, row in tqdm(table.iterrows(), total=len(table.index)):
 
-            all_target_genes = []
-            for id in row['QTLg'].strip('\n').split(';'):
-                target_genes = Gene.query.filter(Gene.gene_id.like(id.split('.')[0] + '%')).all()
-                if target_genes:
-                    # if len(set(g.gene_name for g in target_genes)) != 1:
-                    #     print('Bad genes: {}'.format(target_genes))
-                    gene = target_genes[0]
-                    all_target_genes.append(gene)
-                else:
-                    gene = Gene(gene_id=id, gene_name=id, chromosome='chr1', start_pos=1, end_pos=1, orientation=True)
-                    genes.append(gene)
-                    all_target_genes.append(gene)
+                if str(row['QTLgenes']) in ('nan', '', 'None'):
+                    continue
+                all_target_genes = []
+                for id in row['QTLg'].strip('\n').split(';'):
+                    target_genes = Gene.query.filter(Gene.gene_id.like(id.split('.')[0] + '%')).all()
+                    if target_genes:
+                        # if len(set(g.gene_name for g in target_genes)) != 1:
+                        #     print('Bad genes: {}'.format(target_genes))
+                        gene = target_genes[0]
+                        all_target_genes.append(gene)
+                    else:
+                        gene = Gene(gene_id=id, gene_name=id, chromosome='chr1', start_pos=1, end_pos=1, orientation=True)
+                        genes.append(gene)
+                        all_target_genes.append(gene)
 
-            mutations = SNP.query.filter(SNP.rs_id == int(row['RSID'][row['RSID'].rfind('rs') + 2:])).all()
-            # if not mutations:
-            #     print('No snps for ', int(row['RSID'][2:]))
+                mutations = SNP.query.filter(SNP.rs_id == int(row['RSID'][row['RSID'].rfind('rs') + 2:])).all()
+                # if not mutations:
+                #     print('No snps for ', int(row['RSID'][2:]))
 
-            for mutation in mutations:
-                mutation.target_genes = all_target_genes
-        session.add_all(genes)
+                for mutation in mutations:
+                    mutation.target_genes = all_target_genes
+            session.add_all(genes)
         session.commit()
 
     if PROMOTER_GENES:
