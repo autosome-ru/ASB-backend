@@ -219,12 +219,22 @@ if __name__ == '__main__':
                         if str(row[database]) == 'nan':
                             continue
                         ph_names = row[database].strip('\n').split(';')
-                        data += [
-                            Phenotype(**{
-                                'db_name': database,
-                                'phenotype_name': name
-                            }) for name in ph_names
-                        ]
+                        data = []
+                        for ph_name in ph_names:
+                            if len(ph_name) > 200:
+                                names = ph_name.split(', ')
+                                data += [
+                                    Phenotype(**{
+                                        'db_name': database,
+                                        'phenotype_name': name
+                                    }) for name in names
+                                ]
+                            else:
+                                data.append(Phenotype(**{
+                                        'db_name': database,
+                                        'phenotype_name': ph_name
+                                    }))
+
                     if len(data) > 0:
                         if len(mutation.phenotypes) != 0:
                             assert len(data) == len(mutation.phenotypes)
