@@ -448,7 +448,7 @@ if __name__ == '__main__':
             genes = []
             for index, row in tqdm(table.iterrows(), total=len(table.index)):
 
-                if str(row['qtlgenes']) in ('nan', '', 'None'):
+                if pd.isna(row['qtlgenes']) or str(row['qtlgenes']) in ('nan', '', 'None'):
                     continue
                 all_target_genes = []
                 for id in row['qtlgenes'].strip('\n').split(';'):
