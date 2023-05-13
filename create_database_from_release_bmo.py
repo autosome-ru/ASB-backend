@@ -446,7 +446,7 @@ if __name__ == '__main__':
         for t in ['atac', 'dnase', 'faire']:
             table = pd.read_table(f'/home/ivavlakul/udachaC/_fdr_comb_pval0.1snpphclALLmpcq_IceKing{t}.tsv')
             genes = []
-            for index, row in tqdm(table.iterrows(), total=len(table.index)):
+            for index, row in tqdm(table.drop_duplicates(subset='RSID').iterrows(), total=len(table.index)):
 
                 if pd.isna(row['qtlgenes']) or str(row['qtlgenes']) in ('nan', '', 'None'):
                     continue
