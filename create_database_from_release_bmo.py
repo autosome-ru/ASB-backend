@@ -420,6 +420,7 @@ if __name__ == '__main__':
                 gene = Gene(gene_id=gene_id, gene_name=gene_name, start_pos=start_pos, end_pos=end_pos, chromosome=chrom,
                             orientation=True if orient == '+' else False if orient == '-' else None, snps_count=len(snps),
                             proximal_promoter_snps=snps)
+
                 if gene_id in genes_ids:
                     # print(gene_id, chrom, start_pos, end_pos)
                     continue
@@ -457,15 +458,15 @@ if __name__ == '__main__':
                     # if len(set(g.gene_name for g in target_genes)) != 1:
                     #     print('Bad genes: {}'.format(target_genes))
                     gene = target_genes[0]
-                    all_target_genes.append(gene)
-                else:
-                    try:
-                        gene = Gene(gene_id=id, gene_name=id, chromosome='chr1', start_pos=1, end_pos=1, orientation=True)
-                    except:
-                        print(gene_id, id)
-                        raise
-                    genes.append(gene)
-                    all_target_genes.append(gene)
+                    all_target_genes.append(target_genes)
+                # else:
+                #     try:
+                #         gene = Gene(gene_id=id, gene_name=id, chromosome='chr1', start_pos=1, end_pos=1, orientation=True)
+                #     except:
+                #         print(gene_id, id)
+                #         raise
+                #     genes.append(gene)
+                #     all_target_genes.append(gene)
 
             mutations = SNP.query.filter(SNP.rs_id == int(row['RSID'][row['RSID'].rfind('rs') + 2:])).all()
             # if not mutations:
@@ -473,7 +474,6 @@ if __name__ == '__main__':
 
             for mutation in mutations:
                 mutation.target_genes = all_target_genes
-        session.add_all(genes)
         session.commit()
 
     if PROMOTER_GENES:
