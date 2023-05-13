@@ -605,6 +605,8 @@ def get_p_and_odds_by_chromosome(counts_data, expected_asbs_rs, expected_negativ
 
 def read_table_as_df(f):
     not_null_rows = 0
+    uncompressor = SafeUncompressor(f, 100*1024*1024)  # 100 mb
+    uncompressor.check_file()
     for index, line in enumerate(f, 1):
         if not line.startswith('#'):
             not_null_rows += 1
@@ -620,7 +622,38 @@ def read_table_as_df(f):
                                keep_default_na=False)
 
 
+class FileTooLarge(Exception):
+    pass
+
+
+class SafeUncompressor(object):
+    """Small proxy class that enables external file object
+    support for uncompressed and gzip files. Works transparently, and
+    supports a maximum size to avoid zipbombs.
+    """
+    blocksize = 16 * 1024
+
+    def __init__(self, fileobj, maxsize=10*1024*1024):
+        self.fileobj = fileobj
+        self.name = getattr(self.fileobj, "name", None)
+        self.maxsize = maxsize
+
+    def check_file(self):
+        x = 0
+        while x < self.maxsize:
+            data = self.fileobj.read(self.blocksize)
+            if not data:
+                break
+            x += len(data)
+
+            if x > self.maxsize:
+                raise FileTooLarge("Compressed file too large")
+        else:
+            raise FileTooLarge("Compressed file too large")
+
+
 def read_file_as_df(input_file_name, ticket):
+
     try:
         with gzip.open(input_file_name, 'rt') as f:
             status, data = read_table_as_df(f)
