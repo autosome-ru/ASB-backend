@@ -59,7 +59,7 @@ PHEN = 0
 
 CONTEXT = 0
 BAD_GROUP = 0
-GENES = 1
+GENES = 0
 TARGET_GENES = 1
 PROMOTER_GENES = 1  # not needed at first time
 TARGET_GENE_SNP_COUNT = 1
@@ -459,7 +459,11 @@ if __name__ == '__main__':
                         gene = target_genes[0]
                         all_target_genes.append(gene)
                     else:
-                        gene = Gene(gene_id=id, gene_name=id, chromosome='chr1', start_pos=1, end_pos=1, orientation=True)
+                        try:
+                            gene = Gene(gene_id=id, gene_name=id, chromosome='chr1', start_pos=1, end_pos=1, orientation=True)
+                        except:
+                            print(gene_id, id)
+                            raise
                         genes.append(gene)
                         all_target_genes.append(gene)
 
