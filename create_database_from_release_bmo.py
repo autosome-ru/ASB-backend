@@ -443,37 +443,37 @@ if __name__ == '__main__':
     if TARGET_GENES:
         print('Loading target genes')
         # table = pd.read_table(os.path.join(release_path, 'release_stats', 'phenotypes_stats.tsv'))
-        for t in ['atac', 'dnase', 'faire']:
-            table = pd.read_table(f'/home/ivavlakul/udachaC/_fdr_comb_pval0.1snpphclALLmpcq_IceKing{t}.tsv')
-            genes = []
-            for index, row in tqdm(table.drop_duplicates(subset='RSID').iterrows(), total=len(table.index)):
+        table = pd.concat([pd.read_table(f'/home/ivavlakul/udachaC/_fdr_comb_pval0.1snpphclALLmpcq_IceKing{t}.tsv')
+                           for t in ['atac', 'dnase', 'faire']]).drop_duplicates(subset='RSID')
+        genes = []
+        for index, row in tqdm(table.iterrows(), total=len(table.index)):
 
-                if pd.isna(row['qtlgenes']) or str(row['qtlgenes']) in ('nan', '', 'None'):
-                    continue
-                all_target_genes = []
-                for id in row['qtlgenes'].strip('\n').split(';'):
-                    target_genes = Gene.query.filter(Gene.gene_id.like(id.split('.')[0] + '%')).all()
-                    if target_genes:
-                        # if len(set(g.gene_name for g in target_genes)) != 1:
-                        #     print('Bad genes: {}'.format(target_genes))
-                        gene = target_genes[0]
-                        all_target_genes.append(gene)
-                    else:
-                        try:
-                            gene = Gene(gene_id=id, gene_name=id, chromosome='chr1', start_pos=1, end_pos=1, orientation=True)
-                        except:
-                            print(gene_id, id)
-                            raise
-                        genes.append(gene)
-                        all_target_genes.append(gene)
+            if pd.isna(row['qtlgenes']) or str(row['qtlgenes']) in ('nan', '', 'None'):
+                continue
+            all_target_genes = []
+            for id in row['qtlgenes'].strip('\n').split(';'):
+                target_genes = Gene.query.filter(Gene.gene_id.like(id.split('.')[0] + '%')).all()
+                if target_genes:
+                    # if len(set(g.gene_name for g in target_genes)) != 1:
+                    #     print('Bad genes: {}'.format(target_genes))
+                    gene = target_genes[0]
+                    all_target_genes.append(gene)
+                else:
+                    try:
+                        gene = Gene(gene_id=id, gene_name=id, chromosome='chr1', start_pos=1, end_pos=1, orientation=True)
+                    except:
+                        print(gene_id, id)
+                        raise
+                    genes.append(gene)
+                    all_target_genes.append(gene)
 
-                mutations = SNP.query.filter(SNP.rs_id == int(row['RSID'][row['RSID'].rfind('rs') + 2:])).all()
-                # if not mutations:
-                #     print('No snps for ', int(row['RSID'][2:]))
+            mutations = SNP.query.filter(SNP.rs_id == int(row['RSID'][row['RSID'].rfind('rs') + 2:])).all()
+            # if not mutations:
+            #     print('No snps for ', int(row['RSID'][2:]))
 
-                for mutation in mutations:
-                    mutation.target_genes = all_target_genes
-            session.add_all(genes)
+            for mutation in mutations:
+                mutation.target_genes = all_target_genes
+        session.add_all(genes)
         session.commit()
 
     if PROMOTER_GENES:
