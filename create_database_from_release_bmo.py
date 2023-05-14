@@ -229,13 +229,13 @@ if __name__ == '__main__':
                             names = ph_name.split(', ')
                             data += [
                                 Phenotype(**{
-                                    'db_name': database,
+                                    'db_name': db,
                                     'phenotype_name': name
                                 }) for name in names
                             ]
                         else:
                             data.append(Phenotype(**{
-                                    'db_name': database,
+                                    'db_name': db,
                                     'phenotype_name': ph_name
                                 }))
 

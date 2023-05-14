@@ -114,7 +114,8 @@ def update_phenotype_associations():
     while count > 0:
         print(count)
         for snp, db_name in q.order_by(SNP.rs_id).limit(max_count).offset(offset):
-            setattr(snp, db_name_property_dict[db_name], True)
+            db = db_name if db_name != 'qtltissues' else 'qtl'
+            setattr(snp, db_name_property_dict[db], True)
         session.commit()
         session.close()
         offset += max_count
