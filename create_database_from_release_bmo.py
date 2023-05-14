@@ -55,14 +55,14 @@ FAIRE_DICT = 0
 DNASE_DICT = 0
 ATAC_DICT = 0
 
-PHEN = 0
+PHEN = 1
 
 CONTEXT = 0
 BAD_GROUP = 0
 GENES = 0
-TARGET_GENES = 1
-PROMOTER_GENES = 1  # not needed at first time
-TARGET_GENE_SNP_COUNT = 1
+TARGET_GENES = 0
+PROMOTER_GENES = 0  # not needed at first time
+TARGET_GENE_SNP_COUNT = 0
 
 # Don't forget to change current_release in releases.py
 UPDATE_PHEN_COUNT = 1
@@ -208,39 +208,43 @@ if __name__ == '__main__':
 
     if PHEN:
         print('Loading phenotypes')
-        for t in ['atac', 'dnase', 'faire']:
-            table = pd.read_table(f'/home/ivavlakul/udachaC/_fdr_comb_pval0.1snpphclALLmpcq_IceKing{t}.tsv')
-            for index, row in tqdm(table.iterrows(), total=len(table.index)):
-                rs_id = row['RSID'][row['RSID'].rfind('rs') + 2:]
-                mutations = SNP.query.filter(SNP.rs_id == int(rs_id)).all()
-                for mutation in mutations:
-                    data = []
-                    for database in ['grasp', 'ebi', 'clinvar', 'phewas', 'finemapping', 'qtltissues']:
-                        if str(row[database]) == 'nan':
-                            continue
-                        ph_names = row[database].strip('\n').split(';')
-                        data = []
-                        for ph_name in ph_names:
-                            if len(ph_name) > 200:
-                                names = ph_name.split(', ')
-                                data += [
-                                    Phenotype(**{
-                                        'db_name': database,
-                                        'phenotype_name': name
-                                    }) for name in names
-                                ]
-                            else:
-                                data.append(Phenotype(**{
-                                        'db_name': database,
-                                        'phenotype_name': ph_name
-                                    }))
+        tables = []
 
-                    if len(data) > 0:
-                        if len(mutation.phenotypes) != 0:
-                            #assert len(data) == len(mutation.phenotypes)
-                            mutation.phenotypes = data
+        table = pd.concat([pd.read_table(f'/home/ivavlakul/udachaC/_fdr_comb_pval0.1snpphclALLmpcq_IceKing{t}.tsv')
+                 for t in ['atac', 'dnase', 'faire']]).drop_duplicates(subset='RSID')
+
+        for index, row in tqdm(table.iterrows(), total=len(table.index)):
+            rs_id = row['RSID'][row['RSID'].rfind('rs') + 2:]
+            mutations = SNP.query.filter(SNP.rs_id == int(rs_id)).all()
+            for mutation in mutations:
+                data = []
+                for database in ['grasp', 'ebi', 'clinvar', 'phewas', 'finemapping', 'qtltissues']:
+                    if str(row[database]) == 'nan':
+                        continue
+                    ph_names = row[database].strip('\n').split(';')
+                    data = []
+                    db = database if database != 'qtltissues' else 'qtl'
+                    for ph_name in ph_names:
+                        if len(ph_name) > 200:
+                            names = ph_name.split(', ')
+                            data += [
+                                Phenotype(**{
+                                    'db_name': database,
+                                    'phenotype_name': name
+                                }) for name in names
+                            ]
                         else:
-                            mutation.phenotypes = data
+                            data.append(Phenotype(**{
+                                    'db_name': database,
+                                    'phenotype_name': ph_name
+                                }))
+
+                if len(data) > 0:
+                    if len(mutation.phenotypes) != 0:
+                        #assert len(data) == len(mutation.phenotypes)
+                        mutation.phenotypes = data
+                    else:
+                        mutation.phenotypes = data
         session.commit()
 
     session.close()
@@ -495,51 +499,6 @@ if __name__ == '__main__':
             gene.eqtl_snps_count = 0
         session.commit()
         session.close()
-
-    # if REDO_CONCORDANCE:
-    #     print('Rereading motif columns')
-    #     def to_type(val, typ):
-    #         if val == '' or val == '.' or pd.isna(val):
-    #             return None
-    #         else:
-    #             return typ(val)
-    #     float_field = ['motif_log_pref', 'motif_log_palt', 'motif_fc']
-    #     int_field = ['motif_pos']
-    #     for tf in tqdm(TranscriptionFactor.query.all(), position=0):
-    #         edited_snps = []
-    #         path = os.path.join(release_path, 'TF_P-values', tf.name + '.tsv')
-    #         if not os.path.exists(path):
-    #             continue
-    #         tf_pval_df = pd.read_table(path)
-    #         tf_pval_df['key'] = tf_pval_df.apply(lambda x:
-    #                                              '@'.join(map(str,
-    #                                                           [x['#chr'],
-    #                                                            x['pos'],
-    #                                                            x['alt']])),
-    #                                              axis=1)
-    #         tf_pval_df = tf_pval_df.set_index('key')
-    #         for tf_snp, snp in tqdm(session.query(
-    #                 TranscriptionFactorSNP, SNP
-    #         ).join(
-    #             SNP,
-    #             TranscriptionFactorSNP.snp
-    #         ).filter(TranscriptionFactorSNP.tf_id == tf.tf_id).all(), position=1, leave=False):
-    #             key = '@'.join(map(str, [snp.chromosome, snp.position, snp.alt]))
-    #             snp_df = tf_pval_df.loc[key]
-    #             tf_snp.motif_log_p_ref = to_type(snp_df['motif_log_pref'], float)
-    #             tf_snp.motif_log_p_alt = to_type(snp_df['motif_log_palt'], float)
-    #             tf_snp.motif_log_2_fc = to_type(snp_df['motif_fc'], float)
-    #             tf_snp.motif_position = to_type(snp_df['motif_pos'], int)
-    #             tf_snp.motif_orientation = {'+': True, '-': False}.get(snp_df['motif_orient'])
-    #             conc = snp_df['motif_conc']
-    #             tf_snp.motif_concordance = None if conc in ('None', '') or pd.isna(conc) else conc
-    #             edited_snps.append(tf_snp)
-    #         session.commit()
-    #
-
-    # if UPDATE_CONCORDANCE:
-    #     print('Updating motif concordance')
-    #     update_motif_concordance()
 
     if UPDATE_PHEN_COUNT:
         print('Updating phenotype associations counts')
