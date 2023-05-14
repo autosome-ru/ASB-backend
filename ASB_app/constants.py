@@ -16,7 +16,7 @@ max_nrows = 10000
 max_comments = 5000
 db_name_property_dict = {
     x: 'has_{}_associations'.format(x.lower())
-    for x in ['clinvar', 'ebi', 'finemapping', 'grasp', 'phewas', 'QTL']
+    for x in ['clinvar', 'ebi', 'finemapping', 'grasp', 'phewas', 'qtl']
 }
 
 default_fdr_tr = lambda v: '0.1' if v == 3 else '0.05'
