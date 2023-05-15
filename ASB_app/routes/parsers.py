@@ -22,13 +22,14 @@ for release in Release.__subclasses__():
     search_parser.add_argument('es', help='Effect size threshold', choices=es_choices)
     search_parser.add_argument('atac', type=lambda value: value.split('@'),
                                help='"@" separated list of cell types, search SNPs ASB for every cell type specified')
-    search_parser.add_argument('dnase', action='split', help='"@" separated list of cell types, search SNPs ASB for every cell type specified')
-    search_parser.add_argument('faire', action='split',
+    search_parser.add_argument('dnase', type=lambda value: value.split('@'), help='"@" separated list of cell types, search SNPs ASB for every cell type specified')
+    search_parser.add_argument('faire', type=lambda value: value.split('@'),
                                help='"@" separated list of cell types, search SNPs ASB for every cell type specified')
     search_parser.add_argument('chromosome', choices=chromosomes, help='Search only SNPs on the specified chromosome')
     search_parser.add_argument('start', type=inputs.positive, help='Search SNPs in interval from specified position, Requires "chromosome" and "end", 1-based')
     search_parser.add_argument('end', type=inputs.positive, help='Search SNPs in interval to specified position, Requiers "chromosome" and "start", 1-based')
-    search_parser.add_argument('phenotype_databases', action='split', help='Comma-separated list of databases, possible choices {grasp, ebi, clinvar, phewas, finemapping, QTL}, earch SNPs that have phenotype associations in all specified databases')
+    search_parser.add_argument('phenotype_databases',
+                               action='split', help='Comma-separated list of databases, possible choices {grasp, ebi, clinvar, phewas, finemapping, qtl}, earch SNPs that have phenotype associations in all specified databases')
 
     search_parser_tsv = search_parser.copy()
     search_parser_tsv.replace_argument('size', type=inputs.natural, help='Items per page', default=0)
