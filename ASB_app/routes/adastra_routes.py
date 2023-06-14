@@ -139,14 +139,14 @@ for release in Release.__subclasses__():
         used_release = release
 
         @api.marshal_with(release_serializers.search_results_model)
-        @api.expect(pagination_parser)
+        @api.expect(search_parser)
         def get(self, rs_id):
             """
             Get all SNPs by rs-ID short info
             """
-            all_args = pagination_parser.parse_args()
+            all_args = search_parser.parse_args()
             filters = self.release_service.get_filters_by_rs_id(rs_id) + \
-                self.release_service.get_filters_by_fdr(default_fdr_tr(int(self.used_release.version)))
+                self.release_service.get_filters_by_fdr(search_parser['fdr'])
             result = self.paginate(all_args, extra_filters=filters)
             return {'results': result, 'total': self.items_count(extra_filters=filters)}
 
@@ -158,18 +158,18 @@ for release in Release.__subclasses__():
         used_release = release
 
         @api.marshal_with(release_serializers.gene_search_results_model)
-        @api.expect(pagination_parser)
+        @api.expect(search_parser)
         def get(self, gene_id):
             """
             Get all SNPs by gene encode id short info
             """
-            all_args = pagination_parser.parse_args()
+            all_args = search_parser.parse_args()
             gene = self.release_service.get_gene_by_id(gene_id)
             if gene is None:
                 return {'results': [], 'gene': None, 'total': 0}
             gene.locus_start, gene.locus_end = self.release_service.get_gene_locus(gene)
             filters = self.release_service.get_filters_by_gene(gene) + \
-                self.release_service.get_filters_by_fdr(default_fdr_tr(int(self.used_release.version)))
+                self.release_service.get_filters_by_fdr(search_parser['fdr'])
             result = self.paginate(all_args, extra_filters=filters)
 
             return {'results': result, 'gene': gene, 'total': self.items_count(extra_filters=filters)}
@@ -182,18 +182,18 @@ for release in Release.__subclasses__():
         used_release = release
 
         @api.marshal_with(release_serializers.gene_search_results_model)
-        @api.expect(pagination_parser)
+        @api.expect(search_parser)
         def get(self, gene_name):
             """
             Get all SNPs by gene name short info
             """
-            all_args = pagination_parser.parse_args()
+            all_args = search_parser.parse_args()
             gene = self.release_service.get_gene_by_name(gene_name)
             if gene is None:
                 return {'results': [], 'gene': None, 'total': 0}
             gene.locus_start, gene.locus_end = self.release_service.get_gene_locus(gene)
             filters = self.release_service.get_filters_by_gene(gene) + \
-                self.release_service.get_filters_by_fdr(default_fdr_tr(int(self.used_release.version)))
+                self.release_service.get_filters_by_fdr(search_parser['fdr'])
             result = self.paginate(all_args, extra_filters=filters)
 
             return {'results': result, 'gene': gene, 'total': self.items_count(extra_filters=filters)}
@@ -207,18 +207,18 @@ for release in Release.__subclasses__():
             used_release = release
 
             @api.marshal_with(release_serializers.gene_search_results_model)
-            @api.expect(pagination_parser)
+            @api.expect(search_parser)
             def get(self, gene_id):
                 """
                 Get all SNPs by eqtl target gene encode id short info
                 """
-                all_args = pagination_parser.parse_args()
+                all_args = search_parser.parse_args()
                 gene = self.release_service.get_gene_by_id(gene_id)
                 if gene is None:
                     return {'results': [], 'gene': None, 'total': 0}
                 gene.locus_start, gene.locus_end = self.release_service.get_gene_locus(gene)
                 filters = self.release_service.get_filters_by_eqtl_gene(gene) + \
-                    self.release_service.get_filters_by_fdr(default_fdr_tr(int(self.used_release.version)))
+                    self.release_service.get_filters_by_fdr(all_args['fdr'])
                 result = self.paginate(all_args, extra_filters=filters)
 
                 return {'results': result, 'gene': gene, 'total': self.items_count(extra_filters=filters)}
@@ -231,19 +231,19 @@ for release in Release.__subclasses__():
             used_release = release
 
             @api.marshal_with(release_serializers.gene_search_results_model)
-            @api.expect(pagination_parser)
+            @api.expect(search_parser)
             def get(self, gene_name):
                 """
                 Get all SNPs by eqtl target gene name short info
                 """
-                all_args = pagination_parser.parse_args()
+                all_args = search_parser.parse_args()
                 gene = self.release_service.get_gene_by_name(gene_name)
                 if gene is None:
                     print('None')
                     return {'results': [], 'gene': None, 'total': 0}
                 gene.locus_start, gene.locus_end = self.release_service.get_gene_locus(gene)
                 filters = self.release_service.get_filters_by_eqtl_gene(gene) + \
-                    self.release_service.get_filters_by_fdr(default_fdr_tr(int(self.used_release.version)))
+                    self.release_service.get_filters_by_fdr(all_args['fdr'])
                 result = self.paginate(all_args, extra_filters=filters)
 
                 return {'results': result, 'gene': gene, 'total': self.items_count(extra_filters=filters)}
@@ -383,7 +383,7 @@ for release in Release.__subclasses__():
     @set_release_service(release_service)
     class DnaseHint(Resource):
         @api.expect(used_hints_parser)
-        @api.marshal_list_with(release_serializers.transcription_factor_model)
+        @api.marshal_list_with(release_serializers.cell_line_model)
         def get(self):
             args = used_hints_parser.parse_args()
             return self.release_service.get_hints('dnase', args.get('search', ''), args.get('options', []))

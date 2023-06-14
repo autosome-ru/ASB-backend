@@ -56,20 +56,21 @@ BAD_GROUP = 0
 GENES = 0
 TARGET_GENES = 0
 PROMOTER_GENES = 0  # not needed at first time
-TARGET_GENE_SNP_COUNT = 0
 
-REDO_CONCORDANCE = 1
+REDO_CONCORDANCE = 0
 
-UPDATE_CONCORDANCE = 1  # Don't forget to change current_release in releases.py
+UPDATE_CONCORDANCE = 0  # Don't forget to change current_release in releases.py
 UPDATE_PHEN_COUNT = 0
-UPDATE_HAS_CONCORDANCE = 1
+UPDATE_HAS_CONCORDANCE = 0
 UPDATE_BEST_P_VALUE = 0
 UPDATE_BEST_ES = 0
-PROMOTER_GENE_COUNT = 0
-TARGET_GENE_COUNT_010 = 0
-PROMOTER_GENE_COUNT_010 = 0
-SET_NONE_TO_ZERO = 0
-CHECK_NONE = 0
+
+TARGET_GENE_SNP_COUNT = 1
+PROMOTER_GENE_COUNT = 1
+TARGET_GENE_COUNT_010 = 1
+PROMOTER_GENE_COUNT_010 = 1
+SET_NONE_TO_ZERO = 1
+CHECK_NONE = 1
 
 # Gene name in tfs is not updated
 
@@ -580,10 +581,7 @@ if __name__ == '__main__':
     if TARGET_GENE_SNP_COUNT:
         print('Updating target snp count')
         q = session.query(Gene, db.func.count('*')).join(SNP, Gene.snps_by_target).group_by(Gene)
-        for gene, count in tqdm(
-            session.query(Gene, db.func.count('*')).join(SNP, Gene.snps_by_target).group_by(Gene),
-            total=q.count()
-        ):
+        for gene, count in tqdm(q, total=q.count()):
             gene.eqtl_snps_count = count
         session.commit()
         for gene in Gene.query.filter(Gene.eqtl_snps_count.is_(None)):
@@ -591,75 +589,11 @@ if __name__ == '__main__':
         session.commit()
         session.close()
 
-    if REDO_CONCORDANCE:
-        print('Rereading motif columns')
-        def to_type(val, typ):
-            if val == '' or val == '.' or pd.isna(val):
-                return None
-            else:
-                return typ(val)
-        float_field = ['motif_log_pref', 'motif_log_palt', 'motif_fc']
-        int_field = ['motif_pos']
-        for tf in tqdm(TranscriptionFactor.query.all(), position=0):
-            edited_snps = []
-            path = os.path.join(release_path, 'TF_P-values', tf.name + '.tsv')
-            if not os.path.exists(path):
-                continue
-            tf_pval_df = pd.read_table(path)
-            tf_pval_df['key'] = tf_pval_df.apply(lambda x:
-                                                 '@'.join(map(str,
-                                                              [x['#chr'],
-                                                               x['pos'],
-                                                               x['alt']])),
-                                                 axis=1)
-            tf_pval_df = tf_pval_df.set_index('key')
-            for tf_snp, snp in tqdm(session.query(
-                    TranscriptionFactorSNP, SNP
-            ).join(
-                SNP,
-                TranscriptionFactorSNP.snp
-            ).filter(TranscriptionFactorSNP.tf_id == tf.tf_id).all(), position=1, leave=False):
-                key = '@'.join(map(str, [snp.chromosome, snp.position, snp.alt]))
-                snp_df = tf_pval_df.loc[key]
-                tf_snp.motif_log_p_ref = to_type(snp_df['motif_log_pref'], float)
-                tf_snp.motif_log_p_alt = to_type(snp_df['motif_log_palt'], float)
-                tf_snp.motif_log_2_fc = to_type(snp_df['motif_fc'], float)
-                tf_snp.motif_position = to_type(snp_df['motif_pos'], int)
-                tf_snp.motif_orientation = {'+': True, '-': False}.get(snp_df['motif_orient'])
-                conc = snp_df['motif_conc']
-                tf_snp.motif_concordance = None if conc in ('None', '') or pd.isna(conc) else conc
-                edited_snps.append(tf_snp)
-            session.commit()
-
-
-    if UPDATE_CONCORDANCE:
-        print('Updating motif concordance')
-        update_motif_concordance()
-
-    if UPDATE_PHEN_COUNT:
-        print('Updating phenotype associations counts')
-        update_phenotype_associations()
-
-    if UPDATE_HAS_CONCORDANCE:
-        print('Updating "has concordant snps"')
-        update_has_concordance()
-
-    if UPDATE_BEST_P_VALUE:
-        print('Updating best p-value')
-        update_best_p_value()
-
-    if UPDATE_BEST_ES:
-        print('Updating best effect_size')
-        update_best_es()
-
     if TARGET_GENE_COUNT_010:
         print('Updating target snp count 010')
-        q = session.query(Gene, db.func.count('*')).join(SNP, Gene.snps_by_target).filter(SNP.fdr_class.in_(['0.01', '0.05', '0.1'])).group_by(Gene)
-        for gene, count in tqdm(
-            session.query(Gene, db.func.count('*')).join(SNP, Gene.snps_by_target).filter(
-                SNP.fdr_class.in_(['0.01', '0.05', '0.1'])).group_by(Gene),
-            total=q.count()
-        ):
+        q = session.query(Gene, db.func.count('*')).join(SNP, Gene.snps_by_target).filter(
+            SNP.fdr_class.in_(['0.01', '0.05', '0.1'])).group_by(Gene)
+        for gene, count in tqdm(q, total=q.count()):
             gene.eqtl_snps_count010 = count
         session.commit()
         for gene in Gene.query.filter(Gene.eqtl_snps_count010.is_(None)):
@@ -670,10 +604,7 @@ if __name__ == '__main__':
     if PROMOTER_GENE_COUNT:
         print('Updating promoter snp count')
         q = session.query(Gene, db.func.count('*')).join(SNP, Gene.proximal_promoter_snps).group_by(Gene)
-        for gene, count in tqdm(
-            session.query(Gene, db.func.count('*')).join(SNP, Gene.proximal_promoter_snps).group_by(Gene),
-            total=q.count()
-        ):
+        for gene, count in tqdm(q, total=q.count()):
             gene.snps_count = count
         session.commit()
         for gene in Gene.query.filter(Gene.snps_count.is_(None)):
@@ -683,18 +614,27 @@ if __name__ == '__main__':
 
     if PROMOTER_GENE_COUNT_010:
         print('Updating promoter snp count 010')
-        q = session.query(Gene, db.func.count('*')).join(SNP, Gene.proximal_promoter_snps).filter(SNP.fdr_class.in_(['0.01', '0.05', '0.1'])).group_by(Gene)
-        for gene, count in tqdm(
-            session.query(Gene, db.func.count('*')).join(SNP, Gene.proximal_promoter_snps).filter(
-                SNP.fdr_class.in_(['0.01', '0.05', '0.1'])).group_by(Gene),
-            total=q.count()
-        ):
+        q = session.query(Gene, db.func.count('*')).join(SNP, Gene.proximal_promoter_snps).filter(
+            SNP.fdr_class.in_(['0.01', '0.05', '0.1'])).group_by(Gene)
+        for gene, count in tqdm(q, total=q.count()):
             gene.snps_count010 = count
         session.commit()
         for gene in Gene.query.filter(Gene.snps_count010.is_(None)):
             gene.snps_count010 = 0
         session.commit()
         session.close()
+
+    if UPDATE_PHEN_COUNT:
+        print('Updating phenotype associations counts')
+        update_phenotype_associations()
+
+    if UPDATE_BEST_P_VALUE:
+        print('Updating best p-value')
+        update_best_p_value()
+
+    if UPDATE_BEST_ES:
+        print('Updating best effect_size')
+        update_best_es()
 
     if SET_NONE_TO_ZERO:
         print('Setting 0 when NULL')

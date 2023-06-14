@@ -219,7 +219,7 @@ class ReleaseService:
             agr_snp_class_alias = aliased(aggregated_snp_class)
             agr_class_alias = aliased(aggregation_class)
             query_args.append(self.release.db.func.group_concat(agr_class_alias.name.distinct()))
-            headers.append('{}-ASBs'.format({'TF': 'TF', 'CL': 'Cell type'}[what_for]))
+            headers.append('{}-ASBs'.format({'atac': 'ATAC', 'dnase': 'DNase', 'faire': 'FAIRE'}[what_for]))
 
             if int(self.release.version) >= 3:
                 join_tuples += [
