@@ -47,6 +47,8 @@ current_release.Gene
 tr = 0.25
 
 EXP = 0
+CL_DICT = 0
+
 FAIRE = 0
 DNASE = 0
 ATAC = 0
@@ -87,18 +89,19 @@ conv_bad = dict(zip(
 agr_class_dict = {'dnase': Dnase, 'faire': Faire, 'atac': Atac}
 snp_class_dict = {'dnase': DnaseSNP, 'faire': FaireSNP, 'atac': AtacSNP}
 if __name__ == '__main__':
-    cl_dict = {}
-    cl_dict_reverse = {}
-    with open(f'{release_path}/metadata/celnames.tsv') as file:
-        for line in file:
-            if not line.strip():
-                continue
-            try:
-                key, value = line.strip().split('\t')
-            except:
-                print(line)
-            cl_dict_reverse[value] = key
-            cl_dict[key] = value
+    if CL_DICT:
+        cl_dict = {}
+        cl_dict_reverse = {}
+        with open(f'{release_path}/metadata/celnames.tsv') as file:
+            for line in file:
+                if not line.strip():
+                    continue
+                try:
+                    key, value = line.strip().split('\t')
+                except:
+                    print(line)
+                cl_dict_reverse[value] = key
+                cl_dict[key] = value
 
     if EXP:
         for param in ['faire'] * FAIRE + ['dnase'] * DNASE + ['atac'] * ATAC:
