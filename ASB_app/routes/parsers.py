@@ -48,7 +48,7 @@ for release in Release.__subclasses__():
     used_hints_parser.add_argument('search')
 
     csv_columns_parser = api.parser()
-    csv_columns_parser.add_argument('columns', action='split', required=True)
+    csv_columns_parser.add_argument('columns', type=lambda value: value.split('@'), required=True)
     csv_columns_parser.add_argument('filter')
 #
 # result_param_parser = current_release.api.parser()
