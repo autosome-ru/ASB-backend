@@ -3,20 +3,20 @@
 <head>
     <link rel="icon" type="image/x-icon" href="/assets/favicon.ico">
     <meta charset="UTF-8">
-    <title>ADASTRA ASB SNPs sitemap</title>
+    <title>UDACHA ASB SNPs sitemap</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
           integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
 </head>
 <body class="container-fluid">
-<h2>ADASTRA ASB SNPs sitemap</h2>
-<h4><a href="https://adastra.autosome.ru/{{release.name}}">go back to ADASTRA website</a></h4>
+<h2>UDACHA ASB SNPs sitemap</h2>
+<h4><a href="https://udacha.autosome.ru/{{release.name}}">go back to UDACHA website</a></h4>
 <nav>
     <ul class="pagination pagination-sm">
         {% for page in range(pages) %}
         {% if page != current_page %}
         <li class="page-item">
             <a
-                    href="https://adastra.autosome.ru/sitemap/v{{release.version}}/snps/{{page}}"
+                    href="https://udacha.autosome.ru/sitemap/v{{release.version}}/snps/{{page}}"
                     class="page-link"
             >
                 {{page}}
