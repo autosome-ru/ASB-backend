@@ -38,7 +38,7 @@ class ReleaseService:
             return tuple()
 
     def get_release_name(self):
-        rname = self.release.name if self.release.name != 'billcipher' else 'bill-cipher'
+        rname = self.release.name if self.release.name != 'bmo' else 'IceKing'
         return f'https://udacha.autosome.org/{rname}'
 
 
@@ -126,7 +126,7 @@ class ReleaseService:
         )
 
     def get_gene_by_name(self, gene_name):
-        return self.Gene.query.filter_by(gene_name=gene_name).one_or_none()
+        return self.Gene.query.filter_by(gene_name=gene_name).all()
 
     def get_gene_by_id(self, gene_id):
         return self.Gene.query.filter((self.Gene.gene_id == gene_id) | (self.Gene.gene_id.like('{}.%'.format(gene_id)))
