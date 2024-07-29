@@ -99,6 +99,10 @@ class ReleaseSerializers:
                 'snps_count': fields.Integer,
             })
 
+        if int(self.release.version) >= 6:
+            additional_data = {'tf_motif_index': fields.Integer}
+        else:
+            additional_data = {}
         self.tf_snp_model = api.inherit('Transcription Factor SNP (no genome info)', self.aggregated_snp_model, {
             'tf_snp_id': fields.Integer(readonly=True),
             'motif_log_p_ref': fields.Float,
@@ -108,6 +112,7 @@ class ReleaseSerializers:
             'motif_position': fields.Integer,
             'motif_concordance': fields.String,
             'transcription_factor': fields.Nested(self.transcription_factor_model),
+            **additional_data
         })
 
         self.cl_snp_model = api.inherit('Cell line SNP (no genome info)', self.aggregated_snp_model, {

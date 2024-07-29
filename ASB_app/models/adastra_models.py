@@ -310,9 +310,12 @@ for release in Release.__subclasses__():
                                   db.Index('tf_id_index', 'tf_id'),
                                   db.Index('motif_concordance_index', 'motif_concordance'),
                                   )
+            if int(release.version) >= 6:
+                tf_motif_index = db.Column(db.Integer, nullable=True)
 
             tf_snp_id = db.Column(db.Integer, primary_key=True)
             tf_id = db.Column(db.Integer, db.ForeignKey('transcription_factors.tf_id'), nullable=False)
+
             motif_log_p_ref = db.Column(db.Float)
             motif_log_p_alt = db.Column(db.Float)
             motif_log_2_fc = db.Column(db.Float)
