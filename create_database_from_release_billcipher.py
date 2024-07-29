@@ -651,7 +651,7 @@ if __name__ == '__main__':
         float_field = ['motif_log_pref', 'motif_log_palt', 'motif_fc']
         int_field = ['motif_pos']
         tf_name_to_id = {tf.name: tf.tf_id for tf in session.query(TranscriptionFactor).all()}
-
+        print([x for x in tf_name_to_id if 'AHRR_HUMAN' in x])
         mapping = pd.read_table('/home/abramov/adastra_update072124/mapping.tsv',
                                 header=None, names=['tf_id', 'tf_name']).set_index('tf_name')['tf_id'].to_dict()
 
