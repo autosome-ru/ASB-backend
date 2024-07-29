@@ -681,7 +681,7 @@ if __name__ == '__main__':
 
                 key = '@'.join(map(str, [snp.chromosome, snp.position, snp.alt]))
                 snp_df = tf_pval_df.loc[key]
-                n = tf_name if pd.isna( snp_df['motif_index']) else tf_name + '@' + snp_df['motif_index'].astype(str)
+                n = tf_name if pd.isna( snp_df['motif_index']) else tf_name + '@' + int(snp_df['motif_index']).astype(str)
                 tf_snp.tf_id = tf_name_to_id[n]
                 tf_snp.motif_log_p_ref = to_type(snp_df['motif_log_pref'], float)
                 tf_snp.motif_log_p_alt = to_type(snp_df['motif_log_palt'], float)
