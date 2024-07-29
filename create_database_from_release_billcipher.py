@@ -58,8 +58,8 @@ TARGET_GENES = 0
 PROMOTER_GENES = 0  # not needed at first time
 TARGET_GENE_SNP_COUNT = 0
 
-REDO_CONCORDANCE = 1
-
+REDO_CONCORDANCE = 0
+REDO_CONCORDANCE_NEW_FORMAT = 1
 UPDATE_CONCORDANCE = 1  # Don't forget to change current_release in releases.py
 UPDATE_PHEN_COUNT = 0
 UPDATE_HAS_CONCORDANCE = 1
@@ -630,6 +630,49 @@ if __name__ == '__main__':
                 tf_snp.motif_concordance = None if conc in ('None', '') or pd.isna(conc) else conc
                 edited_snps.append(tf_snp)
             session.commit()
+
+
+    if REDO_CONCORDANCE_NEW_FORMAT:
+        print('Rereading motif columns')
+        def to_type(val, typ):
+            if val == '' or val == '.' or pd.isna(val):
+                return None
+            else:
+                return typ(val)
+        float_field = ['motif_log_pref', 'motif_log_palt', 'motif_fc']
+        int_field = ['motif_pos']
+        for tf in tqdm(TranscriptionFactor.query.all(), position=0):
+            edited_snps = []
+            tf_name = tf.name.split('@')[0]
+            path = f"/home/abramov/adastra_update072124/new-version/{tf_name}.tsv"
+            if not os.path.exists(path):
+                continue
+            tf_pval_df = pd.read_table(path)
+            tf_pval_df['key'] = tf_pval_df.apply(lambda x:
+                                                 '@'.join(map(str,
+                                                              [x['#chr'],
+                                                               x['pos'],
+                                                               x['alt']])),
+                                                 axis=1)
+            tf_pval_df = tf_pval_df.set_index('key')
+            for tf_snp, snp in tqdm(session.query(
+                    TranscriptionFactorSNP, SNP
+            ).join(
+                SNP,
+                TranscriptionFactorSNP.snp
+            ).filter(TranscriptionFactorSNP.tf_id == tf.tf_id).all(), position=1, leave=False):
+                key = '@'.join(map(str, [snp.chromosome, snp.position, snp.alt]))
+                snp_df = tf_pval_df.loc[key]
+                tf_snp.motif_log_p_ref = to_type(snp_df['motif_log_pref'], float)
+                tf_snp.motif_log_p_alt = to_type(snp_df['motif_log_palt'], float)
+                tf_snp.motif_log_2_fc = to_type(snp_df['motif_fc'], float)
+                tf_snp.motif_position = to_type(snp_df['motif_pos'], int)
+                tf_snp.motif_orientation = {'+': True, '-': False}.get(snp_df['motif_orient'])
+                conc = snp_df['motif_conc']
+                tf_snp.motif_concordance = None if conc in ('None', '') or pd.isna(conc) else conc
+                edited_snps.append(tf_snp)
+            session.commit()
+
 
 
     if UPDATE_CONCORDANCE:
