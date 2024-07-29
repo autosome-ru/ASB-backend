@@ -633,7 +633,7 @@ if __name__ == '__main__':
 
 
     if REDO_CONCORDANCE_NEW_FORMAT:
-        print('Rereading motif columns')
+        print('Rereading motif columns new format')
         def to_type(val, typ):
             if val == '' or val == '.' or pd.isna(val):
                 return None
@@ -668,6 +668,7 @@ if __name__ == '__main__':
                     continue
                 key = '@'.join(map(str, [snp.chromosome, snp.position, snp.alt]))
                 snp_df = tf_pval_df.loc[key]
+                tf_snp.tf_id = tf_id
                 tf_snp.motif_log_p_ref = to_type(snp_df['motif_log_pref'], float)
                 tf_snp.motif_log_p_alt = to_type(snp_df['motif_log_palt'], float)
                 tf_snp.motif_log_2_fc = to_type(snp_df['motif_fc'], float)
