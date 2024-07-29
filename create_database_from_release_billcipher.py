@@ -29,18 +29,18 @@ PhenotypeSNPCorrespondence, \
 BADGroup, \
 GeneSNPCorrespondence, \
 Gene = \
-current_release.TranscriptionFactor, \
-current_release.CellLine, \
-current_release.Experiment, \
-current_release.ExpSNP, \
-current_release.SNP, \
-current_release.TranscriptionFactorSNP, \
-current_release.CellLineSNP, \
-current_release.Phenotype, \
-current_release.PhenotypeSNPCorrespondence, \
-current_release.BADGroup, \
-current_release.GeneSNPCorrespondence, \
-current_release.Gene
+    current_release.TranscriptionFactor, \
+    current_release.CellLine, \
+    current_release.Experiment, \
+    current_release.ExpSNP, \
+    current_release.SNP, \
+    current_release.TranscriptionFactorSNP, \
+    current_release.CellLineSNP, \
+    current_release.Phenotype, \
+    current_release.PhenotypeSNPCorrespondence, \
+    current_release.BADGroup, \
+    current_release.GeneSNPCorrespondence, \
+    current_release.Gene
 
 tr = 0.25
 
@@ -106,7 +106,8 @@ if __name__ == '__main__':
                 continue
 
             if row['TF_UNIPROT_NAME'] not in used_tf_names:
-                tfs.append(TranscriptionFactor(tf_id=counter, uniprot_ac=row['TF_UNIPROT_ID'], name=row['TF_UNIPROT_NAME']))
+                tfs.append(
+                    TranscriptionFactor(tf_id=counter, uniprot_ac=row['TF_UNIPROT_ID'], name=row['TF_UNIPROT_NAME']))
                 used_tf_names[row['TF_UNIPROT_NAME']] = counter
                 counter += 1
             if row['CELL_ID'] not in used_cl_ids:
@@ -250,7 +251,7 @@ if __name__ == '__main__':
         for index, row in tqdm(table.iterrows(), total=len(table.index)):
             mutations = SNP.query.filter(SNP.rs_id == int(row['RSID'][row['RSID'].rfind('rs') + 2:])).all()
             # if not mutations:
-                # print('No snps for ', int(row['RSID'][2:]))
+            # print('No snps for ', int(row['RSID'][2:]))
             for database in ['grasp', 'ebi', 'clinvar', 'phewas', 'finemapping', 'QTL']:
                 if str(row[database]) == 'nan':
                     continue
@@ -509,8 +510,10 @@ if __name__ == '__main__':
                 snps = SNP.query.filter(SNP.chromosome == chrom,
                                         SNP.position.between(start_pos_ext, end_pos_ext)).all()
 
-                gene = Gene(gene_id=gene_id, gene_name=gene_name, start_pos=start_pos, end_pos=end_pos, chromosome=chrom,
-                            orientation=True if orient == '+' else False if orient == '-' else None, snps_count=len(snps),
+                gene = Gene(gene_id=gene_id, gene_name=gene_name, start_pos=start_pos, end_pos=end_pos,
+                            chromosome=chrom,
+                            orientation=True if orient == '+' else False if orient == '-' else None,
+                            snps_count=len(snps),
                             proximal_promoter_snps=snps)
                 if gene_id in genes_ids:
                     # print(gene_id, chrom, start_pos, end_pos)
@@ -568,11 +571,10 @@ if __name__ == '__main__':
         genes = []
         q = Gene.query.filter(~((Gene.start_pos == 1) & (Gene.end_pos == 1)))
         for gene in tqdm(Gene.query.filter(~((Gene.start_pos == 1) & (Gene.end_pos == 1))), total=q.count()):
-
             gene.proximal_promoter_snps = SNP.query.filter(
-                    SNP.chromosome == gene.chromosome,
-                    SNP.position.between(gene.start_pos - 5000, gene.end_pos) if gene.orientation
-                    else SNP.position.between(gene.start_pos, gene.end_pos + 5000)
+                SNP.chromosome == gene.chromosome,
+                SNP.position.between(gene.start_pos - 5000, gene.end_pos) if gene.orientation
+                else SNP.position.between(gene.start_pos, gene.end_pos + 5000)
             ).all()
             genes.append(gene)
         session.commit()
@@ -581,8 +583,8 @@ if __name__ == '__main__':
         print('Updating target snp count')
         q = session.query(Gene, db.func.count('*')).join(SNP, Gene.snps_by_target).group_by(Gene)
         for gene, count in tqdm(
-            session.query(Gene, db.func.count('*')).join(SNP, Gene.snps_by_target).group_by(Gene),
-            total=q.count()
+                session.query(Gene, db.func.count('*')).join(SNP, Gene.snps_by_target).group_by(Gene),
+                total=q.count()
         ):
             gene.eqtl_snps_count = count
         session.commit()
@@ -593,11 +595,15 @@ if __name__ == '__main__':
 
     if REDO_CONCORDANCE:
         print('Rereading motif columns')
+
+
         def to_type(val, typ):
             if val == '' or val == '.' or pd.isna(val):
                 return None
             else:
                 return typ(val)
+
+
         float_field = ['motif_log_pref', 'motif_log_palt', 'motif_fc']
         int_field = ['motif_pos']
         for tf in tqdm(TranscriptionFactor.query.all(), position=0):
@@ -631,22 +637,28 @@ if __name__ == '__main__':
                 edited_snps.append(tf_snp)
             session.commit()
 
-
     if REDO_CONCORDANCE_NEW_FORMAT:
         print('Rereading motif columns new format')
+
+
         def to_type(val, typ):
             if val == '' or val == '.' or pd.isna(val):
                 return None
             else:
                 return typ(val)
+
+
         float_field = ['motif_log_pref', 'motif_log_palt', 'motif_fc']
         int_field = ['motif_pos']
         tf_name_to_id = {tf.name: tf.tf_id for tf in session.query(TranscriptionFactor).all()}
 
-        for tf_name, tf_id in tqdm(tf_name_to_id.items(), position=0, total=len([x for x in tf_name_to_id])):
+        mapping = pd.read_table('/home/abramov/adastra_update072124/mapping.tsv',
+                                header=None, names=['tf_id', 'tf_name']).set_index('tf_name')['tf_id'].to_dict()
+
+        for tf_name, old_tf_id in tqdm(mapping.items(), position=0, total=len([x for x in tf_name_to_id])):
             edited_snps = []
-            base_tf_name = tf_name.split('@')[0]
-            path = f"/home/abramov/adastra_update072124/new-version/{base_tf_name}.tsv"
+            path = f"/home/abramov/adastra_update072124/new-version/{tf_name}.tsv"
+
             if not os.path.exists(path):
                 continue
             tf_pval_df = pd.read_table(path)
@@ -659,16 +671,17 @@ if __name__ == '__main__':
             tf_pval_df = tf_pval_df.set_index('key')
 
             for tf_snp, snp in tqdm(session.query(
-                    TranscriptionFactorSNP, SNP
+                TranscriptionFactorSNP, SNP
             ).join(
                 SNP,
                 TranscriptionFactorSNP.snp
+            ).filter(
+                TranscriptionFactorSNP.tf_id == old_tf_id
             ).all(), position=1, leave=False):
-                if tf_snp.tf_name != base_tf_name:
-                    continue
+
                 key = '@'.join(map(str, [snp.chromosome, snp.position, snp.alt]))
                 snp_df = tf_pval_df.loc[key]
-                tf_snp.tf_id = tf_id
+                tf_snp.tf_id = tf_name_to_id[tf_name + '@' + snp_df['motif_index'].astype(str)]
                 tf_snp.motif_log_p_ref = to_type(snp_df['motif_log_pref'], float)
                 tf_snp.motif_log_p_alt = to_type(snp_df['motif_log_palt'], float)
                 tf_snp.motif_log_2_fc = to_type(snp_df['motif_fc'], float)
@@ -678,7 +691,6 @@ if __name__ == '__main__':
                 tf_snp.motif_concordance = None if conc in ('None', '') or pd.isna(conc) else conc
                 edited_snps.append(tf_snp)
             session.commit()
-
 
     if UPDATE_CONCORDANCE:
         print('Updating motif concordance')
@@ -702,11 +714,12 @@ if __name__ == '__main__':
 
     if TARGET_GENE_COUNT_010:
         print('Updating target snp count 010')
-        q = session.query(Gene, db.func.count('*')).join(SNP, Gene.snps_by_target).filter(SNP.fdr_class.in_(['0.01', '0.05', '0.1'])).group_by(Gene)
+        q = session.query(Gene, db.func.count('*')).join(SNP, Gene.snps_by_target).filter(
+            SNP.fdr_class.in_(['0.01', '0.05', '0.1'])).group_by(Gene)
         for gene, count in tqdm(
-            session.query(Gene, db.func.count('*')).join(SNP, Gene.snps_by_target).filter(
-                SNP.fdr_class.in_(['0.01', '0.05', '0.1'])).group_by(Gene),
-            total=q.count()
+                session.query(Gene, db.func.count('*')).join(SNP, Gene.snps_by_target).filter(
+                    SNP.fdr_class.in_(['0.01', '0.05', '0.1'])).group_by(Gene),
+                total=q.count()
         ):
             gene.eqtl_snps_count010 = count
         session.commit()
@@ -719,8 +732,8 @@ if __name__ == '__main__':
         print('Updating promoter snp count')
         q = session.query(Gene, db.func.count('*')).join(SNP, Gene.proximal_promoter_snps).group_by(Gene)
         for gene, count in tqdm(
-            session.query(Gene, db.func.count('*')).join(SNP, Gene.proximal_promoter_snps).group_by(Gene),
-            total=q.count()
+                session.query(Gene, db.func.count('*')).join(SNP, Gene.proximal_promoter_snps).group_by(Gene),
+                total=q.count()
         ):
             gene.snps_count = count
         session.commit()
@@ -731,11 +744,12 @@ if __name__ == '__main__':
 
     if PROMOTER_GENE_COUNT_010:
         print('Updating promoter snp count 010')
-        q = session.query(Gene, db.func.count('*')).join(SNP, Gene.proximal_promoter_snps).filter(SNP.fdr_class.in_(['0.01', '0.05', '0.1'])).group_by(Gene)
+        q = session.query(Gene, db.func.count('*')).join(SNP, Gene.proximal_promoter_snps).filter(
+            SNP.fdr_class.in_(['0.01', '0.05', '0.1'])).group_by(Gene)
         for gene, count in tqdm(
-            session.query(Gene, db.func.count('*')).join(SNP, Gene.proximal_promoter_snps).filter(
-                SNP.fdr_class.in_(['0.01', '0.05', '0.1'])).group_by(Gene),
-            total=q.count()
+                session.query(Gene, db.func.count('*')).join(SNP, Gene.proximal_promoter_snps).filter(
+                    SNP.fdr_class.in_(['0.01', '0.05', '0.1'])).group_by(Gene),
+                total=q.count()
         ):
             gene.snps_count010 = count
         session.commit()
@@ -765,7 +779,8 @@ if __name__ == '__main__':
         print('Performing NULL checks')
         items_dict = {
             Gene: ['snps_count', 'snps_count010', 'eqtl_snps_count', 'eqtl_snps_count010'],
-            SNP: ['best_p_value', 'fdr_class', 'best_es', 'es_class', 'context', 'has_clinvar_associations', 'has_phewas_associations',
+            SNP: ['best_p_value', 'fdr_class', 'best_es', 'es_class', 'context', 'has_clinvar_associations',
+                  'has_phewas_associations',
                   'has_ebi_associations', 'has_qtl_associations', 'has_grasp_associations',
                   'has_finemapping_associations', 'has_concordance'],
             TranscriptionFactor: ['aggregated_snps_count', 'aggregated_snps_count005', 'aggregated_snps_count010'],
@@ -779,4 +794,3 @@ if __name__ == '__main__':
                 ctr = cls.query.filter(getattr(cls, field).is_(None)).count()
                 if ctr > 0:
                     print('WARN: {} occasions of {}.{} = NULL'.format(ctr, cls, field))
-
