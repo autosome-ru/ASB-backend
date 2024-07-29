@@ -641,10 +641,12 @@ if __name__ == '__main__':
                 return typ(val)
         float_field = ['motif_log_pref', 'motif_log_palt', 'motif_fc']
         int_field = ['motif_pos']
-        for tf in tqdm(TranscriptionFactor.query.all(), position=0):
+        tf_name_to_id = {tf.name: tf.tf_id for tf in session.query(TranscriptionFactor).all()}
+
+        for tf_name, tf_id in tqdm(tf_name_to_id.items(), position=0, total=len([x for x in tf_name_to_id])):
             edited_snps = []
-            tf_name = tf.name.split('@')[0]
-            path = f"/home/abramov/adastra_update072124/new-version/{tf_name}.tsv"
+            base_tf_name = tf_name.split('@')[0]
+            path = f"/home/abramov/adastra_update072124/new-version/{base_tf_name}.tsv"
             if not os.path.exists(path):
                 continue
             tf_pval_df = pd.read_table(path)
@@ -655,12 +657,15 @@ if __name__ == '__main__':
                                                                x['alt']])),
                                                  axis=1)
             tf_pval_df = tf_pval_df.set_index('key')
+
             for tf_snp, snp in tqdm(session.query(
                     TranscriptionFactorSNP, SNP
             ).join(
                 SNP,
                 TranscriptionFactorSNP.snp
-            ).filter(TranscriptionFactorSNP.tf_id == tf.tf_id).all(), position=1, leave=False):
+            ).all(), position=1, leave=False):
+                if tf_snp.tf_name != base_tf_name:
+                    continue
                 key = '@'.join(map(str, [snp.chromosome, snp.position, snp.alt]))
                 snp_df = tf_pval_df.loc[key]
                 tf_snp.motif_log_p_ref = to_type(snp_df['motif_log_pref'], float)
@@ -672,7 +677,6 @@ if __name__ == '__main__':
                 tf_snp.motif_concordance = None if conc in ('None', '') or pd.isna(conc) else conc
                 edited_snps.append(tf_snp)
             session.commit()
-
 
 
     if UPDATE_CONCORDANCE:
