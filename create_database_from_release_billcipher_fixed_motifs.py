@@ -602,7 +602,7 @@ if __name__ == '__main__':
         int_field = ['motif_pos']
         for tf in tqdm(TranscriptionFactor.query.all(), position=0):
             edited_snps = []
-            path = os.path.join(release_path, 'TF_P-values', tf.name + '.tsv')
+            path = f"/home/abramov/adastra_update072124/new-version/{tf.name}.tsv"
             if not os.path.exists(path):
                 continue
             tf_pval_df = pd.read_table(path)
