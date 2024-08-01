@@ -122,15 +122,14 @@ def update_motif_concordance():
     while count > 0:
         print(count)
         for snp in query.offset(offset).limit(max_count):
-            if snp.motif_log_p_ref:
-                snp.motif_log_2_fc = (snp.motif_log_p_alt - snp.motif_log_p_ref) / np.log10(2)
-                # passes_fdr_filters = snp.best_p_value >= 1 + np.log10(2)  # 0.05
-                passes_motif_filters = ((snp.motif_log_p_ref >= 3 + np.log10(2)) or
-                                        (snp.motif_log_p_alt >= 3 + np.log10(2)))  # 0.0005
-            else:
+            if not snp.motif_log_p_ref:
                 assert not snp.motif_log_p_alt
                 assert not snp.motif_log_2_fc
                 continue
+
+            # passes_fdr_filters = snp.best_p_value >= 1 + np.log10(2)  # 0.05
+            passes_motif_filters = ((snp.motif_log_p_ref >= 3 + np.log10(2)) or
+                                    (snp.motif_log_p_alt >= 3 + np.log10(2)))  # 0.0005
             if not passes_motif_filters:
                 snp.motif_concordance = 'No Hit'
                 snp.motif_log_2_fc = None
@@ -138,7 +137,7 @@ def update_motif_concordance():
 
             snp.motif_log_2_fc = (snp.motif_log_p_alt - snp.motif_log_p_ref) / np.log10(2)
 
-            if abs((snp.motif_log_p_alt - snp.motif_log_p_ref) / np.log10(2)) >= 2:
+            if abs(snp.motif_log_2_fc) >= 2:
                 snp.motif_concordance = 'Concordant' if (snp.motif_log_p_alt - snp.motif_log_p_ref) * \
                                                         (snp.log_p_value_alt - snp.log_p_value_ref) > 0 \
                     else 'Discordant'
