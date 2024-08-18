@@ -103,7 +103,7 @@ if __name__ == '__main__':
     base_dir = '/home/abramov/hocomoco12/pcm'
     for file_name in os.listdir(base_dir):
         tf_name, _, tf_index, *_ = file_name.split('.')
-        key = f"{tf_name}.{tf_index}"
+        key = f"{tf_name}_HUMAN.{tf_index}"
         if key in name_dict:
             print('Бросаем корабль!')
         name_dict[key] = f"{base_dir}/{file_name}"
