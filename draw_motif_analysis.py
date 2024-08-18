@@ -179,9 +179,10 @@ if __name__ == '__main__':
         'c': 'g',
         'g': 'c',
     }
-
-    for tf_snp, snp, tf in tqdm(session.query(TranscriptionFactorSNP, SNP, TranscriptionFactor).filter(TranscriptionFactorSNP.motif_concordance.isnot(None) &
-                                                                                                  (TranscriptionFactorSNP.motif_concordance != 'No Hit')).join(
+    req = session.query(TranscriptionFactorSNP, SNP, TranscriptionFactor).filter(
+        TranscriptionFactorSNP.motif_concordance.isnot(None) &
+        (TranscriptionFactorSNP.motif_concordance != 'No Hit')
+    ).join(
         SNP,
         (SNP.chromosome == TranscriptionFactorSNP.chromosome) &
         (SNP.position == TranscriptionFactorSNP.position) &
@@ -189,10 +190,12 @@ if __name__ == '__main__':
     ).join(
         TranscriptionFactor,
         TranscriptionFactor.tf_id == TranscriptionFactorSNP.tf_id
-    ), total=71445):
+    )
+    for tf_snp, snp, tf in tqdm(req, total=req.count()):
         for draw_revcomp in True, False:
             # if os.path.isfile('D:\Sashok\svgs_{}/{}_{}_{}{}.svg.gz'.format(current_release.name, tf.name, snp.rs_id, snp.alt, '_revcomp' if draw_revcomp else '')):
             #     continue
+            print(tf.__dict__)
             key = f"{tf.name}.{tf.tf_motif_index}"
             pcm_path = name_dict[key]
 
