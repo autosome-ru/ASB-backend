@@ -196,7 +196,11 @@ if __name__ == '__main__':
             # if os.path.isfile('D:\Sashok\svgs_{}/{}_{}_{}{}.svg.gz'.format(current_release.name, tf.name, snp.rs_id, snp.alt, '_revcomp' if draw_revcomp else '')):
             #     continue
             key = f"{tf.name}.{tf_snp.tf_motif_index}"
-            pcm_path = name_dict[key]
+            try:
+                pcm_path = name_dict[key]
+            except KeyError:
+                print(snp.chromosome, snp.position, tf_snp.motif_concordance)
+                raise
 
             trimmed_snp_context = snp.context if len(snp.context) == 49 else snp.context[(len(snp.context) - 49) // 2:-(len(snp.context) - 49) // 2]
             context = ' ' * 20 + (''.join([get_revcomp[x] for x in trimmed_snp_context[::-1]]) if draw_revcomp else trimmed_snp_context) + ' ' * 20
