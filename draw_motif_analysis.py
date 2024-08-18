@@ -195,8 +195,7 @@ if __name__ == '__main__':
         for draw_revcomp in True, False:
             # if os.path.isfile('D:\Sashok\svgs_{}/{}_{}_{}{}.svg.gz'.format(current_release.name, tf.name, snp.rs_id, snp.alt, '_revcomp' if draw_revcomp else '')):
             #     continue
-            print(tf.__dict__)
-            key = f"{tf.name}.{tf.tf_motif_index}"
+            key = f"{tf.name}.{tf_snp.tf_motif_index}"
             pcm_path = name_dict[key]
 
             trimmed_snp_context = snp.context if len(snp.context) == 49 else snp.context[(len(snp.context) - 49) // 2:-(len(snp.context) - 49) // 2]
