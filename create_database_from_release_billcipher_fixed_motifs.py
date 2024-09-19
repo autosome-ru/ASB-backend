@@ -621,7 +621,11 @@ if __name__ == '__main__':
             ).filter(TranscriptionFactorSNP.tf_id == tf.tf_id).all(), position=1, leave=False):
                 key = '@'.join(map(str, [snp.chromosome, snp.position, snp.alt]))
                 snp_df = tf_pval_df.loc[key]
-                motif_index = to_type(snp_df['motif_index'], int)
+                try:
+                    motif_index = to_type(snp_df['motif_index'], int)
+                except ValueError:
+                    print(snp_df['motif_index'])
+                    raise
                 if motif_index is not None:
                     tf_snp.motif_log_p_ref = to_type(snp_df['motif_log_pref'], float)
 
