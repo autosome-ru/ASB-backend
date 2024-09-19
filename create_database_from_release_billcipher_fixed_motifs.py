@@ -624,6 +624,7 @@ if __name__ == '__main__':
                 try:
                     motif_index = to_type(snp_df['motif_index'], int)
                 except ValueError:
+                    print(snp_df)
                     print(snp_df['motif_index'])
                     raise
                 if motif_index is not None:
