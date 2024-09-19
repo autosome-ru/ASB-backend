@@ -621,16 +621,21 @@ if __name__ == '__main__':
             ).filter(TranscriptionFactorSNP.tf_id == tf.tf_id).all(), position=1, leave=False):
                 key = '@'.join(map(str, [snp.chromosome, snp.position, snp.alt]))
                 snp_df = tf_pval_df.loc[key]
-                tf_snp.motif_log_p_ref = to_type(snp_df['motif_log_pref'], float)
+                motif_index = to_type(snp_df['motif_index'], int)
+                if motif_index is not None:
+                    tf_snp.motif_log_p_ref = to_type(snp_df['motif_log_pref'], float)
 
-                tf_snp.motif_log_p_alt = to_type(snp_df['motif_log_palt'], float)
+                    tf_snp.motif_log_p_alt = to_type(snp_df['motif_log_palt'], float)
 
-                tf_snp.motif_log_2_fc = to_type(snp_df['motif_fc'], float)
-                tf_snp.motif_position = to_type(snp_df['motif_pos'], int)
-                tf_snp.tf_motif_index = to_type(snp_df['motif_index'], int)
-                tf_snp.motif_orientation = {'+': True, '-': False}.get(snp_df['motif_orient'])
-                conc = snp_df['motif_conc']
-                tf_snp.motif_concordance = None if conc in ('None', '') or pd.isna(conc) else conc
+                    tf_snp.motif_log_2_fc = to_type(snp_df['motif_fc'], float)
+                    tf_snp.motif_position = to_type(snp_df['motif_pos'], int)
+                    tf_snp.tf_motif_index = to_type(snp_df['motif_index'], int)
+                    tf_snp.motif_orientation = {'+': True, '-': False}.get(snp_df['motif_orient'])
+                    conc = snp_df['motif_conc']
+                    tf_snp.motif_concordance = None if conc in ('None', '') or pd.isna(conc) else conc
+                else:
+                    tf_snp.motif_concordance = tf_snp.motif_orientation  = tf_snp.tf_motif_index = tf_snp.motif_position = tf_snp.motif_log_p_ref = tf_snp.motif_log_p_alt = tf_snp.motif_log_2_fc = None
+
                 edited_snps.append(tf_snp)
             session.commit()
 
