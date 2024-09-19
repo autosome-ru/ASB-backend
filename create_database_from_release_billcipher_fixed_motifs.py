@@ -594,7 +594,7 @@ if __name__ == '__main__':
     if REDO_CONCORDANCE:
         print('Rereading motif columns')
         def to_type(val, typ):
-            if val == '' or val == '.' or pd.isna(val):
+            if val == '' or val == '.' or pd.isna(val) or val == "n":
                 return None
             else:
                 return typ(val)
