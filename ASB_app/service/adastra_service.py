@@ -151,27 +151,8 @@ class ReleaseService:
 
     def construct_advanced_filters(self, filters_object):
         filters = []
-        if int(self.release.version) >= 6:
-            if not filters_object['fdr']:
-                filters_object['fdr'] = default_fdr_tr(int(self.release.version))
-            if not filters_object['es']:
-                filters_object['es'] = default_es_tr(int(self.release.version))
 
-            if filters_object['transcription_factors']:
-                filters += [self.SNP.tf_aggregated_snps.any(
-                    (self.TranscriptionFactorSNP.tf_id.in_(
-                        [
-                            tf.tf_id for tf in self.TranscriptionFactor.query.filter(
-                            self.TranscriptionFactor.name.ilike(f"{tf_name}%")
-                        ).all()
-                        ]
-                    )) &
-                    (self.TranscriptionFactorSNP.fdr_class.in_(get_corresponding_fdr_classes(filters_object['fdr']))) &
-                    (self.TranscriptionFactorSNP.es_class.in_(get_corresponding_es_classes(filters_object['es']))))
-                    for tf_name in filters_object['transcription_factors']]
-
-
-        elif int(self.release.version) >= 3:
+        if int(self.release.version) >= 3:
             if not filters_object['fdr']:
                 filters_object['fdr'] = default_fdr_tr(int(self.release.version))
             if not filters_object['es']:
