@@ -639,7 +639,7 @@ if __name__ == '__main__':
                     conc = snp_df['motif_conc']
                     tf_snp.motif_concordance = None if conc in ('None', '') or pd.isna(conc) else conc
                 else:
-                    tf_snp.motif_concordance = tf_snp.motif_orientation  = tf_snp.tf_motif_index = tf_snp.motif_position = tf_snp.motif_log_p_ref = tf_snp.motif_log_p_alt = tf_snp.motif_log_2_fc = None
+                    tf_snp.motif_concordance = tf_snp.motif_orientation = tf_snp.tf_motif_index = tf_snp.motif_position = tf_snp.motif_log_p_ref = tf_snp.motif_log_p_alt = tf_snp.motif_log_2_fc = None
 
                 edited_snps.append(tf_snp)
             session.commit()
