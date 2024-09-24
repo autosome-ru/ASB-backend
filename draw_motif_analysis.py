@@ -307,9 +307,10 @@ if __name__ == '__main__':
             bracket_thick = 10
             conc_label_space = 0.1
 
+            name = key
             place_concordance_on_svg(fig, tf_snp.motif_concordance, conc_label_space*unit_width, (1/2 +(1/2 + full_gap + text_h + indent + hill_gap + strands_h/2 + ref_height)/2)*unit_height - concordance_h[tf_snp.motif_concordance]/2, concordance_h[tf_snp.motif_concordance], concordance_w)
             place_letter_on_svg(fig, os.path.expanduser('~/PARAMETERS/letters/rect2.svg'), conc_label_space*2*unit_width+concordance_w, (1/2 + bracket_thick/600/2) * unit_height, (1/2 + full_gap + text_h + indent + hill_gap + strands_h/2 + ref_height - bracket_thick/600)*unit_height, bracket_thick/300*unit_width)
             place_letter_on_svg(fig, os.path.expanduser('~/PARAMETERS/letters/rect2.svg'), conc_label_space*2*unit_width+concordance_w, (1/2 - bracket_thick/600/2) * unit_height, bracket_thick/600*unit_height, (add_letters + concordance_indent - 3*conc_label_space)*unit_width - concordance_w)
             place_letter_on_svg(fig, os.path.expanduser('~/PARAMETERS/letters/rect2.svg'), conc_label_space*2*unit_width+concordance_w, (1 + full_gap + text_h + indent + hill_gap + strands_h/2 + ref_height - bracket_thick/600/2) * unit_height, bracket_thick/600*unit_height, (add_letters + concordance_indent - 3*conc_label_space)*unit_width - concordance_w)
 
-            fig.save(os.path.expanduser('/home/abramov/adastra_images/{}/{}_{}_{}{}.svg'.format(current_release.name, tf.name, snp.rs_id, snp.alt, '_revcomp' if draw_revcomp else '')))
+            fig.save(os.path.expanduser('/home/abramov/adastra_images/{}/{}_{}_{}{}.svg'.format(current_release.name, name, snp.rs_id, snp.alt, '_revcomp' if draw_revcomp else '')))
