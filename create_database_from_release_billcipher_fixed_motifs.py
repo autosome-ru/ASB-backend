@@ -620,7 +620,12 @@ if __name__ == '__main__':
                 TranscriptionFactorSNP.snp
             ).filter(TranscriptionFactorSNP.tf_id == tf.tf_id).all(), position=1, leave=False):
                 key = '@'.join(map(str, [snp.chromosome, snp.position, snp.alt]))
-                snp_df = tf_pval_df.loc[key]
+                try:
+                    snp_df = tf_pval_df.loc[key]
+                except KeyError:
+                    print(tf.name)
+                    print(key)
+                    raise
                 try:
                     motif_index = to_type(snp_df['motif_index'], int)
                 except ValueError:
