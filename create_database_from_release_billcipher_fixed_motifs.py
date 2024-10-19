@@ -607,12 +607,9 @@ if __name__ == '__main__':
                 continue
             tf_pval_df = pd.read_table(path, low_memory=False)
             tf_pval_df['end'] = tf_pval_df['end'].astype(int)
-            tf_pval_df['key'] = tf_pval_df.apply(lambda x:
-                                                 '@'.join(map(str,
-                                                              [x['#chr'],
-                                                               x['end'],
-                                                               x['alt']])),
-                                                 axis=1)
+            tf_pval_df['key'] = tf_pval_df.apply(
+                lambda x: '@'.join(
+                    map(str, [x['#chr'], x['end'], x['alt']])), axis=1)
             tf_pval_df = tf_pval_df.set_index('key')
             for tf_snp, snp in tqdm(session.query(
                     TranscriptionFactorSNP, SNP
