@@ -627,6 +627,7 @@ if __name__ == '__main__':
                 try:
                     motif_index = to_type(snp_df['motif_index'], int)
                 except ValueError:
+                    print(tf.name)
                     print(snp_df)
                     print(snp_df['motif_index'])
                     raise
