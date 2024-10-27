@@ -604,7 +604,8 @@ if __name__ == '__main__':
             edited_snps = []
             path = f"/home/abramov/adastra_update072124/new-version/{tf.name}.tsv"
             if not os.path.exists(path):
-                continue
+                raise ValueError(f'There is no file for {tf.name}')
+                #continue
             tf_pval_df = pd.read_table(path, low_memory=False)
             tf_pval_df['end'] = tf_pval_df['end'].astype(int)
             tf_pval_df['key'] = tf_pval_df.apply(
