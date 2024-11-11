@@ -34,8 +34,8 @@ class ReleaseBillCipher(Release):
     full_version = '5.1'
 
 
-class ReleaseBillCipherFixedMotifs(Release):
-    name = 'billcipher_fixed_motifs'
+class ReleaseMabel(Release):
+    name = 'mabel'
     version = '6'
     full_version = '6.1'
 
@@ -47,4 +47,4 @@ def get_release_by_version(version):
     raise ReleaseNotFound('No release: v{}'.format(version))
 
 
-current_release = ReleaseBillCipherFixedMotifs
+current_release = ReleaseMabel
