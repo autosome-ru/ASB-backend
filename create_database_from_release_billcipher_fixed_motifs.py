@@ -14,7 +14,7 @@ from tqdm import tqdm
 
 from ASB_app.utils.statistics import get_fdr_class, get_es_class
 
-current_release = releases.ReleaseBillCipherFixedMotifs
+current_release = releases.current_release
 session = current_release.session
 
 TranscriptionFactor, \

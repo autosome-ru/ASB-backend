@@ -7,7 +7,7 @@ import numpy as np
 from ASB_app.constants import db_name_property_dict, fdr_classes, fdr_choices, es_choices, es_classes
 
 from ASB_app.releases import current_release
-from ASB_app.models import CandidateSNP, CandidateRS
+from ASB_app.models import CandidateSNP
 from ASB_app.utils.statistics import get_fdr_class, get_es_class
 
 session = current_release.session
