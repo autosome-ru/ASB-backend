@@ -128,12 +128,12 @@ def update_motif_concordance():
                 continue
 
             # passes_fdr_filters = snp.best_p_value >= 1 + np.log10(2)  # 0.05
-            # passes_motif_filters = ((snp.motif_log_p_ref >= 3 + np.log10(2)) or
-            #                         (snp.motif_log_p_alt >= 3 + np.log10(2)))  # 0.0005
-            # if not passes_motif_filters:
-            #     snp.motif_concordance = 'No Hit'
-            #     snp.motif_log_2_fc = None
-            #     continue
+            passes_motif_filters = ((snp.motif_log_p_ref >= 3) or
+                                    (snp.motif_log_p_alt >= 3))  # 0.0005
+            if not passes_motif_filters:
+                snp.motif_concordance = 'No Hit'
+                snp.motif_log_2_fc = None
+                continue
 
             snp.motif_log_2_fc = (snp.motif_log_p_alt - snp.motif_log_p_ref) / np.log10(2)
 
