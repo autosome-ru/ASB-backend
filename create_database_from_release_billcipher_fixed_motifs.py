@@ -58,7 +58,7 @@ TARGET_GENES = 0
 PROMOTER_GENES = 0  # not needed at first time
 TARGET_GENE_SNP_COUNT = 0
 
-REDO_CONCORDANCE = 1
+REDO_CONCORDANCE = 0
 
 UPDATE_CONCORDANCE = 1  # Don't forget to change current_release in releases.py
 UPDATE_PHEN_COUNT = 0
