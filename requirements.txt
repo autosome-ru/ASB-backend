@@ -6,7 +6,7 @@ backcall==0.1.0
 Click==7.0
 colorama==0.4.4
 decorator==4.4.1
-Flask==1.1.1
+Flask==2.3.2
 Flask-APScheduler==1.11.0
 Flask-Cors==3.0.9
 Flask-Executor==0.9.3
