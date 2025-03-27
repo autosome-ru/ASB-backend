@@ -10,10 +10,10 @@ class Release:
     full_version = '0.0'
 
 
-class ReleaseSoos(Release):
-    name = 'soos'
-    version = '1'
-    full_version = '1.6'
+# class ReleaseSoos(Release):
+#     name = 'soos'
+#     version = '1'
+#     full_version = '1.6'
 
 
 # class ReleaseSusan(Release):
@@ -28,11 +28,11 @@ class ReleaseSoos(Release):
 #     full_version = '4.0'
 
 
-class ReleaseBillCipher(Release):
-    name = 'billcipher'
-    version = '5'
-    full_version = '5.1'
-
+# class ReleaseBillCipher(Release):
+#     name = 'billcipher'
+#     version = '5'
+#     full_version = '5.1'
+#
 
 class ReleaseMabel(Release):
     name = 'mabel'
