@@ -215,7 +215,7 @@ if __name__ == '__main__':
                         ({'TF': 'tf_id', 'CL': 'cl_id'}[param]): ag_id,
                         'log_p_value_ref': -np.log10(row['fdrp_bh_ref']) if row['fdrp_bh_ref'] != 0 else 310,
                         'log_p_value_alt': -np.log10(row['fdrp_bh_alt']) if row['fdrp_bh_alt'] != 0 else 310,
-                        'best_p_value': -np.log10(min_pv),
+                        'best_p_value': -np.log10(min_pv) if min_pv != 0 else 310,
                         'best_es': max_es,
                         'fdr_class': get_fdr_class(-np.log10(min_pv)),
                         'es_class': get_es_class(max_es),
@@ -233,6 +233,7 @@ if __name__ == '__main__':
                                         'motif_orientation': row['motif_orient'],
                                         'motif_position': row['motif_pos'],
                                         'motif_concordance': row['motif_conc'],
+                                        'tf_motif_index': None,
                                         })
                     ag_snps.append(SNPClass(**ag_data))
 
