@@ -178,8 +178,8 @@ if __name__ == '__main__':
                             row[field] = float(row[field])
 
                     min_pv = min(
-                        row['fdrp_bh_ref'] if row['fdrp_bh_ref'] else 1,
-                        row['fdrp_bh_alt'] if row['fdrp_bh_alt'] else 1,
+                        row['fdrp_bh_ref'] if pd.notna(row['fdrp_bh_ref']) else 1,
+                        row['fdrp_bh_alt'] if pd.notna(row['fdrp_bh_alt']) else 1,
                     )
 
                     if min_pv > tr:
