@@ -164,7 +164,7 @@ if __name__ == '__main__':
                         row = dict(zip(header, row.strip('\n').split('\t')))
                     float_fields = ['fdrp_bh_ref', 'fdrp_bh_alt',
                                     'es_mean_ref', 'es_mean_alt', 'mean_BAD']
-                    int_fields = ['end', 'n_peak_calls', 'n_peak_callers']
+                    int_fields = ['pos', 'n_peak_calls', 'n_peak_callers']
                     if param == "TF":
                         float_fields += ['motif_log_pref', 'motif_log_palt', 'motif_fc']
                         int_fields += ['motif_pos']
@@ -201,7 +201,7 @@ if __name__ == '__main__':
                         mutation = SNP(
                             rs_id=row['ID'],
                             chromosome=row['#chr'],
-                            position=row['end'],
+                            position=row['pos'],
                             ref=row['ref'],
                             alt=row['alt'],
                         )
@@ -210,7 +210,7 @@ if __name__ == '__main__':
 
                     ag_data = {
                         'chromosome': row['#chr'],
-                        'position': int(row['end']),
+                        'position': int(row['pos']),
                         'alt': row['alt'],
                         ({'TF': 'tf_id', 'CL': 'cl_id'}[param]): ag_id,
                         'log_p_value_ref': -np.log10(row['fdrp_bh_ref']) if row['fdrp_bh_ref'] != 0 else 310,
