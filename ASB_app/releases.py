@@ -34,7 +34,7 @@ class Release:
 #     full_version = '5.1'
 
 class ReleaseBmo(Release):
-    name = 'IceKing'
+    name = 'bmo'
     version = '5'
     full_version = '1.0'
 
